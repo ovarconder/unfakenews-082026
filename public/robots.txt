@@ -1,0 +1,49 @@
+User-agent: *
+Allow: /
+
+# Social media crawlers — allow all for rich link previews
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Facebot
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: Twitter
+Allow: /
+
+User-agent: X
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: WhatsApp
+Allow: /
+
+User-agent: Slackbot
+Allow: /
+
+User-agent: Discordbot
+Allow: /
+
+User-agent: TelegramBot
+Allow: /
+
+User-agent: LINE
+Allow: /
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: Yeti  # Naver / LINE
+Allow: /
+
+User-agent: Pinterestbot
+Allow: /
+
+User-agent: Applebot
+Allow: /
+

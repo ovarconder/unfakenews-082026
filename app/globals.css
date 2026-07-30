@@ -1,0 +1,155 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 216 50% 11%;    /* #0d1b2a - body bg */
+    --foreground: 0 0% 98%;       /* white text */
+    --card: 216 48% 13%;          /* slightly lighter than bg */
+    --card-foreground: 0 0% 98%;
+    --popover: 216 48% 13%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 38 92% 50%;        /* amber accent */
+    --primary-foreground: 0 0% 98%;
+    --secondary: 216 50% 15%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 216 50% 15%;
+    --muted-foreground: 0 0% 70%;
+    --accent: 38 92% 50%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 216 30% 20%;
+    --input: 216 30% 20%;
+    --ring: 38 92% 50%;
+    --radius: 0.5rem;
+
+    /* Dynamic theme CSS variables (overriden by SettingsProvider) */
+    --color-primary: #fbbf24;
+    --color-secondary: #f59e0b;
+    --color-accent: #d97706;
+    --color-bg: #060e1a;
+    --color-bg-secondary: #0a1628;
+    --color-card: #0f1f3a;
+    --color-card-border: rgba(255,255,255,0.1);
+    --color-text: #ffffff;
+    --color-text-muted: rgba(255,255,255,0.5);
+    --color-sidebar: #0a1628;
+    --color-header: #060e1a;
+    --color-success: #10b981;
+    --color-error: #ef4444;
+  }
+
+  .dark {
+    /* same defaults */
+    --color-primary: #fbbf24;
+    --color-secondary: #f59e0b;
+    --color-accent: #d97706;
+    --color-bg: #060e1a;
+    --color-bg-secondary: #0a1628;
+    --color-card: #0f1f3a;
+    --color-card-border: rgba(255,255,255,0.1);
+    --color-text: #ffffff;
+    --color-text-muted: rgba(255,255,255,0.5);
+    --color-sidebar: #0a1628;
+    --color-header: #060e1a;
+    --color-success: #10b981;
+    --color-error: #ef4444;
+  }
+}
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    /* Default body font: Noto Serif (English) */
+    font-family: var(--font-noto-serif), Georgia, serif;
+  }
+  
+  /* Thai text uses Noto Sans Thai for body content */
+  [lang="th"],
+  [lang="th"] * {
+    font-family: var(--font-noto-sans-thai), "Noto Sans Thai", sans-serif;
+  }
+  
+  /* English headings: Playfair Display */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-playfair), Georgia, "Times New Roman", serif;
+  }
+  
+  /* Thai headings: Prompt */
+  [lang="th"] h1, [lang="th"] h2, [lang="th"] h3,
+  [lang="th"] h4, [lang="th"] h5, [lang="th"] h6 {
+    font-family: var(--font-prompt), "Prompt", sans-serif;
+  }
+  
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Article prose styling enhancements */
+@layer components {
+  .prose {
+    @apply text-white/90;
+  }
+  
+  .prose h1,
+  .prose h2,
+  .prose h3 {
+    @apply text-white;
+  }
+  
+  .prose p {
+    @apply text-white/80 leading-relaxed;
+  }
+  
+  .prose a {
+    @apply text-amber-300 underline decoration-amber-300/30 hover:decoration-amber-300 transition-colors;
+  }
+
+  /* 🔤 Article Hero Title — ใช้กับ h1 ใน hero section ของบทความ */
+  .article-hero-title {
+    font-family: var(--font-prompt), "Prompt", var(--font-playfair), Georgia, "Times New Roman", serif;
+    font-size: 2.5rem;        /* fallback */
+    font-size: clamp(1.5rem, 5vw, 2.5rem);
+    line-height: 1.4;
+    font-weight: bold;
+    color: white;
+    max-width: 56rem;         /* max-w-4xl */
+    margin-bottom: 1.5rem;
+  }
+
+  [lang="th"] .article-hero-title {
+    font-family: var(--font-prompt), "Prompt", sans-serif;
+  }
+}
+
+@layer components {
+  .bg-brand { background-color: var(--color-bg); }
+  .bg-brand-secondary { background-color: var(--color-bg-secondary); }
+  .bg-brand-card { background-color: var(--color-card); }
+  .text-brand { color: var(--color-text); }
+  .text-brand-muted { color: var(--color-text-muted); }
+  .text-primary { color: var(--color-primary); }
+  .text-secondary { color: var(--color-secondary); }
+  .border-brand-card { border-color: var(--color-card-border); }
+  .bg-sidebar { background-color: var(--color-sidebar); }
+  .bg-header { background-color: var(--color-header); }
+  .bg-success { background-color: var(--color-success); }
+  .bg-error { background-color: var(--color-error); }
+
+  .btn-primary {
+    background: linear-gradient(to right, var(--color-primary), var(--color-secondary));
+    color: var(--color-bg);
+  }
+  .btn-secondary {
+    background: transparent;
+    border: 1px solid var(--color-card-border);
+    color: var(--color-primary);
+  }
+}

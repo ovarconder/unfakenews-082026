@@ -1,0 +1,637 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { getAllArticleMasters } from "@/lib/articles-data";
+import { createClient } from "@/lib/supabase-client";
+import { t } from "@/lib/translations";
+import type { Locale } from "@/lib/locales";
+import type { ArticleFull } from "@/lib/article-service-supabase";
+import { RefreshCw as RefreshCwIcon, ChevronRight, Share2, Facebook, Twitter, Link as LinkIcon } from "lucide-react";
+import { SchemaArticle } from "@/components/schema-article";
+import ExternalLink, { getDomainLabel } from "@/components/external-link";
+import { AdUnit } from "@/components/analytics/adsense";
+import { useSettings } from "@/components/admin/settings-context";
+
+// ============================================================
+// Wiki-Style Components (Quick Facts, Glossary, Abstract)
+// ============================================================
+import WikiHeroSection from "@/components/articles/wiki-hero-section";
+import GlossarySection from "@/components/articles/glossary-section";
+import ExcerptSection from "@/components/articles/excerpt-section";
+import { getWikiArticle } from "@/lib/wiki-data";
+import type { WikiArticle } from "@/lib/wiki-types";
+
+interface ArticleDetailProps {
+  article: ArticleFull;
+  locale: Locale;
+}
+
+// ============================================================
+// Render markdown-style content (รองรับ imageAltTexts ที่แปลแล้ว)
+// ============================================================
+
+/**
+ * แทนที่ alt text ใน markdown ด้วยเวอร์ชันที่แปลแล้วจากแปล
+ */
+function applyTranslatedAltTexts(content: string, translatedAlts?: Record<string, string>): string {
+  if (!translatedAlts || Object.keys(translatedAlts).length === 0) return content;
+  return content.replace(/!\[(.*?)\]\((.*?)\)/g, (_match, _alt: string, url: string) => {
+    const newAlt = translatedAlts[url] || translatedAlts["hero"] || _alt;
+    return `![${newAlt}](${url})`;
+  });
+}
+
+interface ImageAltCache {
+  [key: string]: string;
+}
+
+function renderContent(content: string, translatedAlts?: Record<string, string>) {
+  // Apply translated alt texts before rendering
+  const processedContent = applyTranslatedAltTexts(content, translatedAlts);
+
+  return processedContent.split("\n").map((line, idx) => {
+    // --- blockquote (บรรทัดที่ขึ้นต้นด้วย > หรือ <blockquote>) ---
+    if (line.trimStart().startsWith(">") || line.trimStart().startsWith("<blockquote>")) {
+      const quoteText = line
+        .trimStart()
+        .replace(/^>\s*/, "")
+        .replace(/^<\/?blockquote>\s*/, "")
+        .replace(/<\/?blockquote>/g, "");
+      return (
+        <blockquote
+          key={idx}
+          className="border-l-4 border-amber-400/40 pl-4 py-2 my-4 text-white/70 italic bg-white/[0.02] rounded-r-lg"
+        >
+          {renderInlineMarkdown(quoteText)}
+        </blockquote>
+      );
+    }
+
+    // --- style: ### **bold heading** (markdown-like) ---
+    if (line.startsWith("### **") && line.endsWith("**")) {
+      return (
+        <h3 key={idx} className="text-xl font-semibold text-white mt-8 mb-3">
+          {line.replace(/^### \*\*/, "").replace(/\*\*$/, "")}
+        </h3>
+      );
+    }
+
+    // --- style: ### **bold heading (no closing ** on same line) ---
+    if (line.startsWith("### **")) {
+      return (
+        <h3 key={idx} className="text-xl font-semibold text-white mt-8 mb-3">
+          {line.replace(/^### \*\*/, "").replace(/\*\*$/, "")}
+        </h3>
+      );
+    }
+
+    if (line.startsWith("## ")) {
+      return (
+        <h2 key={idx} className="text-2xl font-bold text-amber-200 mt-10 mb-4">
+          {line.replace("## ", "")}
+        </h2>
+      );
+    }
+    if (line.startsWith("### ")) {
+      return (
+        <h3 key={idx} className="text-xl font-semibold text-white mt-8 mb-3">
+          {line.replace("### ", "")}
+        </h3>
+      );
+    }
+    // --- bold text on its own line (**text**) ---
+    if (/^\*\*[^*]+\*\*$/.test(line.trim())) {
+      return (
+        <p key={idx} className="text-white font-semibold mt-4 mb-2">
+          {line.replace(/\*\*/g, "")}
+        </p>
+      );
+    }
+    if (line.startsWith("- ")) {
+      return (
+        <li key={idx} className="text-white/80 ml-4 mb-1">
+          {renderInlineMarkdown(line.replace("- ", ""))}
+        </li>
+      );
+    }
+    if (line.trim() === "") {
+      return <div key={idx} className="h-3" />;
+    }
+    return (
+      <p key={idx} className="text-white/80 leading-relaxed mb-4">
+        {renderInlineMarkdown(line)}
+      </p>
+    );
+  });
+}
+
+/** Helper to render inline markdown formatting within a line */
+function renderInlineMarkdown(text: string): React.ReactNode {
+  // First handle links (before bold/italic to avoid conflicts)
+  const urlRegex = /(https?:\/\/[^\s<"')]+)/g;
+  const linkParts = text.split(urlRegex);
+  
+  if (linkParts.length > 1) {
+    return linkParts.map((part, i) => {
+      if (part.match(urlRegex)) {
+        const domain = getDomainLabel(part);
+        return <ExternalLink key={i} href={part}>{domain}</ExternalLink>;
+      }
+      return renderBoldItalic(part);
+    });
+  }
+
+  return renderBoldItalic(text);
+}
+
+/** Render bold (**text**) and italic (*text*) inline */
+function renderBoldItalic(text: string): React.ReactNode {
+  // Match both **bold** and *italic* — bold first to prevent conflict
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={i} className="text-white font-semibold">{part.slice(2, -2)}</strong>;
+    }
+    if (part.startsWith("*") && part.endsWith("*")) {
+      return <em key={i} className="text-white/90 italic">{part.slice(1, -1)}</em>;
+    }
+    return part;
+  });
+}
+
+// ============================================================
+// Social Share Component
+// ============================================================
+
+function SocialShareButtons({ url, title, description }: { url: string; title: string; description: string }) {
+  const [copied, setCopied] = useState(false);
+  const encodedUrl = encodeURIComponent(url);
+  const encodedTitle = encodeURIComponent(title);
+
+  const shareLinks = [
+    {
+      name: "Facebook",
+      href: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedTitle}`,
+      icon: Facebook,
+      color: "hover:text-blue-500",
+    },
+    {
+      name: "Twitter/X",
+      href: `https://twitter.com/intent/tweet?text=${encodedTitle}&url=${encodedUrl}`,
+      icon: Twitter,
+      color: "hover:text-sky-400",
+    },
+    {
+      name: "Copy Link",
+      href: "#",
+      icon: LinkIcon,
+      color: "hover:text-amber-300",
+      onClick: async (e: React.MouseEvent) => {
+        e.preventDefault();
+        try {
+          await navigator.clipboard.writeText(url);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        } catch {
+          const textArea = document.createElement("textarea");
+          textArea.value = url;
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand("copy");
+          document.body.removeChild(textArea);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        }
+      },
+    },
+  ];
+
+  return (
+    <div className="flex items-center gap-2">
+      <Share2 size={14} className="text-white/40" />
+      {shareLinks.map((link) => {
+        const Icon = link.icon;
+        if (link.onClick) {
+          return (
+            <button
+              key={link.name}
+              onClick={link.onClick}
+              className={`p-1.5 rounded-lg bg-white/5 ${link.color} transition-colors relative`}
+              title={copied ? "Copied!" : link.name}
+            >
+              <Icon size={14} />
+              {copied && link.name === "Copy Link" && (
+                <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-white/10 text-white text-[10px] px-2 py-0.5 rounded whitespace-nowrap backdrop-blur-sm">
+                  Copied!
+                </span>
+              )}
+            </button>
+          );
+        }
+        return (
+          <a
+            key={link.name}
+            href={link.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`p-1.5 rounded-lg bg-white/5 ${link.color} transition-colors`}
+            title={`Share on ${link.name}`}
+          >
+            <Icon size={14} />
+          </a>
+        );
+      })}
+    </div>
+  );
+}
+
+// ============================================================
+// Article Detail
+// ============================================================
+
+export function ArticleDetail({ article, locale }: ArticleDetailProps) {
+  const { adsenseId, adsenseSlotSidebar } = useSettings() || {};
+
+  const [stateArticle, setStateArticle] = useState<ArticleFull | null>(article);
+  const [loading, setLoading] = useState(false);
+  const [translating, setTranslating] = useState(false);
+  const [translatedAlts, setTranslatedAlts] = useState<Record<string, string> | undefined>(undefined);
+
+  // ================================================================
+  // JIT (Just-in-Time) Translation — สำหรับ Tier 2 (summary_only)
+  // ================================================================
+  useEffect(() => {
+    if (locale === "th") return;
+    if (!article) return;
+    
+    // ถ้าเป็น "summary_only" หรือ "pending" และ content ยังไม่ถูกแปล
+    if ((article.translationStatus === "summary_only" || article.translationStatus === "pending") && article.content) {
+      let cancelled = false;
+      
+      const fetchContent = async () => {
+        setTranslating(true);
+        try {
+          const res = await fetch(`/api/translate-content/${article.slug}?locale=${locale}`);
+          if (!res.ok) throw new Error("Failed to load content");
+          const data = await res.json();
+          
+          if (!cancelled && data.success && data.content) {
+            // อัปเดต content ที่ render
+            setStateArticle(prev => prev ? {
+              ...prev,
+              content: data.content,
+              translationStatus: "complete",
+            } : null);
+            
+            // ถ้ามี translatedAlts ให้ apply
+            if (data.imageAlts) {
+              setTranslatedAlts(data.imageAlts);
+            }
+          }
+        } catch (err) {
+          console.warn("[JIT] Failed to auto-translate content, showing original:", err);
+        } finally {
+          if (!cancelled) setTranslating(false);
+        }
+      };
+      
+      fetchContent();
+      
+      return () => { cancelled = true; };
+    }
+  }, [article?.slug, locale, article?.translationStatus]);
+
+  // Get related articles from Supabase (instead of local JSON)
+  const [relatedArticles, setRelatedArticles] = useState<any[]>([]);
+  const [relatedLoading, setRelatedLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchRelatedArticles() {
+      try {
+        const supabase = createClient();
+        
+        // Fetch published articles from Supabase, excluding current article
+        const { data: articles } = await supabase
+          .from("articles")
+          .select(`
+            id, slug, original_title, original_excerpt, tags,
+            categories!inner(name_th, name_en),
+            author_name, published_at, image_url, image_alt, featured
+          `)
+          .or("status.eq.published,is_published.eq.true")
+          .is("microsite_id", null)
+          .neq("slug", article.slug) // exclude current article
+          .order("published_at", { ascending: false })
+          .limit(10);
+
+        if (!articles || articles.length === 0) {
+          setRelatedArticles([]);
+          setRelatedLoading(false);
+          return;
+        }
+
+        // Map to a simple structure for display
+        const mapped = articles.slice(0, 4).map((a: any) => {
+          const categoryName = locale === "th"
+            ? a.categories?.name_th || ""
+            : a.categories?.name_en || "";
+          return {
+            slug: a.slug,
+            originalTitle: a.original_title,
+            originalExcerpt: a.original_excerpt,
+            category: categoryName,
+            imageUrl: a.image_url || undefined,
+            tags: a.tags || [],
+          };
+        });
+
+        setRelatedArticles(mapped);
+      } catch (err) {
+        console.error("Failed to fetch related articles:", err);
+        // Fallback: try to use local data if supabase fails
+        try {
+          const allMasters = getAllArticleMasters().filter(
+            (m) => m.slug !== article.slug && (m.status === undefined || m.status === "published")
+          );
+          setRelatedArticles(allMasters.slice(0, 4));
+        } catch {}
+      }
+      setRelatedLoading(false);
+    }
+
+    fetchRelatedArticles();
+  }, [article.slug, locale]);
+
+  if (!article) {
+    if (typeof window !== "undefined") {
+      return (
+        <div className="min-h-screen pt-24 pb-16 flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-6xl font-bold text-amber-300/60 mb-4">404</h1>
+            <p className="text-white/60">Article not found</p>
+            <Link href={`/${locale}/articles`} className="text-amber-300 hover:text-amber-200 mt-4 inline-block">
+              &larr; {locale === "th" ? "กลับไปหน้าบทความ" : "Back to articles"}
+            </Link>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  }
+
+  // Build Wiki Metadata for this article
+  const masterLike = {
+    id: article.id,
+    slug: article.slug,
+    originalTitle: article.title,
+    originalExcerpt: article.excerpt,
+    originalContent: article.content,
+    category: article.category,
+    author: article.author,
+    publishedAt: article.publishedAt,
+    imageUrl: article.imageUrl,
+    imageAlt: article.imageAlt,
+    tags: article.tags,
+  };
+  const wikiData: WikiArticle = getWikiArticle(masterLike as any);
+
+  // ================================================================
+  // Custom Google Schema Markup (JSON-LD) — จาก DB article field
+  // ================================================================
+  const customSchemaLD = article.googleSchemaMarkup;
+
+  return (
+    <>
+      <SchemaArticle
+        article={masterLike}
+        imageUrl={article.imageUrl}
+        wikiMetadata={wikiData.metadata}
+      />
+
+      {/* Custom Schema Markup (จาก DB) — merge/override เพิ่มเติม */}
+      {customSchemaLD && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(
+              customSchemaLD["@context"]
+                ? customSchemaLD  // ถ้ามี @context อยู่แล้ว ใช้ตรงๆ
+                : { "@context": "https://schema.org", ...customSchemaLD },
+              null,
+              2
+            ),
+          }}
+        />
+      )}
+
+      {/* WikiHeroSection — รวม hero image + abstract (semantic + AI Overview) */}
+      <WikiHeroSection
+        article={article}
+        locale={locale}
+        abstract={wikiData.abstract}
+        master={masterLike}
+      />
+
+      {/* ExcerptSection — Lead Paragraph + Social Caption */}
+      {wikiData.excerpts && (
+        <section className="py-8 sm:py-12">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <ExcerptSection
+              excerpts={wikiData.excerpts}
+              locale={locale}
+              fallbackShort={article.excerpt}
+              fallbackLong={wikiData.abstract.full}
+            />
+          </div>
+        </section>
+      )}
+
+      {/* Content + Sidebar Layout */}
+      <section className="py-12 sm:py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col lg:flex-row gap-10 lg:gap-12">
+            {/* Main Content */}
+            <div className="flex-1 min-w-0">
+              <div className="relative">
+                {translating && (
+                  <div className="absolute inset-0 z-10 bg-[#0a1628]/60 backdrop-blur-[1px] flex items-center justify-center rounded-xl">
+                    <div className="flex flex-col items-center gap-3">
+                      <RefreshCwIcon size={24} className="animate-spin text-amber-300" />
+                      <p className="text-white/60 text-sm">{t("common.translating", locale)}</p>
+                    </div>
+                  </div>
+                )}
+                <div className="max-w-none">
+                  {renderContent(stateArticle?.content || article.content, translatedAlts)}
+                </div>
+              </div>
+
+              <div className="mt-12 pt-8 border-t border-white/10">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="text-white/40 text-xs">
+                      {locale === "th" ? "เผยแพร่" : "Published"}: {new Date(article.publishedAt).toLocaleDateString(locale === "th" ? "th-TH" : "en-US", { year: "numeric", month: "long", day: "numeric" })}
+                    </div>
+                    {/* Social Share Buttons */}
+                    <SocialShareButtons 
+                      url={typeof window !== 'undefined' ? window.location.href : `/${locale}/articles/${article.slug}`}
+                      title={article.title}
+                      description={article.excerpt}
+                    />
+                  </div>
+                  {article.tags && article.tags.length > 0 && (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {article.tags.map((tag) => (
+                        <Link
+                          key={tag}
+                          href={`/${locale}/tags/${encodeURIComponent(tag.toLowerCase())}`}
+                          className="text-xs text-white/40 hover:text-amber-300 transition-colors"
+                        >
+                          #{tag}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Sidebar */}
+            <aside className="w-full lg:w-80 xl:w-96 flex-shrink-0">
+              <div className="sticky top-24 space-y-6">
+                {/* QuickFactsBox — REMOVED per request */}
+
+                {/* Category */}
+                <div className="rounded-xl bg-gradient-to-br from-[#0f1f3a] to-[#162545] border border-white/10 p-5">
+                  <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2">
+                    <ChevronRight size={14} className="text-amber-300" />
+                    {locale === "th" ? "หมวดหมู่" : "Category"}
+                  </h3>
+                  <Link
+                    href={`/${locale}/categories/${encodeURIComponent(article.category)}`}
+                    className="block text-sm text-amber-300/80 hover:text-amber-200 transition-colors"
+                  >
+                    {article.category}
+                  </Link>
+                </div>
+
+                {/* Related Articles in Sidebar */}
+                <div className="rounded-xl bg-gradient-to-br from-[#0f1f3a] to-[#162545] border border-white/10 p-5">
+                  <h3 className="text-white font-semibold text-sm mb-4 flex items-center gap-2">
+                    <ChevronRight size={14} className="text-amber-300" />
+                    {locale === "th" ? "บทความที่เกี่ยวข้อง" : "Related Articles"}
+                  </h3>
+                  <div className="space-y-3">
+                    {relatedArticles.slice(0, 3).map((rel: any) => (
+                      <Link
+                        key={rel.slug}
+                        href={`/${locale}/articles/${rel.slug}`}
+                        className="group flex gap-3 p-2 -mx-2 rounded-lg hover:bg-white/5 transition-colors"
+                      >
+                        {rel.imageUrl && (
+                          <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
+                            <img
+                              src={rel.imageUrl}
+                              alt={rel.originalTitle}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-white text-xs font-medium leading-snug line-clamp-2 group-hover:text-amber-200 transition-colors">
+                            {rel.originalTitle}
+                          </p>
+                          <p className="text-white/30 text-[10px] mt-1">{rel.category}</p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                  {relatedArticles.length > 3 && (
+                    <Link
+                      href={`/${locale}/articles?category=${encodeURIComponent(article.category)}`}
+                      className="block text-center text-xs text-amber-400/70 hover:text-amber-300 mt-3 pt-3 border-t border-white/5 transition-colors"
+                    >
+                      {locale === "th" ? "ดูทั้งหมด" : "View all"}
+                    </Link>
+                  )}
+                </div>
+
+                {/* Ad Unit —  sidebar */}
+                <div className="rounded-xl bg-gradient-to-br from-[#0f1f3a] to-[#162545] border border-white/10 p-5">
+                  <h3 className="text-white/40 text-xs font-medium mb-3">
+                    {locale === "th" ? "โฆษณา" : "Advertisement"}
+                  </h3>
+                  <AdUnit adsenseId={adsenseId} slot={adsenseSlotSidebar || "0000000000"} format="rectangle" />
+                  <p className="text-white/15 text-[10px] text-center mt-3">
+                    {locale === "th" ? "โฆษณา — ช่วยสนับสนุนเว็บไซต์ของเรา" : "Ad — Support our website"}
+                  </p>
+                </div>
+
+                {/* GlossarySection — moved after Advertisement */}
+                {wikiData.glossary.some(e => e.definition && e.definition.length > 0) && (
+                  <GlossarySection
+                    entries={wikiData.glossary}
+                    locale={locale}
+                    collapsedCount={4}
+                  />
+                )}
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      {/* Related Articles Section (bottom) */}
+      {relatedArticles.length > 0 && (
+        <section className="pb-16">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="border-t border-white/10 pt-12">
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-2xl font-bold text-white">
+                  {locale === "th" ? "บทความที่เกี่ยวข้อง" : "Related Articles"}
+                </h2>
+                <Link
+                  href={`/${locale}/articles`}
+                  className="text-sm text-amber-400/70 hover:text-amber-300 transition-colors"
+                >
+                  {locale === "th" ? "ดูทั้งหมด" : "View all"} &rarr;
+                </Link>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {relatedArticles.map((rel: any) => (
+                  <Link
+                    key={rel.slug}
+                    href={`/${locale}/articles/${rel.slug}`}
+                    className="group rounded-xl overflow-hidden bg-gradient-to-br from-[#0f1f3a] to-[#162545] border border-white/10 hover:border-amber-300/30 transition-all"
+                  >
+                    {rel.imageUrl && (
+                      <div className="aspect-[16/9] overflow-hidden">
+                        <img
+                          src={rel.imageUrl}
+                          alt=""
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          loading="lazy"
+                        />
+                      </div>
+                    )}
+                    <div className="p-4">
+                      <p className="text-white/40 text-[10px] uppercase tracking-wider mb-2">{rel.category}</p>
+                      <h3 className="text-white font-medium text-sm leading-snug line-clamp-2 group-hover:text-amber-200 transition-colors">
+                        {rel.originalTitle}
+                      </h3>
+                      <p className="text-white/40 text-xs mt-2 line-clamp-2">
+                        {rel.originalExcerpt}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+    </>
+  );
+}

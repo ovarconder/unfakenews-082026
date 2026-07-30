@@ -1,0 +1,6 @@
+# Allow Facebook and other crawlers to access root without redirect
+/  /en  302
+
+# Direct file access, no redirect for bots
+/robots.txt  /robots.txt  200
+/siamheritage-soon.jpg  /siamheritage-soon.jpg  200

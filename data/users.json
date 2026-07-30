@@ -1,0 +1,11 @@
+[
+  {
+    "id": "f69a5993-86b1-4de3-b84b-d0df4961c3fb",
+    "email": "admin@vibe.overconda.space",
+    "name": "Admin",
+    "role": "admin",
+    "passwordHash": "ecb42295c40b75e8fa26cb375e9280793d2908b022bf5eda826ec7e91c1734e8",
+    "createdAt": "2026-05-14T16:54:05.670Z",
+    "lastLogin": "2026-05-22T07:01:00.854Z"
+  }
+]

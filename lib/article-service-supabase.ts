@@ -1,0 +1,308 @@
+// ============================================================
+// Siam Heritage - Supabase Article Service
+// ============================================================
+// แทนที่ article-service.ts เดิมที่ใช้ local filesystem
+// ใช้ Supabase Database แทน
+// ============================================================
+
+import { createClient as createServerClient } from "./supabase-server";
+import { createAdminClient } from "./supabase-server";
+import type { Locale } from "./locales";
+import type { TranslationStatus } from "./types";
+
+// ============================================================
+// Article Interfaces (Public)
+// ============================================================
+
+export interface ArticleSummary {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  category: string;
+  author: string;
+  publishedAt: string;
+  imageUrl?: string;
+  imageAlt?: string;
+  featured?: boolean;
+  tags?: string[];
+  translationStatus: TranslationStatus;
+}
+
+export interface ArticleFull extends ArticleSummary {
+  content: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  imageCredit?: string;
+  imagePhotographer?: string;
+  imageSourceUrl?: string;
+  imageYear?: string;
+  /** Google Schema Markup — JSON-LD structured data จาก DB columns */
+  googleSchemaMarkup?: Record<string, unknown> | null;
+}
+
+// ============================================================
+// Server-side: Get all articles as summaries (Main Site Only)
+// ============================================================
+// Filter: microsite_id IS NULL — ไม่เอา articles ของ microsites
+
+export async function getTranslatedSummaries(locale: Locale): Promise<ArticleSummary[]> {
+  const supabase = await createServerClient();
+  
+  const { data: articles } = await supabase
+    .from("articles")
+    .select(`
+      id, slug, original_title, original_excerpt, tags,
+      categories(name_th, name_en),
+      author_name, published_at, image_url, image_alt, featured
+    `)
+    .or("status.eq.published,is_published.eq.true")
+    .is("microsite_id", null) // ★ เฉพาะของ main site
+    .order("published_at", { ascending: false });
+
+  if (!articles) return [];
+
+  const summaries: ArticleSummary[] = await Promise.all(
+    articles.map(async (article: any) => {
+      const categoryName = locale === "th"
+        ? article.categories?.name_th || ""
+        : article.categories?.name_en || "";
+
+      // Get translation status
+      const { data: trans } = await supabase
+        .from("translations")
+        .select("translation_status")
+        .eq("article_id", article.id)
+        .eq("locale", locale)
+        .maybeSingle();
+
+      const status: TranslationStatus =
+        (trans as any)?.translation_status || "pending";
+
+      const title = await getTranslatedField(article.id, locale, "title");
+      const excerpt = await getTranslatedField(article.id, locale, "excerpt");
+
+      return {
+        id: article.id,
+        slug: article.slug,
+        title: title || article.original_title,
+        excerpt: excerpt || article.original_excerpt,
+        category: categoryName,
+        author: article.author_name,
+        publishedAt: article.published_at,
+        imageUrl: article.image_url || undefined,
+        imageAlt: article.image_alt || undefined,
+        featured: article.featured,
+        tags: (article as any).tags || [],
+        translationStatus: status,
+      };
+    })
+  );
+
+  return summaries;
+}
+
+async function getTranslatedField(
+  articleId: string,
+  locale: Locale,
+  field: "title" | "excerpt"
+): Promise<string | null> {
+  // Thai = original text
+  if (locale === "th") return null;
+
+  const supabase = await createServerClient();
+  const { data } = await supabase
+    .from("translations")
+    .select(field)
+    .eq("article_id", articleId)
+    .eq("locale", locale)
+    .maybeSingle();
+
+  return data ? (data as any)[field] : null;
+}
+
+// ============================================================
+// Server-side: Get featured articles
+// ============================================================
+
+export async function getFeaturedSummaries(locale: Locale): Promise<ArticleSummary[]> {
+  const all = await getTranslatedSummaries(locale);
+  return all.filter((a) => a.featured);
+}
+
+// ============================================================
+// Server-side: Get latest articles
+// ============================================================
+
+export async function getLatestSummaries(locale: Locale, count?: number): Promise<ArticleSummary[]> {
+  const all = await getTranslatedSummaries(locale);
+  return count ? all.slice(0, count) : all;
+}
+
+// ============================================================
+// Server-side: Get full article with content
+// ============================================================
+
+export async function getFullArticle(
+  slug: string,
+  locale: Locale
+): Promise<ArticleFull | null> {
+  const supabase = await createServerClient();
+  const adminClient = createAdminClient();
+
+  // Get article
+  let { data: article } = await supabase
+    .from("articles")
+    .select(`
+      id, slug, original_title, original_excerpt, original_content, tags,
+      categories(name_th, name_en),
+      author_name, published_at, image_url, image_alt, featured,
+      image_credit, image_photographer, image_source_url, image_year,
+      google_schema_markup
+    `)
+    .eq("slug", slug)
+    .or("status.eq.published,is_published.eq.true")
+    .is("microsite_id", null) // ★ เฉพาะของ main site
+    .maybeSingle();
+
+  if (!article) {
+    console.error(`[getFullArticle] No article found for slug="${slug}" locale="${locale}"`);
+    return null;
+  }
+
+  const art = article as any;
+  const categoryName = locale === "th"
+    ? art.categories?.name_th || ""
+    : art.categories?.name_en || "";
+
+  // Google Schema Markup (custom JSON-LD from DB)
+  const googleSchemaMarkup = art.google_schema_markup
+    ? (typeof art.google_schema_markup === "string"
+        ? JSON.parse(art.google_schema_markup)
+        : art.google_schema_markup)
+    : null;
+
+  // Helper: extract image metadata fields from article row
+  const getImageFields = (a: any) => ({
+    imageCredit: a.image_credit || undefined,
+    imagePhotographer: a.image_photographer || undefined,
+    imageSourceUrl: a.image_source_url || undefined,
+    imageYear: a.image_year || undefined,
+  });
+
+  // Get translation for this locale
+  const { data: rawTrans } = await supabase
+    .from("translations")
+    .select("*")
+    .eq("article_id", art.id)
+    .eq("locale", locale)
+    .maybeSingle();
+
+  const trans = rawTrans as any;
+
+  const baseArticle = {
+    id: art.id,
+    slug: art.slug,
+    category: categoryName,
+    author: art.author_name,
+    publishedAt: art.published_at,
+    imageUrl: art.image_url || undefined,
+    imageAlt: art.image_alt || undefined,
+    featured: art.featured,
+    ...getImageFields(art),
+  };
+
+  // Shared schema markup object (from DB custom JSON-LD)
+  const googleSchema = googleSchemaMarkup || undefined;
+
+  // If Thai, return original
+  if (locale === "th") {
+    return {
+      ...baseArticle,
+      title: art.original_title,
+      excerpt: art.original_excerpt,
+      content: art.original_content,
+      translationStatus: "complete",
+      googleSchemaMarkup: googleSchema,
+    };
+  }
+
+  // If translation exists and full, return it
+  if (trans && trans.is_full_translated) {
+    return {
+      ...baseArticle,
+      title: trans.title,
+      excerpt: trans.excerpt,
+      content: trans.content || art.original_content,
+      translationStatus: trans.translation_status as TranslationStatus,
+      seoTitle: trans.seo_title || undefined,
+      seoDescription: trans.seo_description || undefined,
+      googleSchemaMarkup: googleSchema,
+    };
+  }
+
+  // If summary only
+  if (trans) {
+    return {
+      ...baseArticle,
+      title: trans.title,
+      excerpt: trans.excerpt,
+      content: trans.content || art.original_content,
+      translationStatus: trans.translation_status as TranslationStatus,
+      seoTitle: trans.seo_title || undefined,
+      seoDescription: trans.seo_description || undefined,
+      googleSchemaMarkup: googleSchema,
+    };
+  }
+
+  // No translation - return original as pending
+  return {
+    ...baseArticle,
+    title: art.original_title,
+    excerpt: art.original_excerpt,
+    content: art.original_content,
+    translationStatus: "pending",
+    googleSchemaMarkup: googleSchema,
+  };
+}
+
+// ============================================================
+// Server-side: Get SEO metadata
+// ============================================================
+
+export async function getArticleSEO(slug: string, locale: Locale): Promise<{
+  title: string;
+  description: string;
+} | null> {
+  const supabase = await createServerClient();
+
+  const { data: rawArticle } = await supabase
+    .from("articles")
+    .select("id, original_title, original_excerpt")
+    .eq("slug", slug)
+    .or("status.eq.published,is_published.eq.true")
+    .is("microsite_id", null) // ★ เฉพาะของ main site
+    .maybeSingle();
+
+  if (!rawArticle) return null;
+  const article = rawArticle as any;
+
+  if (locale === "th") {
+    return {
+      title: article.original_title,
+      description: article.original_excerpt,
+    };
+  }
+
+  const { data: trans } = await supabase
+    .from("translations")
+    .select("seo_title, seo_description, title, excerpt")
+    .eq("article_id", article.id)
+    .eq("locale", locale)
+    .maybeSingle();
+
+  return {
+    title: (trans as any)?.seo_title || (trans as any)?.title || article.original_title,
+    description: (trans as any)?.seo_description || (trans as any)?.excerpt || article.original_excerpt,
+  };
+}

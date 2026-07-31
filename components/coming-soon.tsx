@@ -8,7 +8,7 @@ interface ComingSoonPageProps {
 
 export function ComingSoonPage({ locale }: ComingSoonPageProps) {
   const settings = useSettings();
-  const siteName = settings?.name || process.env.NEXT_PUBLIC_SITE_NAME || "Siam Heritage";
+  const siteName = settings?.name || process.env.NEXT_PUBLIC_SITE_NAME || "UnFake News";
 
   return (
     <div className="relative min-h-screen w-full bg-[#0d1b2a] overflow-hidden">

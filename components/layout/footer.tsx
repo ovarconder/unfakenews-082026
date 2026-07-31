@@ -11,7 +11,7 @@ interface FooterProps {
 
 export function Footer({ locale }: FooterProps) {
   const settings = useSettings();
-  const siteName = settings?.name || process.env.NEXT_PUBLIC_SITE_NAME || "Siam Heritage";
+  const siteName = settings?.name || process.env.NEXT_PUBLIC_SITE_NAME || "UnFake News";
   const copyright = settings?.copyright || `© ${new Date().getFullYear()} Vibe. All rights reserved.`;
   const logoInitial = siteName.charAt(0).toUpperCase();
   return (

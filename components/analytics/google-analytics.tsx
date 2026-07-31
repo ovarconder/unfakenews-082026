@@ -25,7 +25,7 @@ import { useEffect, useState } from "react";
 import { useSettings } from "@/components/admin/settings-context";
 
 const FALLBACK_GA_ID = process.env.NEXT_PUBLIC_GA_ID;
-const COOKIE_CONSENT_KEY = "siamheritage_cookie_consent";
+const COOKIE_CONSENT_KEY = "unfakenews_cookie_consent";
 
 // Type-safe gtag function
 declare global {

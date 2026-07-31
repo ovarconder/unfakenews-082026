@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: LangLayoutProps): Promise<Met
   if (!locale) return {};
 
   const settings = await getSettings();
-  const baseUrl = settings?.url || process.env.NEXT_PUBLIC_SITE_URL || "https://siamheritage.org";
+  const baseUrl = settings?.url || process.env.NEXT_PUBLIC_SITE_URL || "https://unfakenews.asia";
 
   // Build alternate language links (hreflang) — only active (non-disabled) locales
   const activeLocales = getActiveLocales();

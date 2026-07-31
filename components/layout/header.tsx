@@ -25,7 +25,7 @@ export function Header({ locale }: HeaderProps) {
   const [langOpen, setLangOpen] = useState(false);
   const langRef = useRef<HTMLDivElement>(null);
 
-  const siteName = settings?.name || process.env.NEXT_PUBLIC_SITE_NAME || "Siam Heritage";
+  const siteName = settings?.name || process.env.NEXT_PUBLIC_SITE_NAME || "UnFake News";
   const logoUrl = settings?.logoFull || settings?.logo || "/images/logo/SiamHeritage-logo-gradient-128.png";
 
   // Close language menu when clicking outside

@@ -14,8 +14,8 @@ const SESSION_KEY = "siam_admin_session";
 
 export default function AdminLoginClient() {
   const settings = useSettings();
-  const siteName = settings?.name || process.env.NEXT_PUBLIC_SITE_NAME || "Siam Heritage";
-  const logoUrl = settings?.logo || process.env.NEXT_PUBLIC_SITE_LOGO || "/images/logo/logo-light.png";
+  const siteName = settings?.name || process.env.NEXT_PUBLIC_SITE_NAME || "UnFake News";
+  const logoUrl = settings?.logo || process.env.NEXT_PUBLIC_SITE_LOGO || "/images/logo/unfakenews-logo-light.png";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);

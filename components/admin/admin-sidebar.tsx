@@ -147,8 +147,8 @@ export default function AdminSidebar({ user, onLogout }: AdminSidebarProps) {
     return () => clearInterval(interval);
   }, []);
 
-  const siteName = settings?.name || process.env.NEXT_PUBLIC_SITE_NAME || "Siam Heritage";
-  const logoUrl = settings?.logo || "/images/logo/SiamHeritage-logo-light-128.png";
+  const siteName = settings?.name || process.env.NEXT_PUBLIC_SITE_NAME || "UnFake News";
+  const logoUrl = settings?.logo || "/images/logo/unfakenews-logo-light.png";
 
   const isActive = (href: string) => {
     if (href === "/admin") return pathname === "/admin";

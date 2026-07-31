@@ -55,7 +55,7 @@ export function MaintenancePage({ message, locale = "en" }: MaintenancePageProps
 
         {/* Footer note */}
         <p className="text-white/20 text-xs mt-8">
-          SiamHeritage.org
+          UnFake News
         </p>
       </div>
 

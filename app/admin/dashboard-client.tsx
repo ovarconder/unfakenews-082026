@@ -24,7 +24,7 @@ interface DashboardClientProps {
 
 export default function DashboardClient({ user, stats }: DashboardClientProps) {
   const settings = useSettings();
-  const siteName = settings?.name || process.env.NEXT_PUBLIC_SITE_NAME || "Siam Heritage";
+  const siteName = settings?.name || process.env.NEXT_PUBLIC_SITE_NAME || "UnFake News";
   const statCards = (() => {
     const isWriter = user.role === "writer";
     const cards: any[] = [

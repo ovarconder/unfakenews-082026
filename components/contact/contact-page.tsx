@@ -12,7 +12,7 @@ interface ContactPageProps {
 
 export function ContactPage({ locale }: ContactPageProps) {
   const settings = useSettings();
-  const contactEmail = settings?.email || "contact@siamheritage.org";
+  const contactEmail = settings?.email || "info@unfakenews.asia";
   const [sent, setSent] = useState(false);
   const [formData, setFormData] = useState({
     name: "",

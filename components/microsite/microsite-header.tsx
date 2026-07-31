@@ -45,7 +45,7 @@ export function MicrositeHeader({ locale, microsite, settings }: MicrositeHeader
   const langRef = useRef<HTMLDivElement>(null);
 
   const siteName = microsite.name;
-  const logoUrl = microsite.logo_url || "/images/logo/SiamHeritage-logo-gradient-128.png";
+  const logoUrl = microsite.logo_url || "/images/logo/unfakenews-logo.png";
   const primaryColor = settings?.primaryColor || "#fbbf24";
 
   // Extract the actual path for route detection

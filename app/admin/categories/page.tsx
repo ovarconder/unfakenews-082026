@@ -462,7 +462,7 @@ export default function CategoriesPage() {
                     type="text"
                     value={form.nameEN}
                     onChange={(e) => handleFormChange("nameEN", e.target.value)}
-                    placeholder="เช่น Thai Heritage"
+                    placeholder="เช่น UnFake News"
                     className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-amber-400/30"
                   />
                 </div>

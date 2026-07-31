@@ -19,7 +19,7 @@ interface MicrositeFooterProps {
 export function MicrositeFooter({ locale, microsite, settings }: MicrositeFooterProps) {
   const siteName = microsite.name;
   const primaryColor = settings?.primaryColor || "#fbbf24";
-  const logoUrl = microsite.logo_url || "/images/logo/SiamHeritage-logo-gradient-128.png";
+  const logoUrl = microsite.logo_url || "/images/logo/unfakenews-logo.png";
   const micrositePrefix = `/${microsite.slug}/${locale}`;
 
   return (

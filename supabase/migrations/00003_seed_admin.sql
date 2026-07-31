@@ -14,16 +14,16 @@ DO $$
 DECLARE
   user_id UUID;
 BEGIN
-  SELECT id INTO user_id FROM auth.users WHERE email = 'admin@vibe.overconda.space' LIMIT 1;
+  SELECT id INTO user_id FROM auth.users WHERE email = 'overconda@gmail.com' LIMIT 1;
   
   IF user_id IS NOT NULL THEN
     INSERT INTO profiles (id, name, role)
     VALUES (user_id, 'ผู้ดูแลระบบ', 'admin')
     ON CONFLICT (id) DO UPDATE SET role = 'admin', name = 'ผู้ดูแลระบบ';
     
-    RAISE NOTICE '✅ Admin profile created/updated for admin@vibe.overconda.space';
+    RAISE NOTICE '✅ Admin profile created/updated for overconda@gmail.com';
   ELSE
-    RAISE NOTICE '❌ User admin@vibe.overconda.space not found in auth.users. Create one first via Dashboard → Authentication → Users';
+    RAISE NOTICE '❌ User overconda@gmail.com not found in auth.users. Create one first via Dashboard → Authentication → Users';
   END IF;
 END $$;
 

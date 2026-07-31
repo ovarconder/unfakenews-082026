@@ -12,7 +12,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { getLocale, type Locale } from "@/lib/locales";
 
-const COOKIE_CONSENT_KEY = "siamheritage_cookie_consent";
+const COOKIE_CONSENT_KEY = "unfakenews_cookie_consent";
 
 // ============================================================
 // Cookie Consent Translations (15 languages)

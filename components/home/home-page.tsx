@@ -1,4 +1,4 @@
-import { getTranslatedSummaries } from "@/lib/article-service-supabase";
+import { getTranslatedSummaries, getFeaturedSummaries } from "@/lib/article-service-supabase";
 import { t } from "@/lib/translations";
 import type { Locale } from "@/lib/locales";
 import { ArticleCard } from "@/components/articles/article-card";
@@ -11,6 +11,14 @@ interface HomePageProps {
 
 export async function HomePage({ locale }: HomePageProps) {
   const allArticles = await getTranslatedSummaries(locale);
+  // Hero = highlight (featured) articles, 6 items
+  const featuredArticles = await getFeaturedSummaries(locale);
+  // ถ้า highlight < 3 → ใช้ latest มาเติมให้ครบ 6
+  const heroArticles =
+    featuredArticles.length >= 3
+      ? featuredArticles.slice(0, 6)
+      : allArticles.slice(0, 6);
+  // Latest section = 3 บทความล่าสุด (ตัด hero ที่ซ้ำออกชั่วคราว)
   const latestArticles = allArticles.slice(0, 3);
   const settings = await getSettings();
 
@@ -24,8 +32,38 @@ export async function HomePage({ locale }: HomePageProps) {
         />
       </div>
 
+      {/* Highlight / Hero Section — featured articles */}
+      {heroArticles.length > 0 && (
+        <section className="py-16 md:py-20 relative">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-10">
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <div className="h-px w-8 bg-gradient-to-r from-transparent to-amber-400/40" />
+                <span className="text-amber-300/60 text-xs uppercase tracking-[0.2em] font-medium">
+                  {t("home.featured", locale)}
+                </span>
+                <div className="h-px w-8 bg-gradient-to-l from-transparent to-amber-400/40" />
+              </div>
+              <h2 className="text-3xl md:text-4xl font-prompt font-bold text-white">
+                Highlight
+              </h2>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {heroArticles.map((article) => (
+                <ArticleCard
+                  key={article.id}
+                  article={article}
+                  locale={locale}
+                  featured
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Latest Articles Section */}
-      <section className="py-20 md:py-28 relative">
+      <section className="py-16 md:py-24 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
             <div className="flex items-center justify-center gap-3 mb-4">
@@ -39,7 +77,7 @@ export async function HomePage({ locale }: HomePageProps) {
               {t("home.latestArticles", locale)}
             </h2>
             <p className="text-white/50 text-sm mt-2 max-w-xl mx-auto">
-              "Latest stories and articles about Thai heritage, culture, and wisdom"
+              {t("hero.tagline", locale)}
             </p>
           </div>
 
@@ -77,4 +115,3 @@ export async function HomePage({ locale }: HomePageProps) {
     </>
   );
 }
-

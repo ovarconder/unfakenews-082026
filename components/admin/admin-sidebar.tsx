@@ -23,6 +23,7 @@ import {
   Layers,
   BookMarked,
   Bell,
+  Star,
 } from "lucide-react";
 import type { UserRole } from "@/lib/auth-types";
 import { ROLE_LABELS, hasPermission } from "@/lib/auth-types";
@@ -53,6 +54,13 @@ const navItems = [
     icon: FileText,
     permission: "article:create" as const,
     roles: ["writer", "editor", "admin"] as UserRole[],
+  },
+  {
+    label: "ไฮไลต์ (หน้าหลัก)",
+    href: "/admin/highlights",
+    icon: Star,
+    permission: "article:edit_any" as const,
+    roles: ["editor", "admin"] as UserRole[],
   },
   {
     label: "หน้า",

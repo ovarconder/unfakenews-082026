@@ -49,7 +49,8 @@ export type TranslationKey =
   | "common.loading"
   | "common.translating"
   | "lang.switchTo"
-  | "hero.learnMore";
+  | "hero.learnMore"
+  | "hero.tagline";
 
 const DEFAULT_LOCALE: Locale = "en";
 
@@ -389,6 +390,14 @@ const translations: Record<TranslationKey, Partial<Record<Locale, string>>> = {
     ja: "言語",
     es: "Idioma",
     pt: "Idioma",
+  },
+  "hero.tagline": {
+    en: "A hub for news, articles, and fact-checking to combat fake news and deliver accurate information.",
+    th: "ศูนย์รวมข่าวสาร บทความ และการตรวจสอบข้อเท็จจริง (Fact-Checking) เพื่อแก้ไขข่าวปลอม (Fake News) และนำเสนอข้อมูลที่ถูกต้อง",
+    zh: "汇集新闻、文章与事实核查，打击假新闻并传播准确信息。",
+    ja: "ニュース、記事、ファクトチェック（事実確認）を集結し、フェイクニュースを防ぎ、正確な情報を提供するハブです。",
+    es: "Un centro de noticias, artículos y verificación de hechos para combatir las noticias falsas y brindar información precisa.",
+    pt: "Um hub de notícias, artigos e verificação de fatos para combater notícias falsas e fornecer informações precisas.",
   },
 };
 

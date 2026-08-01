@@ -48,6 +48,7 @@ export default function ArticleListClient({
   const [translatingBatch, setTranslatingBatch] = useState(false);
   const [translateProgress, setTranslateProgress] = useState<string | null>(null);
   const [translatingSlug, setTranslatingSlug] = useState<string | null>(null);
+  const [featuredToggling, setFeaturedToggling] = useState<string | null>(null);
 
   // categoryMap: from parent prop (page.tsx), fallback to empty
   const categoryMap = categoryMapProp || {};
@@ -127,6 +128,34 @@ export default function ArticleListClient({
       alert(err.message);
     } finally {
       setDeleting(null);
+    }
+  };
+
+  // Toggle featured (highlight) — editor/admin only
+  const toggleFeatured = async (article: ArticleMaster) => {
+    if (!isEditor) return;
+    setFeaturedToggling(article.slug);
+    try {
+      const res = await fetch(`/api/admin/articles/${article.slug}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "x-session-data": sessionStorage.getItem("siam_admin_session")
+            ? btoa(encodeURIComponent(sessionStorage.getItem("siam_admin_session") || ""))
+            : "",
+        },
+        body: JSON.stringify({ featured: !article.featured }),
+      });
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        const data = await res.json();
+        alert(data.error || "ไม่สามารถอัปเดตสถานะได้");
+      }
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setFeaturedToggling(null);
     }
   };
 
@@ -311,11 +340,24 @@ export default function ArticleListClient({
                     <td className="px-4 py-3 text-white/60 text-sm hidden md:table-cell">{article.author}</td>
                     <td className="px-4 py-3 text-white/40 text-sm hidden lg:table-cell">{article.publishedAt}</td>
                     <td className="px-4 py-3 text-center hidden sm:table-cell">
-                      {article.featured ? (
-                        <span className="text-amber-300 text-xs">★</span>
-                      ) : (
-                        <span className="text-white/20 text-xs">☆</span>
-                      )}
+                      <button
+                        onClick={() => toggleFeatured(article)}
+                        disabled={!isEditor || featuredToggling === article.slug}
+                        title={article.featured ? "เอาออกจากบทความเด่น (Highlight)" : "ตั้งเป็นบทความเด่น (Highlight)"}
+                        className={`p-1.5 rounded-lg border transition-all disabled:opacity-40 ${
+                          article.featured
+                            ? "bg-amber-400/15 border-amber-400/40 text-amber-300 hover:bg-amber-400/25"
+                            : "bg-white/5 border-white/10 text-white/25 hover:text-amber-300 hover:border-amber-300/30"
+                        }`}
+                      >
+                        {featuredToggling === article.slug ? (
+                          <div className="animate-spin w-3.5 h-3.5 border-2 border-amber-400 border-t-transparent rounded-full" />
+                        ) : article.featured ? (
+                          <Star size={14} fill="currentColor" />
+                        ) : (
+                          <Star size={14} />
+                        )}
+                      </button>
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-2">

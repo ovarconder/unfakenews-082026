@@ -71,6 +71,22 @@ export function Footer({ locale }: FooterProps) {
                   {t("nav.contact", locale)}
                 </Link>
               </li>
+              <li>
+                <Link
+                  href={`/${locale}/privacy`}
+                  className="text-white/60 hover:text-amber-200 text-sm transition-colors"
+                >
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href={`/${locale}/terms`}
+                  className="text-white/60 hover:text-amber-200 text-sm transition-colors"
+                >
+                  Terms of Service
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -113,3 +129,4 @@ export function Footer({ locale }: FooterProps) {
     </footer>
   );
 }
+

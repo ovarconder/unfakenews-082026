@@ -6,7 +6,7 @@ import { useState, useRef, useEffect } from "react";
 import { t } from "@/lib/translations";
 import type { Locale } from "@/lib/locales";
 import { getVisibleLocales, LOCALE_NAMES } from "@/lib/locales";
-import { Menu, X, Globe, LogIn, LogOut } from "lucide-react";
+import { Menu, X, Globe, LogIn, LogOut, LayoutDashboard } from "lucide-react";
 import { useSettings } from "@/components/admin/settings-context";
 
 interface HeaderProps {
@@ -27,14 +27,24 @@ export function Header({ locale }: HeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const langRef = useRef<HTMLDivElement>(null);
 
   const siteName = settings?.name || process.env.NEXT_PUBLIC_SITE_NAME || "UnFake News";
   const logoUrl = settings?.logoFull || settings?.logo || "/images/logo/SiamHeritage-logo-gradient-128.png";
 
-  // ตรวจสถานะ login จาก sessionStorage (admin ใช้ key นี้)
+  // ตรวจสถานะ login + role จาก sessionStorage (admin ใช้ key นี้)
   useEffect(() => {
-    setIsLoggedIn(!!sessionStorage.getItem(SESSION_KEY));
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    setIsLoggedIn(!!raw);
+    if (raw) {
+      try {
+        const user = JSON.parse(raw);
+        setIsAdmin(user?.role === "admin");
+      } catch {
+        setIsAdmin(false);
+      }
+    }
   }, []);
 
   const handleLogout = () => {
@@ -105,6 +115,17 @@ export function Header({ locale }: HeaderProps) {
             >
               {supportLink.label}
             </Link>
+
+            {/* Admin Dashboard link (เฉพาะ admin) */}
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-amber-300/40 text-amber-300 text-sm font-medium hover:bg-amber-300/10 transition-colors"
+              >
+                <LayoutDashboard size={14} />
+                Admin
+              </Link>
+            )}
 
             {/* Login / Logout */}
             {isLoggedIn ? (
@@ -194,6 +215,19 @@ export function Header({ locale }: HeaderProps) {
             >
               {supportLink.label}
             </Link>
+
+            {/* Mobile Admin Dashboard link (เฉพาะ admin) */}
+            {isAdmin && (
+              <Link
+                href="/admin"
+                onClick={() => setMobileOpen(false)}
+                className="block py-2 text-sm font-medium text-amber-300 hover:text-amber-200 transition-colors"
+              >
+                <span className="inline-flex items-center gap-2">
+                  <LayoutDashboard size={16} /> Admin Dashboard
+                </span>
+              </Link>
+            )}
 
             {/* Mobile Login / Logout */}
             {isLoggedIn ? (

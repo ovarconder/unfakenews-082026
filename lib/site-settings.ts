@@ -76,6 +76,13 @@ export interface SiteSettings {
   claudeApiKey?: string;
   openaiApiKey?: string;
   geminiApiKey?: string;
+  /** Support section — "สนับสนุนผู้ทำเว็บ" (ช่วยค่ากาแฟ/ค่าแปลข้อมูล ไม่ใช่คำว่าบริจาค) */
+  supportEnabled: boolean;
+  supportQr?: string;
+  supportTitle?: string;
+  supportDescription?: string;
+  supportAccountName?: string;
+  supportAccountNumber?: string;
   updatedAt: string;
   updatedBy?: string;
 }
@@ -142,6 +149,15 @@ const DEFAULT_SETTINGS: SiteSettings = {
   claudeApiKey: process.env.AUTH_CLAUDE_API_KEY || "",
   openaiApiKey: process.env.AUTH_OPENAI_API_KEY || "",
   geminiApiKey: process.env.AUTH_GEMINI_API_KEY || "",
+  // Support section defaults
+  supportEnabled: false,
+  supportQr: process.env.NEXT_PUBLIC_SUPPORT_QR || "",
+  supportTitle: process.env.NEXT_PUBLIC_SUPPORT_TITLE || "สนับสนุนผู้ทำเว็บ",
+  supportDescription:
+    process.env.NEXT_PUBLIC_SUPPORT_DESCRIPTION ||
+    "ถ้าชอบใจเว็บของเรา ช่วยค่ากาแฟและค่าแปลข้อมูล เพื่อให้เราทำเว็บต่อไปได้ ยิ่งกว่าแค่ค่าเซิร์ฟเวอร์",
+  supportAccountName: "",
+  supportAccountNumber: "",
   updatedAt: new Date().toISOString(),
 };
 
@@ -205,6 +221,13 @@ function dbRowToSettings(row: any): SiteSettings {
     claudeApiKey: row.claude_api_key || DEFAULT_SETTINGS.claudeApiKey,
     openaiApiKey: row.openai_api_key || DEFAULT_SETTINGS.openaiApiKey,
     geminiApiKey: row.gemini_api_key || DEFAULT_SETTINGS.geminiApiKey,
+    // Support section
+    supportEnabled: row.support_enabled !== undefined ? row.support_enabled : DEFAULT_SETTINGS.supportEnabled,
+    supportQr: row.support_qr || DEFAULT_SETTINGS.supportQr,
+    supportTitle: row.support_title || DEFAULT_SETTINGS.supportTitle,
+    supportDescription: row.support_description || DEFAULT_SETTINGS.supportDescription,
+    supportAccountName: row.support_account_name || DEFAULT_SETTINGS.supportAccountName,
+    supportAccountNumber: row.support_account_number || DEFAULT_SETTINGS.supportAccountNumber,
     updatedAt: row.updated_at || new Date().toISOString(),
     updatedBy: row.updated_by || DEFAULT_SETTINGS.updatedBy,
   };
@@ -271,6 +294,13 @@ function settingsToDbRow(settings: SiteSettings): any {
     claude_api_key: settings.claudeApiKey || null,
     openai_api_key: settings.openaiApiKey || null,
     gemini_api_key: settings.geminiApiKey || null,
+    // Support section
+    support_enabled: settings.supportEnabled,
+    support_qr: settings.supportQr || null,
+    support_title: settings.supportTitle || null,
+    support_description: settings.supportDescription || null,
+    support_account_name: settings.supportAccountName || null,
+    support_account_number: settings.supportAccountNumber || null,
     updated_at: new Date().toISOString(),
     updated_by: settings.updatedBy || null,
   };

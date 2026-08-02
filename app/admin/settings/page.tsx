@@ -28,6 +28,8 @@ import {
   Hash,
   Server,
   HardDrive,
+  Coffee,
+  QrCode,
 } from "lucide-react";
 import { ImageUploader } from "@/components/ui/image-uploader";
 import { adminFetch } from "@/lib/use-admin-fetch";
@@ -88,6 +90,13 @@ interface SiteSettings {
   claudeApiKey?: string;
   openaiApiKey?: string;
   geminiApiKey?: string;
+  // Support section
+  supportEnabled: boolean;
+  supportQr?: string;
+  supportTitle?: string;
+  supportDescription?: string;
+  supportAccountName?: string;
+  supportAccountNumber?: string;
 }
 
 export default function SettingsPage() {
@@ -518,6 +527,91 @@ export default function SettingsPage() {
               enabled={settings.maintenanceMode}
               onChange={(v) => updateField("maintenanceMode", v)}
             />
+          </div>
+        </div>
+
+        {/* ===== Support: สนับสนุนผู้ทำเว็บ ===== */}
+        <div className="rounded-xl bg-gradient-to-br from-[#0f1f3a] to-[#162545] border border-white/10 p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 rounded-lg bg-amber-300/10 text-amber-300">
+              <Coffee size={18} />
+            </div>
+            <div>
+              <h2 className="text-white font-semibold">สนับสนุนผู้ทำเว็บ</h2>
+              <p className="text-white/40 text-xs">ช่วยค่ากาแฟ / ค่าแปลข้อมูล ผ่าน QR Code (หน้าแสดงเฉพาะภาษาไทย)</p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <ToggleRow
+              label="เปิดใช้งานการสนับสนุน"
+              description="แสดงหน้า /support พร้อม QR Code ให้ผู้ใช้โอนเงินสนับสนุน"
+              enabled={settings.supportEnabled}
+              onChange={(v) => updateField("supportEnabled", v)}
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <ImageUploader
+                label="QR Code (ธนาคาร)"
+                value={settings.supportQr || ""}
+                onChange={(v) => updateField("supportQr", v)}
+                previewHeight={120}
+              />
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-white/70 text-xs mb-1">หัวข้อ (ภาษาไทย)</label>
+                  <input
+                    type="text"
+                    value={settings.supportTitle || ""}
+                    onChange={(e) => updateField("supportTitle", e.target.value)}
+                    placeholder="สนับสนุนผู้ทำเว็บ"
+                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-amber-300/50"
+                  />
+                </div>
+                <div>
+                  <label className="block text-white/70 text-xs mb-1">คำอธิบาย (ภาษาไทย)</label>
+                  <textarea
+                    value={settings.supportDescription || ""}
+                    onChange={(e) => updateField("supportDescription", e.target.value)}
+                    placeholder="ช่วยค่ากาแฟและค่าแปลข้อมูล..."
+                    rows={3}
+                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-amber-300/50"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-white/70 text-xs mb-1 flex items-center gap-1">
+                  ชื่อบัญชี
+                </label>
+                <input
+                  type="text"
+                  value={settings.supportAccountName || ""}
+                  onChange={(e) => updateField("supportAccountName", e.target.value)}
+                  placeholder="ชื่อบัญชีธนาคาร"
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-amber-300/50"
+                />
+              </div>
+              <div>
+                <label className="block text-white/70 text-xs mb-1 flex items-center gap-1">
+                  <QrCode size={12} /> เลขบัญชี (แสดงเป็นทางเลือก)
+                </label>
+                <input
+                  type="text"
+                  value={settings.supportAccountNumber || ""}
+                  onChange={(e) => updateField("supportAccountNumber", e.target.value)}
+                  placeholder="XXX-X-XXXXX-X"
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm font-mono focus:outline-none focus:border-amber-300/50"
+                />
+              </div>
+            </div>
+
+            <p className="text-[11px] text-white/30 pt-1">
+              หมายเหตุ: QR Code และข้อมูลการโอนเงินจะแสดงเฉพาะในเวอร์ชันภาษาไทย เพื่อเลี่ยงการเก็บภาษีจากคำว่า "บริจาค"
+              คำกล่าวเขียนอธิบายให้เป็น "ค่าช่วยเหลือทีมผู้ทำเว็บ" (ค่าแรง/ค่ากาแฟ/ค่าแปลข้อมูล)
+            </p>
           </div>
         </div>
 

@@ -3,11 +3,11 @@
 > **เป้าหมาย:** รัน `node`, `npm`, `npx` ได้ใน VSCode / Codespace environment (continue environment)
 > บน Mac โดยเฉพาะ PATH ไม่ชี้มาที่ node directory
 >
-> **ต้องอ่านบทความนี้ทุกครั้ง** ก่อนรันอะไรที่เกี่ยวกับ npm / dev server / build
+> **สถานะปัจจุบัน:** ✅ ตั้ง PATH แบบถาวรใน `~/.zshrc` เรียบร้อยแล้ว — เปิด terminal ใหม่ใช้งานได้ทันที
 
 ---
 
-## 1. ปัญหา
+## 1. ปัญหาเดิม (ก่อนตั้งถาวร)
 
 ใน Codespace / VSCode บน Mac บางครั้ง `node`, `npm`, `npx` **ไม่ถูกค้นเจอจาก PATH โดยตรง** เพราะ terminal ยังไม่ได้โหลด PATH ของ Node ที่ติดตั้งผ่าน `n` (Node Version Manager)
 
@@ -15,23 +15,26 @@
 
 ---
 
-## 2. ทางแก้: ตั้ง PATH ก่อนใช้งานเสมอ
+## 2. สถานะปัจจุบัน — ตั้ง PATH แบบถาวรแล้ว ✅
 
-รันคำสั่ง 2 บรรทัดนี้ **ก่อน** จะใช้งาน node/npm ทุกครั้ง ใน terminal ที่เปิดใหม่:
+เพิ่มบรรทัดต่อไปนี้ไว้**ท้ายสุด** ของ `~/.zshrc` ให้ PATH ถูกตั้งอัตโนมัติทุกครั้งที่เปิด terminal:
 
 ```bash
 export N_PREFIX=/usr/local/n
 export PATH=/usr/local/n/versions/node/22.14.0/bin:$PATH
 ```
 
-> ⚠️ ต้องทำทุกครั้งที่เปิด terminal ใหม่ (PATH ไม่จำข้าม session)
-> เวอร์ชัน `22.14.0` ขึ้นอยู่กับ node version ที่ติดตั้งไว้บนเครื่อง — ตรวจสอบด้วยข้อ 3.
+เหตุผลที่ต่อไว้**ท้ายสุด**: nvm/conda จะรันก่อน แล้ว PATH ของเราถูกตั้งเป็นคำสั่งสุดท้าย
+ทำให้ `/usr/local/n/versions/node/22.14.0/bin` มี priority สูงสุด
+
+> ⚠️ ถ้า **Terminal เปิดค้างอยู่** ตั้งแต่ก่อนแก้ `~/.zshrc` ยังไม่เห็น PATH ใหม่
+> ต้องเปิด terminal ใหม่ หรือรัน `source ~/.zshrc` ก่อน
 
 ---
 
 ## 3. ตรวจสอบว่า setup สำเร็จหรือยัง
 
-หลังตั้ง PATH แล้ว ให้เช็คเวอร์ชัน:
+หลังเปิด terminal ใหม่ ให้เช็ค:
 
 ```bash
 node --version   # ต้องขึ้น v22.14.0
@@ -54,15 +57,16 @@ npm --version    # ต้องขึ้น 10.9.2
 
 ## 5. สรุปข้อควรจำ (Checklist)
 
-- [ ] เปิด terminal ใหม่ → รัน `export N_PREFIX=/usr/local/n` + `export PATH=...` 🟡 (ทำเสมอ)
-- [ ] ตรวจ `node --version` ขึ้น v22.14.0
-- [ ] ถึงจะรัน `npm run dev` / `npx tsc --noEmit` / `npm run build`
+- [ ] เปิด terminal ใหม่ → ตรวจ `node --version` ขึ้น v22.14.0
+- [ ] ถ้า terminal เก่ายังใช้ไม่ได้ → รัน `source ~/.zshrc` ก่อน
+- [ ] ถึงจะใช้ `npm run dev` / `npx tsc --noEmit` / `npm run build`
+- [ ] ถ้า node version อัปเกรดใหม่ ให้แก้เลขเวอร์ชันใน `~/.zshrc` ให้ตรงด้วย
 
 ---
 
-## 6. Quick Copy-Paste (รันครั้งเดียว)
+## 6. Quick Copy-Paste (ยืนยัน PATH ทันที)
 
-ถ้าต้องการคำสั่งทั้งชุดครบในบรรทัดเดียว ใช้:
+ถ้าต้องการตรวจ/ตั้ง PATH แบบชั่วคราวใน terminal ปัจจุบัน ใช้:
 
 ```bash
 export N_PREFIX=/usr/local/n && export PATH=/usr/local/n/versions/node/22.14.0/bin:$PATH && node --version
@@ -74,4 +78,4 @@ export N_PREFIX=/usr/local/n && export PATH=/usr/local/n/versions/node/22.14.0/b
 
 ### หมายเหตุ
 - shell เริ่มต้นของ Mac คือ `/bin/zsh` — คำสั่ง `export` ข้างต้นเขียนมาเฉพาะ zsh/bash
-- ถ้า node version เปลี่ยน (เช่น อัปเกรดเป็น v23) ให้แก้เลขเวอร์ชันใน PATH ให้ตรงกับจริงด้วย
+- ถ้า node version เปลี่ยน (เช่น อัปเกรดเป็น v23) ให้แก้เลขเวอร์ชันใน PATH (`~/.zshrc`) และตรวจสอบว่ามี directory นั้นอยู่จริง `ls /usr/local/n/versions/node/`

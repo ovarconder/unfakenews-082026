@@ -62,6 +62,12 @@
 | `gemini_api_key` | TEXT | | Gemini API key |
 | `openai_api_key` | TEXT | | OpenAI API key |
 | `claude_api_key` | TEXT | | Claude API key |
+| `support_enabled` | BOOLEAN | `false` | Enable support section (สนับสนุนผู้ทำเว็บ) |
+| `support_qr` | TEXT | | QR code image URL (โอนเงินผ่านธนาคาร) |
+| `support_title` | TEXT | | Support section title (Thai) |
+| `support_description` | TEXT | | Support section description (Thai) |
+| `support_account_name` | TEXT | | Bank account name |
+| `support_account_number` | TEXT | | Bank account number |
 | `updated_at` | TIMESTAMPTZ | `NOW()` | Last update timestamp |
 | `updated_by` | TEXT | | Who updated |
 

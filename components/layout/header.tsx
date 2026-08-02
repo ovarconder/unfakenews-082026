@@ -50,6 +50,7 @@ export function Header({ locale }: HeaderProps) {
     { href: `/${locale}/articles`, key: "nav.articles" as const },
     { href: `/${locale}/contact`, key: "nav.contact" as const },
   ];
+  const supportLink = { label: "☕ สนับสนุน", href: `/${locale}/support` };
 
   
   const currentLangName = LOCALE_NAMES[locale]?.native || locale.toUpperCase();
@@ -88,6 +89,12 @@ export function Header({ locale }: HeaderProps) {
                 {t(link.key, locale)}
               </Link>
             ))}
+            <Link
+              href={supportLink.href}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-amber-300/30 text-amber-300 text-sm font-medium hover:bg-amber-300/10 transition-colors"
+            >
+              {supportLink.label}
+            </Link>
 
             {/* Language Switcher Dropdown */}
             <div className="relative" ref={langRef}>
@@ -151,6 +158,13 @@ export function Header({ locale }: HeaderProps) {
                 {t(link.key, locale)}
               </Link>
             ))}
+            <Link
+              href={supportLink.href}
+              onClick={() => setMobileOpen(false)}
+              className="block py-2 text-sm font-medium text-amber-300 hover:text-amber-200 transition-colors"
+            >
+              {supportLink.label}
+            </Link>
             {/* Mobile Language Switcher */}
             <div className="pt-3 border-t border-white/10">
               <p className="text-white/40 text-xs mb-2 uppercase tracking-wider">

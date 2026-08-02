@@ -87,6 +87,14 @@ export function Footer({ locale }: FooterProps) {
                   Terms of Service
                 </Link>
               </li>
+              <li>
+                <Link
+                  href={`/${locale}/support`}
+                  className="text-white/60 hover:text-amber-200 text-sm transition-colors"
+                >
+                  ☕ สนับสนุนผู้ทำเว็บ
+                </Link>
+              </li>
             </ul>
           </div>
 

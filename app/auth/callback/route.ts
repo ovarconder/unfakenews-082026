@@ -16,7 +16,10 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+      // Redirect ไปยังหน้า finish (client) เพื่อ set sessionStorage + แยก path ตาม role
+      // แต่ที่จริงตัว callback นี้เรียกผ่าน middleware เป็นหลัก —
+      // เรา redirect ไป finish route เพื่อให้ browser ตั้ง sessionStorage ได้
+      return NextResponse.redirect(new URL(`/auth/finish?next=${encodeURIComponent(next)}`, origin));
     }
   }
 

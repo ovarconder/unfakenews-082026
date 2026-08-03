@@ -355,9 +355,6 @@ export async function saveSettings(updates: Partial<SiteSettings>): Promise<Site
     setLocaleTiers(updated.localeTiers);
   }
 
-  // Update cache immediately (optimistic)
-  cachedSettings = updated;
-
   try {
     const supabase = createAdminClient();
     const dbRow = settingsToDbRow(updated);
@@ -367,11 +364,19 @@ export async function saveSettings(updates: Partial<SiteSettings>): Promise<Site
 
     if (error) {
       console.error("[Settings] DB upsert failed:", error.message);
+      // Don't swallow the error — rethrow so the API/UI can surface it
+      throw new Error(`อัปเดตการตั้งค่าไม่สำเร็จ: ${error.message}`);
     }
   } catch (err: any) {
     console.error("[Settings] DB write failed:", err?.message);
-    // Cache is still updated, so app works until next server restart
+    // Since the DB write failed, don't trust the in-memory cache
+    cachedSettings = null;
+    // Rethrow so the API returns a proper error to the UI
+    throw err;
   }
+
+  // DB write succeeded — now safe to update cache
+  cachedSettings = updated;
 
   return updated;
 }

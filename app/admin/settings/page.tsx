@@ -394,18 +394,21 @@ export default function SettingsPage() {
                 value={settings.logo}
                 onChange={(v) => updateField("logo", v)}
                 previewHeight={80}
+                folder="site-settings"
               />
               <ImageUploader
                 label="Favicon"
                 value={settings.favicon}
                 onChange={(v) => updateField("favicon", v)}
                 previewHeight={80}
+                folder="site-settings"
               />
               <ImageUploader
                 label="OG Image"
                 value={settings.ogImage}
                 onChange={(v) => updateField("ogImage", v)}
                 previewHeight={80}
+                folder="site-settings"
               />
             </div>
           </div>
@@ -556,6 +559,7 @@ export default function SettingsPage() {
                 value={settings.supportQr || ""}
                 onChange={(v) => updateField("supportQr", v)}
                 previewHeight={120}
+                folder="site-settings"
               />
               <div className="space-y-3">
                 <div>

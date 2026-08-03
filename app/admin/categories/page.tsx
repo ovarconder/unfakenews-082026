@@ -501,6 +501,7 @@ export default function CategoriesPage() {
                     value={form.imageUrl}
                     onChange={(url) => handleFormChange("imageUrl", url)}
                     previewHeight={100}
+                    folder="categories"
                   />
                 </div>
 

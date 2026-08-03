@@ -9,7 +9,8 @@
 //   label?: string   — field label
 //   accept?: string  — accepted mime types
 //   maxSizeMB?: number
-//   bucket?: string  — Supabase bucket (default: article-images)
+//   bucket?: string  — (deprecated) ใช้ folder แทน
+//   folder?: string  — หมวด folder ใน bucket images (site-settings, article-images, hero-slides, categories)
 //   className?: string
 //   previewWidth?: number  — width of preview box in px
 //   previewHeight?: number
@@ -27,6 +28,7 @@ interface ImageUploaderProps {
   accept?: string;
   maxSizeMB?: number;
   bucket?: string;
+  folder?: string;
   className?: string;
   previewWidth?: number;
   previewHeight?: number;
@@ -39,6 +41,7 @@ export function ImageUploader({
   accept = "image/jpeg,image/png,image/gif,image/webp,image/svg+xml",
   maxSizeMB = 10,
   bucket,
+  folder,
   className = "",
   previewWidth = 160,
   previewHeight = 100,
@@ -85,6 +88,11 @@ export function ImageUploader({
     try {
       const formData = new FormData();
       formData.append("file", file);
+      // ส่ง folder ไปยัง /api/upload เพื่อจัดเก็บแยกตามหมวด
+      const targetFolder = folder || bucket || "";
+      if (targetFolder) {
+        formData.append("folder", targetFolder);
+      }
 
       const res = await fetch("/api/upload", {
         method: "POST",
@@ -115,7 +123,7 @@ export function ImageUploader({
     } finally {
       setUploading(false);
     }
-  }, [onChange, accept]);
+  }, [onChange, accept, folder, bucket]);
 
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -1201,7 +1201,7 @@ export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorPr
       {/* Featured Image Management Section */}
       <div className="border border-white/10 rounded-xl p-6 bg-white/5 space-y-4">
         <h3 className="text-base font-semibold text-white">รูปภาพหน้าปกบทความ (Featured Image)</h3>
-        <ImageUploader value={imageUrl} onChange={setImageUrl} />
+        <ImageUploader value={imageUrl} onChange={setImageUrl} folder="article-images" />
 
         {imageUrl && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-2">

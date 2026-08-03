@@ -379,6 +379,7 @@ export function HeroSlideEditor({ initialData }: HeroSlideEditorProps) {
           value={formData.image_url}
           onChange={(url) => setFormData({ ...formData, image_url: url })}
           previewHeight={220}
+          folder="hero-slides"
         />
       </div>
 

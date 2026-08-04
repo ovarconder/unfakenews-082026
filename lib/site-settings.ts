@@ -346,18 +346,12 @@ export async function getSettings(): Promise<SiteSettings> {
       return cachedSettings;
     }
 
-    // [DEBUG] ดูค่าดิบจาก DB
-    console.log("[settings.DB] raw support_enabled =", JSON.stringify(data.support_enabled), "typeof:", typeof data.support_enabled);
     cachedSettings = dbRowToSettings(data);
-    // [DEBUG] ดูค่าหลัง normalize
-    console.log("[settings.DB] normalized supportEnabled =", cachedSettings.supportEnabled);
     // Sync locale tiers from DB into locales.ts runtime cache
     setLocaleTiers(cachedSettings.localeTiers);
     return cachedSettings;
   } catch (err: any) {
     console.warn("[Settings] DB unavailable, using defaults:", err?.message);
-    // [DEBUG] ยืนยันว่าเราตกมาที่ default path จริง
-    console.log("[settings.DB] CATCH — using DEFAULT_SETTINGS. supportEnabled =", DEFAULT_SETTINGS.supportEnabled, "| SUPABASE_URL:", process.env.NEXT_PUBLIC_SUPABASE_URL || "MISSING", "| SERVICE_ROLE_KEY set?", !!process.env.SUPABASE_SERVICE_ROLE_KEY);
     cachedSettings = { ...DEFAULT_SETTINGS };
     // Sync defaults into locales.ts runtime cache
     setLocaleTiers(DEFAULT_SETTINGS.localeTiers);

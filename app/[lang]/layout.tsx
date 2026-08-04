@@ -85,8 +85,6 @@ export default async function LangLayout({ children, params }: LangLayoutProps) 
 
   // Check maintenance mode from settings
   const settings = await getSettings();
-  // [DEBUG] ดูค่าที่ layout อ่านได้
-  console.log("[lang/layout] favicon =", settings.favicon);
   
   if (settings.maintenanceMode) {
     return (

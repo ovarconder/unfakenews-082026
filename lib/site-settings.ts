@@ -356,6 +356,8 @@ export async function getSettings(): Promise<SiteSettings> {
     return cachedSettings;
   } catch (err: any) {
     console.warn("[Settings] DB unavailable, using defaults:", err?.message);
+    // [DEBUG] ยืนยันว่าเราตกมาที่ default path จริง
+    console.log("[settings.DB] CATCH — using DEFAULT_SETTINGS. supportEnabled =", DEFAULT_SETTINGS.supportEnabled, "| SUPABASE_URL:", process.env.NEXT_PUBLIC_SUPABASE_URL || "MISSING", "| SERVICE_ROLE_KEY set?", !!process.env.SUPABASE_SERVICE_ROLE_KEY);
     cachedSettings = { ...DEFAULT_SETTINGS };
     // Sync defaults into locales.ts runtime cache
     setLocaleTiers(DEFAULT_SETTINGS.localeTiers);

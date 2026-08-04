@@ -26,6 +26,9 @@ yarn-error.log*
 .env*.local
 .env
 
+# SQL scripts (keep local only — not committed)
+*.sql
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

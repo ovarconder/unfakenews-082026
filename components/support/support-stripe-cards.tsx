@@ -62,7 +62,7 @@ export function SupportStripeCards({ siteName }: SupportStripeCardsProps) {
               {tier.label}
             </div>
             <div className="flex items-center gap-1 text-xs text-amber-300/80 opacity-0 group-hover:opacity-100 transition-opacity">
-              <span>Donate via Stripe</span>
+              <span>Support via Stripe</span>
               <ArrowUpRight size={12} />
             </div>
           </a>

@@ -87,12 +87,13 @@ export function Header({ locale }: HeaderProps) {
           {/* Logo */}
           <Link
             href={`/${locale}`}
-            className="flex items-center gap-2 transition-colors"
+            className="flex items-center transition-colors"
           >
-            <img src={logoUrl} alt={siteName} className="w-8 h-8" />
-            <span className="font-thai text-lg font-bold tracking-wide hidden sm:block text-white hover:text-amber-200 transition-colors">
-              {siteName}
-            </span>
+            <img
+              src={logoUrl}
+              alt={siteName}
+              className="h-8 w-auto"
+            />
           </Link>
 
           {/* Desktop Navigation */}

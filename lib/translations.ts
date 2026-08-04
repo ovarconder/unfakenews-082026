@@ -287,14 +287,14 @@ const translations: Record<TranslationKey, Partial<Record<Locale, string>>> = {
     es: "Todos los derechos reservados.",
     pt: "Todos os direitos reservados.",
   },
-  "footer.powered": {
-    en: `Powered by ${process.env.NEXT_PUBLIC_SITE_NAME || "Siam Heritage"} — ${process.env.NEXT_PUBLIC_SITE_TAGLINE || "Discover Thai heritage, arts, and history."}`,
-    th: `ขับเคลื่อนโดย ${process.env.NEXT_PUBLIC_SITE_NAME || "สยามเฮอริเทจ"} — ค้นพบมรดกไทย ศิลปะ และประวัติศาสตร์`,
-    zh: `由 ${process.env.NEXT_PUBLIC_SITE_NAME || "暹罗遗产"} 驱动 — 探索泰国遗产、艺术与历史`,
-    ja: `${process.env.NEXT_PUBLIC_SITE_NAME || "サイアムヘリテージ"} が提供 — タイの遺産、芸術、歴史を探求`,
-    es: `Impulsado por ${process.env.NEXT_PUBLIC_SITE_NAME || "Siam Heritage"} — Descubre el patrimonio, arte e historia tailandesa`,
-    pt: `Impulsionado por ${process.env.NEXT_PUBLIC_SITE_NAME || "Siam Heritage"} — Descubra a herança, arte e história tailandesa`,
-  },
+ "footer.powered": {
+  en: `Powered by ${process.env.NEXT_PUBLIC_SITE_NAME || "unfakenews"} — ${process.env.NEXT_PUBLIC_SITE_TAGLINE || "Real news based on facts—no fake news, no deception, no propaganda."}`,
+  th: `ขับเคลื่อนโดย ${process.env.NEXT_PUBLIC_SITE_NAME || "unfakenews"} — ข่าวที่เป็นข้อเท็จจริง ไม่ใช่ข่าวปลอม ไม่ใช่ข่าวลวง ไม่ใช่ข่าว propaganda`,
+  zh: `由 ${process.env.NEXT_PUBLIC_SITE_NAME || "unfakenews"} 驱动 — 基于事实的真实新闻，绝无假新闻、虚假 me-息或宣传手段`,
+  ja: `${process.env.NEXT_PUBLIC_SITE_NAME || "unfakenews"} が提供 — 事実に基づく本物のニュース。フェイクニュースやプロパガンダを排除`,
+  es: `Impulsado por ${process.env.NEXT_PUBLIC_SITE_NAME || "unfakenews"} — Noticias basadas en hechos: sin noticias falsas, engaños ni propaganda`,
+  pt: `Impulsionado por ${process.env.NEXT_PUBLIC_SITE_NAME || "unfakenews"} — Notícias baseadas em fatos: sem notícias falsas, enganos ou propaganda`,
+},
   "articles.latest": {
     en: "Latest Articles",
     th: "บทความล่าสุด",

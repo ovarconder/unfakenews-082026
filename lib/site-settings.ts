@@ -161,6 +161,24 @@ const DEFAULT_SETTINGS: SiteSettings = {
   updatedAt: new Date().toISOString(),
 };
 
+/**
+ * Normalize any boolean-ish value into a real boolean.
+ * Handles boolean, number (0/1), and string ("true"/"false"/"t"/"f"/"0"/"1") from DB.
+ * Returns `fallback` when the value is null/undefined/empty.
+ */
+function toBool(value: any, fallback: boolean): boolean {
+  if (value === null || value === undefined || value === "") return fallback;
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value !== 0;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (["1", "t", "true", "y", "yes", "on"].includes(normalized)) return true;
+    if (["0", "f", "false", "n", "no", "off"].includes(normalized)) return false;
+    return fallback;
+  }
+  return Boolean(value);
+}
+
 // Helper: map snake_case DB row → camelCase SiteSettings
 function dbRowToSettings(row: any): SiteSettings {
   return {
@@ -206,10 +224,10 @@ function dbRowToSettings(row: any): SiteSettings {
     email: row.email || DEFAULT_SETTINGS.email,
     phone: row.phone || DEFAULT_SETTINGS.phone,
     address: row.address || DEFAULT_SETTINGS.address,
-    showAuthor: row.show_author !== undefined ? row.show_author : DEFAULT_SETTINGS.showAuthor,
-    enableComments: row.enable_comments !== undefined ? row.enable_comments : DEFAULT_SETTINGS.enableComments,
-    enableSocialShare: row.enable_social_share !== undefined ? row.enable_social_share : DEFAULT_SETTINGS.enableSocialShare,
-    maintenanceMode: row.maintenance_mode !== undefined ? row.maintenance_mode : DEFAULT_SETTINGS.maintenanceMode,
+    showAuthor: toBool(row.show_author, DEFAULT_SETTINGS.showAuthor),
+    enableComments: toBool(row.enable_comments, DEFAULT_SETTINGS.enableComments),
+    enableSocialShare: toBool(row.enable_social_share, DEFAULT_SETTINGS.enableSocialShare),
+    maintenanceMode: toBool(row.maintenance_mode, DEFAULT_SETTINGS.maintenanceMode),
     maintenanceMessage: row.maintenance_message || DEFAULT_SETTINGS.maintenanceMessage,
     localeTiers: row.locale_tiers ? row.locale_tiers : DEFAULT_SETTINGS.localeTiers,
     // OAuth Keys — ใช้ค่าจาก DB ก่อน ถ้าไม่มี fallback จาก env var
@@ -222,7 +240,7 @@ function dbRowToSettings(row: any): SiteSettings {
     openaiApiKey: row.openai_api_key || DEFAULT_SETTINGS.openaiApiKey,
     geminiApiKey: row.gemini_api_key || DEFAULT_SETTINGS.geminiApiKey,
     // Support section
-    supportEnabled: row.support_enabled !== undefined ? row.support_enabled : DEFAULT_SETTINGS.supportEnabled,
+    supportEnabled: toBool(row.support_enabled, DEFAULT_SETTINGS.supportEnabled),
     supportQr: row.support_qr || DEFAULT_SETTINGS.supportQr,
     supportTitle: row.support_title || DEFAULT_SETTINGS.supportTitle,
     supportDescription: row.support_description || DEFAULT_SETTINGS.supportDescription,

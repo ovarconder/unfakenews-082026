@@ -38,13 +38,15 @@ export function SupportCard({
 
   // ★ QR Code + ข้อมูลบัญชี (โอนเงินผ่าน QR) แสดงเฉพาะภาษาไทยเท่านั้น
   const isThai = locale === "th";
+  // Normalize enabled เป็น boolean จริง (กันกรณีค่าที่ส่งมาไม่เป็น boolean ที่แท้จริง)
+  const isEnabled = Boolean(enabled);
   // ถ้าเปิดใช้งาน QQ ไว้ ให้แสดง QR; ถ้าไม่มี QR แต่มีเลขบัญชี แสดงบัญชีแทน
-  const showQr = isThai && enabled && !!qrUrl;
-  const showAccount = isThai && enabled && (!!accountNumber || !!accountName);
+  const showQr = isThai && isEnabled && !!qrUrl;
+  const showAccount = isThai && isEnabled && (!!accountNumber || !!accountName);
 
   return (
     <div className="rounded-2xl bg-gradient-to-br from-[#0f1f3a] to-[#162545] border border-white/10 p-8 text-center">
-      {!enabled ? (
+      {!isEnabled ? (
         <div className="py-8">
           <Coffee size={40} className="mx-auto mb-3 text-white/20" />
           {isThai ? (

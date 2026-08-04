@@ -346,7 +346,11 @@ export async function getSettings(): Promise<SiteSettings> {
       return cachedSettings;
     }
 
+    // [DEBUG] ดูค่าดิบจาก DB
+    console.log("[settings.DB] raw support_enabled =", JSON.stringify(data.support_enabled), "typeof:", typeof data.support_enabled);
     cachedSettings = dbRowToSettings(data);
+    // [DEBUG] ดูค่าหลัง normalize
+    console.log("[settings.DB] normalized supportEnabled =", cachedSettings.supportEnabled);
     // Sync locale tiers from DB into locales.ts runtime cache
     setLocaleTiers(cachedSettings.localeTiers);
     return cachedSettings;

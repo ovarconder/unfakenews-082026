@@ -31,7 +31,8 @@ export function Header({ locale }: HeaderProps) {
   const langRef = useRef<HTMLDivElement>(null);
 
   const siteName = settings?.name || process.env.NEXT_PUBLIC_SITE_NAME || "UnFake News";
-  const logoUrl = settings?.logoFull || settings?.logo || "/images/logo/SiamHeritage-logo-gradient-128.png";
+  // ใช้ logo (field ที่บันทึกใน settings page) เป็นหลัก ก่อน logoFull
+  const logoUrl = settings?.logo || settings?.logoFull || "/images/logo/SiamHeritage-logo-gradient-128.png";
 
   // ตรวจสถานะ login + role จาก sessionStorage (admin ใช้ key นี้)
   useEffect(() => {

@@ -12,6 +12,11 @@ import { MaintenancePage } from "@/components/ui/maintenance-page";
 import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
 
+// Must read fresh settings from DB on every request so dynamic values
+// (favicon, meta, colors, support...) are never statically cached.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 interface LangLayoutProps {
   children: React.ReactNode;
   params: Promise<{ lang: string }>;
@@ -80,6 +85,8 @@ export default async function LangLayout({ children, params }: LangLayoutProps) 
 
   // Check maintenance mode from settings
   const settings = await getSettings();
+  // [DEBUG] ดูค่าที่ layout อ่านได้
+  console.log("[lang/layout] favicon =", settings.favicon);
   
   if (settings.maintenanceMode) {
     return (

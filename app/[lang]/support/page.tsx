@@ -3,6 +3,11 @@ import { getSettings } from "@/lib/site-settings";
 import { SupportCard } from "@/components/support/support-card";
 import { SupportStripeCards } from "@/components/support/support-stripe-cards";
 
+// Must read fresh settings from DB on every request
+// (otherwise Next.js prerenders/statically caches the page with stale support values)
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 interface Props {
   params: Promise<{ lang: string }>;
 }

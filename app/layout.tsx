@@ -42,9 +42,9 @@ const notoSansThai = Noto_Sans_Thai({
 export const metadata: Metadata = {
   title: SITE_NAME,
   description: SITE_DESCRIPTION,
-  icons: {
-    icon: "/images/logo/favicon.png",
-  },
+  // NOTE: ไม่ hardcode favicon/icons ที่นี่
+  // favicon เป็นค่า dynamic จาก site_settings (DB)
+  // ใน app/[lang]/layout.tsx ใช้ <link rel="icon" href={settings.favicon}> จัดการให้แล้ว
 };
 
 export default function RootLayout({

@@ -21,6 +21,8 @@ export async function HomePage({ locale }: HomePageProps) {
   // Latest section = 3 บทความล่าสุด (ตัด hero ที่ซ้ำออกชั่วคราว)
   const latestArticles = allArticles.slice(0, 3);
   const settings = await getSettings();
+  // tagline: ใช้ค่าจาก site settings (settings.tagline) ก่อน ถ้าไม่มีให้ใช้ข้อความ translation (hero.tagline)
+  const tagline = settings?.tagline?.trim() || t("hero.tagline", locale);
 
   return (
     <>
@@ -77,7 +79,7 @@ export async function HomePage({ locale }: HomePageProps) {
               {t("home.latestArticles", locale)}
             </h2>
             <p className="text-white/50 text-sm mt-2 max-w-xl mx-auto">
-              {t("hero.tagline", locale)}
+              {tagline}
             </p>
           </div>
 

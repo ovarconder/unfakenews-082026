@@ -224,7 +224,7 @@ function renderLinksAndText(text: string): React.ReactNode {
   return renderBoldItalic(text);
 }
 
-/** Render bold (**text**) and italic (*text*) inline */
+/** Render bold (**text**), italic (*text*), and <br> line breaks inline */
 function renderBoldItalic(text: string): React.ReactNode {
   // Match both **bold** and *italic* — bold first to prevent conflict
   const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
@@ -234,6 +234,18 @@ function renderBoldItalic(text: string): React.ReactNode {
     }
     if (part.startsWith("*") && part.endsWith("*")) {
       return <em key={i} className="text-white/90 italic">{part.slice(1, -1)}</em>;
+    }
+    // <br> / <br/> / <br /> → line break
+    if (/^(<br\s*\/?>)+$/i.test(part.trim())) {
+      return <br key={`br-${i}`} />;
+    }
+    // <br> ที่แทรกอยู่กลางข้อความ → split เป็นบรรทัดย่อย
+    if (part.includes("<br") && part.includes(">")) {
+      const lineParts = part.split(/(<br\s*\/?>)/i);
+      return lineParts.map((chunk, ci) => {
+        if (/^<br\s*\/?>$/i.test(chunk.trim())) return <br key={`ln-${i}-${ci}`} />;
+        return chunk;
+      });
     }
     return part;
   });

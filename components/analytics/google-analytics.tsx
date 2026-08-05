@@ -35,14 +35,14 @@ declare global {
   }
 }
 
-export function GoogleAnalytics() {
+export function GoogleAnalytics({ gaId: gaIdProp }: { gaId?: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [consented, setConsented] = useState(false);
   const settings = useSettings();
 
-  // Resolve GA ID: prop > Settings DB > env var
-  const gaId = settings?.googleAnalyticsId || FALLBACK_GA_ID;
+  // Resolve GA ID: prop (server/DB) > Settings DB (client fetch) > env var
+  const gaId = gaIdProp || settings?.googleAnalyticsId || FALLBACK_GA_ID;
 
   useEffect(() => {
     // Check if user has accepted cookie consent

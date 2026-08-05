@@ -106,7 +106,9 @@ export default async function LangLayout({ children, params }: LangLayoutProps) 
         <link rel="icon" href={settings.favicon} data-dynamic-favicon />
         <SettingsProvider>
           <Suspense fallback={null}>
-            <GoogleAnalytics />
+            {/* ส่ง GA ID จาก server (อ่านจาก DB) — จะ load script ทันทีจากค่าจริงใน database
+                ถ้าไม่ตั้งค่า GA ใน DB จะ fallback ไป env var / client settings */}
+            <GoogleAnalytics gaId={settings.googleAnalyticsId} />
             <CookieConsent />
             <AdSenseScript />
           </Suspense>

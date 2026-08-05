@@ -66,7 +66,8 @@ export default async function MicrositeLangLayout({
     <SettingsProvider>
       {/* Analytics + AdSense + Cookie Consent (เหมือน main site) */}
       <Suspense fallback={null}>
-        <GoogleAnalytics />
+        {/* ส่ง GA ID จาก main site settings (อ่านจาก DB) */}
+        <GoogleAnalytics gaId={mainSettings.googleAnalyticsId} />
         <CookieConsent />
         <AdSenseScript />
       </Suspense>

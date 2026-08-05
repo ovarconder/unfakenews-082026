@@ -46,11 +46,48 @@ interface ImageAltCache {
   [key: string]: string;
 }
 
+/** แยก attributes จากแท็ก <img ...> เช่น src, alt (ครอบคลุม single/double quotes) */
+function parseImgAttrs(tag: string): { src: string; alt: string } {
+  const attr = (name: string): string => {
+    const m = tag.match(new RegExp(`\\b${name}\\s*=\\s*(["'])(.*?)\\1`, "i"));
+    return m ? m[2] : "";
+  };
+  return { src: attr("src"), alt: attr("alt") };
+}
+
 function renderContent(content: string, translatedAlts?: Record<string, string>) {
   // Apply translated alt texts before rendering
   const processedContent = applyTranslatedAltTexts(content, translatedAlts);
 
   return processedContent.split("\n").map((line, idx) => {
+    // --- image: ![alt](url) เป็นบรรทัดเดี่ยว ๆ ---
+    const imgMatch = line.match(/^!\[([^\]]*)\]\(([^)]+)\)\s*$/);
+    if (imgMatch) {
+      return (
+        <img
+          key={idx}
+          src={imgMatch[2]}
+          alt={imgMatch[1]}
+          loading="lazy"
+          className="rounded-xl my-6 max-w-full h-auto"
+        />
+      );
+    }
+
+    // --- image: <img ...> เป็นบรรทัดเดี่ยว ๆ ---
+    if (/^<img\s[^>]*\/?\s*>$/.test(line.trim())) {
+      const attrs = parseImgAttrs(line);
+      return (
+        <img
+          key={idx}
+          src={attrs.src || ""}
+          alt={attrs.alt || ""}
+          loading="lazy"
+          className="rounded-xl my-6 max-w-full h-auto"
+        />
+      );
+    }
+
     // --- blockquote (บรรทัดที่ขึ้นต้นด้วย > หรือ <blockquote>) ---
     if (line.trimStart().startsWith(">") || line.trimStart().startsWith("<blockquote>")) {
       const quoteText = line
@@ -128,6 +165,48 @@ function renderContent(content: string, translatedAlts?: Record<string, string>)
 
 /** Helper to render inline markdown formatting within a line */
 function renderInlineMarkdown(text: string): React.ReactNode {
+  // 1) เรียงลำดับให้ parse รูปภาพแบบ inline ก่อน (ทั้ง ![alt](url) และ <img ...>) —
+  //    กันไม่ให้ URL ภายใน<img> ตีกับ link regex ด้านล่าง
+  const imgRegex = /(!\[[^\]]*\]\([^)]+\)|<img\s[^>]*\/?\s*>)/g;
+  const imgParts = text.split(imgRegex);
+
+  if (imgParts.length > 1) {
+    return imgParts.map((part, i) => {
+      // Markdown image
+      const mdImg = part.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+      if (mdImg) {
+        return (
+          <img
+            key={i}
+            src={mdImg[2]}
+            alt={mdImg[1]}
+            loading="lazy"
+            className="rounded-xl my-2 max-w-full h-auto"
+          />
+        );
+      }
+      // HTML <img>
+      if (/^<img\s/.test(part)) {
+        const attrs = parseImgAttrs(part);
+        return (
+          <img
+            key={i}
+            src={attrs.src || ""}
+            alt={attrs.alt || ""}
+            loading="lazy"
+            className="rounded-xl my-2 max-w-full h-auto"
+          />
+        );
+      }
+      return renderLinksAndText(part);
+    });
+  }
+
+  return renderLinksAndText(text);
+}
+
+/** แยก inline image ออก แล้ว render link + bold/italic ในส่วนที่เหลือ */
+function renderLinksAndText(text: string): React.ReactNode {
   // First handle links (before bold/italic to avoid conflicts)
   const urlRegex = /(https?:\/\/[^\s<"')]+)/g;
   const linkParts = text.split(urlRegex);

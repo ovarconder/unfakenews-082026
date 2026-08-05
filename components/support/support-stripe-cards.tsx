@@ -39,7 +39,23 @@ interface SupportStripeCardsProps {
 
 export function SupportStripeCards({ siteName }: SupportStripeCardsProps) {
   return (
-    <div className="rounded-2xl bg-gradient-to-br from-[#0f1f3a] to-[#162545] border border-white/10 p-8">
+    <div className="rounded-2xl bg-gradient-to-br from-[#0f1f3a] to-[#162545] border border-white/10 p-8 text-center">
+      {/* ============================================================
+          Stripe donation cards ถูกซ่อนไว้ชั่วคราว (ยังไม่เปิดใช้งาน)
+          จะกลับมาแสดงอีกครั้งเมื่อทำหลังบ้าน (backend) ของ Stripe เสร็จ
+          STRIPE_TIERS + โครงสร้าง render ด้านล่างยังเก็บไว้ครบ
+      ============================================================ */}
+      <p className="text-white/60 text-sm leading-relaxed max-w-md mx-auto mb-4">
+        Online donation via Stripe is coming soon.
+      </p>
+      <p className="text-white/30 text-xs max-w-md mx-auto">
+        Please check back later. Thank you for your patience 🙏
+      </p>
+
+      {/* ============================================================
+          Stripe cards — ซ่อนไว้ชั่วคราว (ยกเลิก comment เพื่อกลับมาใช้งาน)
+      ============================================================ */}
+      {/*
       <p className="text-white/60 text-sm leading-relaxed max-w-md mx-auto mb-8 text-center">
         Thank you for considering supporting our work. Choose a tier below to help
         cover hosting costs, translation, and the time we invest in keeping this
@@ -68,6 +84,7 @@ export function SupportStripeCards({ siteName }: SupportStripeCardsProps) {
           </a>
         ))}
       </div>
+      */}
 
       {siteName && (
         <p className="text-white/30 text-xs mt-8 text-center">

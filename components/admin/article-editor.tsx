@@ -488,7 +488,7 @@ export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorPr
         originalTitle: title,
         originalExcerpt: excerpt || content.slice(0, 200).replace(/[#*\n]/g, ""),
         originalContent: content,
-        category: category || "ทั่วไป",
+        category,
         author: author || "ทีมงาน สยามเฮอริเทจ",
         publishedAt,
         imageUrl: imageUrl || undefined,
@@ -853,13 +853,54 @@ export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorPr
   // 3. UI JSX Structure
   return (
     <div className="space-y-6">
+      {/* ============================================================
+          Error Popup (sticky) — แสดงเป็น modal กลางจอ ค้างไว้จนกว่าผู้ใช้ปิด
+        ============================================================ */}
       {error && (
-        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-red-500/15 border border-red-500/30 text-red-300 text-sm">
-          <AlertCircle size={16} />
-          {error}
-          <button onClick={() => setError(null)} className="ml-auto">
-            <X size={16} />
-          </button>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => setError(null)}
+          />
+          {/* Dialog */}
+          <div className="relative w-full max-w-md rounded-2xl bg-[#1a2440] border border-red-500/40 shadow-2xl p-6">
+            <div className="flex items-start gap-3">
+              <div className="shrink-0 w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
+                <AlertCircle size={24} className="text-red-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-white font-bold text-lg mb-1">บันทึกบทความไม่สำเร็จ</h3>
+                <p className="text-red-300/90 text-sm leading-relaxed break-words whitespace-pre-wrap">{error}</p>
+              </div>
+              <button
+                onClick={() => setError(null)}
+                className="shrink-0 text-white/50 hover:text-white transition-colors"
+                aria-label="ปิด"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                onClick={() => setError(null)}
+                className="px-4 py-2 rounded-lg bg-white/10 text-white/80 text-sm font-medium hover:bg-white/15 transition-colors"
+              >
+                ปิด
+              </button>
+              <button
+                onClick={() => {
+                  setError(null);
+                  setSaving(false);
+                  // กลับไปด้านบน เพื่อให้แก้ไขข้อมูลที่ขาดได้ง่าย
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="px-4 py-2 rounded-lg bg-amber-400 text-black text-sm font-semibold hover:bg-amber-300 transition-colors"
+              >
+                ลองบันทึกอีกครั้ง
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

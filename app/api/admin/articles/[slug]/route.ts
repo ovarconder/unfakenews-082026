@@ -141,14 +141,54 @@ export async function PUT(
     } = body;
 
     // Map category name (TH) → category_id (UUID) if provided
-    let categoryId: string | undefined;
-    if (category !== undefined) {
-      const { data: catRow } = await supabase
-        .from("categories")
-        .select("id")
-        .eq("name_th", category)
-        .maybeSingle();
-      categoryId = catRow?.id || category;
+    // สำคัญ: ถ้า match ไม่เจอ อย่าส่งชื่อไทยลงไป (จะ error uuid) — ถ้า resolve ไม่ได้ก็ไม่แก้อันนี้
+    let categoryId: string | null | undefined;
+    if (category !== undefined && category !== null && String(category).trim() !== "") {
+      const rawCategory = String(category).trim();
+
+      // ถ้าเป็น UUID อยู่แล้ว ใช้ได้เลย
+      const uuidPattern =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (uuidPattern.test(rawCategory)) {
+        categoryId = rawCategory;
+      } else {
+        // 1) match name_th
+        const { data: catRow } = await supabase
+          .from("categories")
+          .select("id")
+          .eq("name_th", rawCategory)
+          .maybeSingle();
+        if (catRow) {
+          categoryId = catRow.id;
+        } else {
+          // 2) match slug
+          const { data: slugRow } = await supabase
+            .from("categories")
+            .select("id")
+            .eq("slug", rawCategory)
+            .maybeSingle();
+          if (slugRow) {
+            categoryId = slugRow.id;
+          } else {
+            // 3) find-or-create "general" — ถ้ายังไม่มีให้ไม่แก้ category
+            const { data: generalCat } = await supabase
+              .from("categories")
+              .select("id")
+              .eq("slug", "general")
+              .maybeSingle();
+            if (generalCat) {
+              categoryId = generalCat.id;
+            } else {
+              const { data: created } = await supabase
+                .from("categories")
+                .insert({ slug: "general", name_th: "ทั่วไป", name_en: "General", sort_order: 0 })
+                .select("id")
+                .single();
+              categoryId = created?.id ?? undefined;
+            }
+          }
+        }
+      }
     }
 
     const updateData: Record<string, any> = {};

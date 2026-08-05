@@ -128,26 +128,55 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Map category name (TH) → category_id (UUID)
-    let categoryId = category;
-    if (category && typeof category === "string" && category !== "General") {
+    // ============================================================
+    // Map category (จาก UI ส่งเป็น name_th หรือ UUID) → category_id (UUID)
+    // มี 3 ขั้นตอน สำคัญ: ห้ามส่งชื่อไทยลง category_id โดยตรงเด็ดขาด
+    // ============================================================
+    const resolveCategoryId = async (value: unknown): Promise<string | null> => {
+      if (!value) return null;
+      const raw = String(value).trim();
+      if (!raw) return null;
+
+      // ถ้าดูเป็น UUID อยู่แล้ว (เช่น มาพร้อม initialData) ให้ใช้ได้เลย
+      const uuidPattern =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (uuidPattern.test(raw)) return raw;
+
+      // 1) Try exact name_th match (จาก select dropdown)
       const { data: catRow } = await supabase
         .from("categories")
         .select("id")
-        .eq("name_th", category)
+        .eq("name_th", raw)
         .maybeSingle();
-      if (catRow) {
-        categoryId = catRow.id;
-      } else {
-        // Fallback: try to find/create "ทั่วไป" category
-        const { data: generalCat } = await supabase
-          .from("categories")
-          .select("id")
-          .eq("slug", "general")
-          .maybeSingle();
-        categoryId = generalCat?.id || category;
-      }
-    }
+      if (catRow) return catRow.id;
+
+      // 2) Try slug match (เช่น "general", "heritage", ...)
+      const { data: slugRow } = await supabase
+        .from("categories")
+        .select("id")
+        .eq("slug", raw)
+        .maybeSingle();
+      if (slugRow) return slugRow.id;
+
+      // 3) Fallback: find-or-create the "ทั่วไป" (General) category
+      const { data: generalCat } = await supabase
+        .from("categories")
+        .select("id")
+        .eq("slug", "general")
+        .maybeSingle();
+      if (generalCat) return generalCat.id;
+
+      const { data: created } = await supabase
+        .from("categories")
+        .insert({ slug: "general", name_th: "ทั่วไป", name_en: "General", sort_order: 0 })
+        .select("id")
+        .single();
+      if (created) return created.id;
+
+      return null; // ไม่มีทาง resolve ได้จริง ๆ
+    };
+
+    const categoryId = await resolveCategoryId(category);
 
     // Create new article in Supabase
     const { data: inserted, error } = await supabase

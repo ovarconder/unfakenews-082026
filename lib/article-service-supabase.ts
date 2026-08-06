@@ -56,7 +56,7 @@ export async function getTranslatedSummaries(locale: Locale): Promise<ArticleSum
       categories(name_th, name_en),
       author_name, published_at, image_url, image_alt, featured
     `)
-    .or("status.eq.published,is_published.eq.true")
+    .eq("status", "published")
     .is("microsite_id", null) // ★ เฉพาะของ main site
     .order("published_at", { ascending: false });
 
@@ -161,7 +161,7 @@ export async function getFullArticle(
       google_schema_markup
     `)
     .eq("slug", slug)
-    .or("status.eq.published,is_published.eq.true")
+    .eq("status", "published")
     .is("microsite_id", null) // ★ เฉพาะของ main site
     .maybeSingle();
 
@@ -280,7 +280,7 @@ export async function getArticleSEO(slug: string, locale: Locale): Promise<{
     .from("articles")
     .select("id, original_title, original_excerpt")
     .eq("slug", slug)
-    .or("status.eq.published,is_published.eq.true")
+    .eq("status", "published")
     .is("microsite_id", null) // ★ เฉพาะของ main site
     .maybeSingle();
 

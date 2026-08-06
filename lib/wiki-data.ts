@@ -89,7 +89,7 @@ export function buildWikiMetadata(master: ArticleMaster): WikiMetadata {
   const excerpts: ExcerptStrategy | undefined = master.shortExcerpt || master.longExcerpt
     ? {
         shortExcerpt: master.shortExcerpt || master.originalExcerpt,
-        longExcerpt: master.longExcerpt || buildFullAbstract(master),
+        longExcerpt: master.longExcerpt || master.originalExcerpt,
         seoTitle: master.shortExcerpt ? undefined : undefined,
         seoDescription: master.shortExcerpt || undefined,
         socialCaption: master.socialCaption || undefined,

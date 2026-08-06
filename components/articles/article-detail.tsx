@@ -412,7 +412,7 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
             categories!inner(name_th, name_en),
             author_name, published_at, image_url, image_alt, featured
           `)
-          .or("status.eq.published,is_published.eq.true")
+          .eq("status", "published")
           .is("microsite_id", null)
           .neq("slug", article.slug) // exclude current article
           .order("published_at", { ascending: false })
@@ -527,6 +527,20 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
         master={masterLike}
       />
 
+      {/* Social Share Bar — ใต้ title */}
+      <div className="border-b border-white/10 bg-[#0a1628]/40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
+          <span className="text-white/50 text-sm">
+            {locale === "th" ? "แชร์บทความนี้" : "Share this article"}
+          </span>
+          <SocialShareButtons
+            url={typeof window !== 'undefined' ? window.location.href : `/${locale}/articles/${article.slug}`}
+            title={article.title}
+            description={article.excerpt}
+          />
+        </div>
+      </div>
+
       {/* ExcerptSection — Lead Paragraph + Social Caption */}
       {wikiData.excerpts && (
         <section className="py-8 sm:py-12">
@@ -535,7 +549,7 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
               excerpts={wikiData.excerpts}
               locale={locale}
               fallbackShort={article.excerpt}
-              fallbackLong={wikiData.abstract.full}
+              fallbackLong={article.excerpt}
             />
           </div>
         </section>
@@ -568,7 +582,7 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
                       {locale === "th" ? "เผยแพร่" : "Published"}: {new Date(article.publishedAt).toLocaleDateString(locale === "th" ? "th-TH" : "en-US", { year: "numeric", month: "long", day: "numeric" })}
                     </div>
                     {/* Social Share Buttons */}
-                    <SocialShareButtons 
+                    <SocialShareButtons
                       url={typeof window !== 'undefined' ? window.location.href : `/${locale}/articles/${article.slug}`}
                       title={article.title}
                       description={article.excerpt}

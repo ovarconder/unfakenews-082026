@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase-server";
+import { runPublishAutomation } from "@/lib/publish-automation";
 
 export async function PUT(request: NextRequest) {
   try {
@@ -43,10 +44,38 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: `Database error: ${error.message}` }, { status: 500 });
     }
 
+    // ============================================================
+    // ★ Post-Publish Automation — ภาษาแปลที่เผยแพร่ด้วยมือ (manual)
+    // เมื่อ translation_status = 'complete' (และบทความหลัก published)
+    // → trigger IndexNow + Google Indexing + revalidate
+    // ============================================================
+    let seoResult: Awaited<ReturnType<typeof runPublishAutomation>> | null = null;
+    if (dbUpdate.translation_status === "complete") {
+      // หา slug ของ article ก่อน (article_id เป็น UUID)
+      const { data: art } = await supabase
+        .from("articles")
+        .select("slug")
+        .eq("id", article_id)
+        .maybeSingle();
+
+      if (art) {
+        try {
+          seoResult = await runPublishAutomation({
+            slug: art.slug,
+            locale,
+          });
+          console.log(`[Manual Translation] SEO automation for "${art.slug}" [${locale}]:`, seoResult);
+        } catch (seoErr: any) {
+          console.error(`[Manual Translation] SEO automation failed for "${art.slug}":`, seoErr);
+        }
+      }
+    }
+
     return NextResponse.json({
       success: true,
       article_id,
       locale,
+      seo: seoResult,
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);

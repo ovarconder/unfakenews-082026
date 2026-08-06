@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentSession } from "@/lib/auth-service";
 import { createAdminClient } from "@/lib/supabase-server";
+import { runPublishAutomation } from "@/lib/publish-automation";
 
 // ============================================================
 // Helper: parse user from request
@@ -229,8 +230,30 @@ export async function PUT(
       return NextResponse.json({ error: "Database error: " + error.message }, { status: 500 });
     }
 
+    // ============================================================
+    // ★ Post-Publish Automation — ภาษาไทย (ต้นฉบับ)
+    // เมื่อ status ของบทความ (ภาษาไทย) เปลี่ยนเป็น "published" จริง
+    // ให้ trigger IndexNow + Google Indexing + revalidate
+    // (guardrail เช็คสถานะจริงจาก DB ใน runPublishAutomation อีกครั้ง)
+    // ============================================================
+    let seoResult: Awaited<ReturnType<typeof runPublishAutomation>> | null = null;
+    if (updateData.status === "published" && existing.status !== "published") {
+      try {
+        seoResult = await runPublishAutomation({
+          slug: updated.slug,
+          locale: "th",
+          previousStatus: existing.status,
+        });
+        console.log(`[Article PUT] SEO automation for "${updated.slug}" [th]:`, seoResult);
+      } catch (seoErr: any) {
+        // automation ล้มเหลวไม่ควร block ตัวหลัก
+        console.error(`[Article PUT] SEO automation failed for "${updated.slug}":`, seoErr);
+      }
+    }
+
     return NextResponse.json({
       success: true,
+      seo: seoResult,
       article: {
         id: updated.id,
         slug: updated.slug,

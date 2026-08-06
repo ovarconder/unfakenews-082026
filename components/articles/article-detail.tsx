@@ -25,6 +25,8 @@ import type { WikiArticle } from "@/lib/wiki-types";
 interface ArticleDetailProps {
   article: ArticleFull;
   locale: Locale;
+  /** URL เต็มของ variant ภาษานี้ (สำหรับ schema/canonical) — optional */
+  localeUrl?: string;
 }
 
 // ============================================================
@@ -341,7 +343,7 @@ function SocialShareButtons({ url, title, description }: { url: string; title: s
 // Article Detail
 // ============================================================
 
-export function ArticleDetail({ article, locale }: ArticleDetailProps) {
+export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps) {
   const { adsenseId, adsenseSlotSidebar } = useSettings() || {};
 
   const [stateArticle, setStateArticle] = useState<ArticleFull | null>(article);
@@ -498,6 +500,7 @@ export function ArticleDetail({ article, locale }: ArticleDetailProps) {
         article={masterLike}
         imageUrl={article.imageUrl}
         wikiMetadata={wikiData.metadata}
+        localeUrl={localeUrl}
       />
 
       {/* Custom Schema Markup (จาก DB) — merge/override เพิ่มเติม */}

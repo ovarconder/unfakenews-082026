@@ -17,6 +17,7 @@ import {
 import type { Locale } from "@/lib/locales";
 import { isDisabled, isTier2 } from "@/lib/locales";
 import { createAdminClient } from "@/lib/supabase-server";
+import { runPublishAutomation } from "@/lib/publish-automation";
 
 export async function POST(request: Request) {
   try {
@@ -153,6 +154,18 @@ export async function POST(request: Request) {
           results.push({ slug: row.slug, status: "db_error" });
         } else {
           results.push({ slug: row.slug, status: "translated" });
+
+          // ★ Post-Publish Automation — translation variant เป็น complete
+          // (เฉพาะ Tier 1 = complete; Tier 2 = summary_only ไม่ trigger)
+          if (!isTier2Locale) {
+            try {
+              await runPublishAutomation({ slug: row.slug, locale: targetLocale })
+                .then((r) => console.log(`[Translate-all] SEO for "${row.slug}" [${targetLocale}]:`, r))
+                .catch((e) => console.warn(`[Translate-all] SEO failed for "${row.slug}":`, e));
+            } catch (seoErr) {
+              console.warn(`[Translate-all] SEO error for "${row.slug}":`, seoErr);
+            }
+          }
         }
       } catch (err) {
         console.error(`[Translate-all] Error for ${row.slug}:`, err);

@@ -28,6 +28,7 @@ import {
 import type { Locale } from "@/lib/locales";
 import { createAdminClient } from "@/lib/supabase-server";
 import { isDisabled, isTier2 } from "@/lib/locales";
+import { runPublishAutomation } from "@/lib/publish-automation";
 
 export type DirtyField =
   | "title"
@@ -261,6 +262,20 @@ export async function POST(request: Request) {
       if (error) {
         console.error("[Translate-new] DB error:", error);
         return NextResponse.json({ error: "Database error" }, { status: 500 });
+      }
+
+      // ============================================================
+      // ★ Post-Publish Automation — translation variant เป็น complete
+      // (Tier 1 full = complete; Trigger ต่อเมื่อผ่าน guardrail ในระบบจริง)
+      // ============================================================
+      if (dbUpdate.translation_status === "complete") {
+        try {
+          await runPublishAutomation({ slug, locale: targetLocale })
+            .then((r) => console.log(`[Translate-new] SEO for "${slug}" [${targetLocale}]:`, r))
+            .catch((e) => console.warn(`[Translate-new] SEO failed for "${slug}":`, e));
+        } catch (seoErr) {
+          console.warn(`[Translate-new] SEO error for "${slug}":`, seoErr);
+        }
       }
     }
 

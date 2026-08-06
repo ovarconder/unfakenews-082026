@@ -9,6 +9,7 @@ import { NextResponse } from "next/server";
 import { translateContentOnly } from "@/lib/translate-service";
 import type { Locale } from "@/lib/locales";
 import { createAdminClient } from "@/lib/supabase-server";
+import { runPublishAutomation } from "@/lib/publish-automation";
 
 export async function GET(
   request: Request,
@@ -80,6 +81,22 @@ export async function GET(
 
     if (error) {
       console.error("[Translate-content] DB cache error:", error);
+    } else {
+      // ============================================================
+      // ★ Post-Publish Automation — JIT Tier2 translation
+      // เมื่อ content ถูกรับเป็น complete ใหม่ (neww variant ภาษา)
+      // → trigger IndexNow + Google Indexing (fire-and-forget)
+      // ============================================================
+      try {
+        // ไม่ต้อง await ให้ช้า — ผู้ใช้กำลังรอหน้า ไม่ต้อง block
+        runPublishAutomation({ slug, locale: targetLocale }).then((r) => {
+          console.log(`[JIT] SEO automation for "${slug}" [${targetLocale}]:`, r);
+        }).catch((e) => {
+          console.warn(`[JIT] SEO automation failed for "${slug}":`, e);
+        });
+      } catch (seoErr: any) {
+        console.warn(`[JIT] SEO automation error for "${slug}":`, seoErr);
+      }
     }
 
     return NextResponse.json({

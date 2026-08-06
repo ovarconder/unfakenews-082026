@@ -86,7 +86,7 @@ export async function getTranslatedSummaries(locale: Locale): Promise<ArticleSum
         id: article.id,
         slug: article.slug,
         title: title || article.original_title,
-        excerpt: excerpt || article.original_excerpt,
+        excerpt: cleanExcerpt(excerpt || article.original_excerpt),
         category: categoryName,
         author: article.author_name,
         publishedAt: article.published_at,
@@ -119,6 +119,34 @@ async function getTranslatedField(
     .maybeSingle();
 
   return data ? (data as any)[field] : null;
+}
+
+/**
+ * ทำความสะอาด excerpt ให้เป็นข้อความสั้นพอดีสำหรับแสดงบนการ์ด/รายการบทความ
+ * - ตัด markdown/HTML tags ออก
+ * - ย่อความยาวไม่เกิน MAX chars (ตัดที่คำ/ประโยคสมบูรณ์)
+ */
+const EXCERPT_MAX_CHARS = 180;
+
+function cleanExcerpt(raw: string | null | undefined): string {
+  if (!raw) return "";
+
+  let text = raw
+    // strip markdown heading/bold/links/images
+    .replace(/!\[.*?\]\(.*?\)/g, "") // images
+    .replace(/\[([^\]]*)\]\(.*?\)/g, "$1") // links
+    .replace(/[#>*_`~]/g, "") // markdown symbols
+    .replace(/<[^>]+>/g, "") // HTML tags
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (text.length <= EXCERPT_MAX_CHARS) return text;
+
+  // ตัดให้ไม่เกิน max แล้วปิดท้ายที่ขอบคำ
+  const cut = text.slice(0, EXCERPT_MAX_CHARS);
+  const lastSpace = cut.lastIndexOf(" ");
+  const truncated = lastSpace > EXCERPT_MAX_CHARS * 0.6 ? cut.slice(0, lastSpace) : cut;
+  return truncated.trimEnd() + "…";
 }
 
 // ============================================================

@@ -505,7 +505,7 @@ export function ArticleEditorJSX(props: ArticleEditorJSXProps) {
                   "datePublished": publishedAt,
                   "author": {
                     "@type": "Person",
-                    "name": author || "ทีมงาน สยามเฮอริเทจ"
+                    "name": author || "ทีมงาน UnFake News"
                   }
                 }, null, 2));
               }}

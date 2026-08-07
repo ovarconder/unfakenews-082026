@@ -489,7 +489,7 @@ export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorPr
         originalExcerpt: excerpt || content.slice(0, 200).replace(/[#*\n]/g, ""),
         originalContent: content,
         category,
-        author: author || "ทีมงาน สยามเฮอริเทจ",
+        author: author || "ทีมงาน UnFake News",
         publishedAt,
         imageUrl: imageUrl || undefined,
         imageCredit: imageCredit.trim() || undefined,
@@ -1368,7 +1368,7 @@ export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorPr
                   "datePublished": publishedAt,
                   "author": {
                     "@type": "Person",
-                    "name": author || "ทีมงาน สยามเฮอริเทจ"
+                    "name": author || "ทีมงาน UnFake News"
                   }
                 }, null, 2));
               }}

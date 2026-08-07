@@ -1,14 +1,17 @@
 // ============================================================
 // Image Gallery + Lightbox — ใช้ในหน้าแสดงบทความ (Article Detail)
 // ============================================================
-// - แสดงรูปเป็นตาราง (grid) เมื่อมีมากกว่า 1 รูป
+// - แสดงรูปเป็น Masonry (Pinterest) ที่จัดลำดับด้วย JavaScript
+//   ไปยังคอลัมน์ที่สั้นที่สุด โดยใช้สัดส่วนจริงของแต่ละรูป
+// - LazyLoad: ใช้ IntersectionObserver โหลดรูปเมื่อเลื่อนเข้าจอ
+//   (โหลดล่วงหน้า 200px) — ประหยัด bandwidth
 // - คลิกรูป → เปิด lightbox ดูรูปใหญ่ พร้อมปุ่มปิด/ก่อนหน้า/ถัดไป
 // - รองรับ keyboard (Esc / ← / →)
 // ============================================================
 
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 
 export interface GalleryImage {
@@ -118,11 +121,142 @@ function Lightbox({
   );
 }
 
+/** คำนวณจำนวนคอลัมน์ตามความกว้างหน้าจอ */
+function getColumnCount(width: number): number {
+  if (width >= 1024) return 3;
+  if (width >= 640) return 2;
+  return 1;
+}
+
+/** ใช้ breakpoint ง่ายๆ ผ่านการฟัง resize */
+function useColumnCount(): number {
+  const [cols, setCols] = useState(1);
+
+  useEffect(() => {
+    const calculate = () => setCols(getColumnCount(window.innerWidth));
+    calculate();
+    window.addEventListener("resize", calculate);
+    return () => window.removeEventListener("resize", calculate);
+  }, []);
+
+  return cols;
+}
+
+// ============================================================
+// หนึ่งรูปใน Masonry — LazyLoad ด้วย IntersectionObserver และ
+// แจ้งสัดส่วน (aspect ratio) จาก onLoad ให้ Masonry ใช้จัดเรียง
+// ============================================================
+function MasonryItem({
+  img,
+  onRatio,
+}: {
+  img: GalleryImage;
+  onRatio: (ratio: number) => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  // IntersectionObserver — โหลดเมื่อเลื่อนเข้า viewport
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setInView(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "200px" } // โหลดล่วงหน้า 200px ก่อนเข้า
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const handleLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const el = e.currentTarget;
+    setLoaded(true);
+    if (el.naturalWidth > 0) {
+      onRatio(el.naturalWidth / el.naturalHeight);
+    }
+  };
+
+  return (
+    <div
+      ref={ref}
+      className="group relative block w-full overflow-hidden rounded-lg cursor-zoom-in mb-4 bg-white/[0.03]"
+      title={img.alt}
+      aria-label={img.alt || "ดูรูปภาพ"}
+    >
+      {/* Placeholder กัน layout shift ก่อนภาพโหลด (fallback 4:3) */}
+      {!loaded && (
+        <div className="w-full aspect-[4/3] animate-pulse bg-white/5" />
+      )}
+
+      {inView && (
+        <img
+          src={img.src}
+          alt={img.alt || ""}
+          loading="lazy"
+          onLoad={handleLoad}
+          className={`w-full h-auto block rounded-lg transition-opacity duration-500 ${
+            loaded ? "opacity-100" : "opacity-0"
+          }`}
+        />
+      )}
+
+      {/* alt overlay on hover */}
+      {img.alt && (
+        <div className="absolute inset-0 flex items-end opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+          <div className="w-full bg-gradient-to-t from-black/80 to-transparent p-2">
+            <span className="text-white/80 text-xs line-clamp-2">{img.alt}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Maximize icon on hover */}
+      <span className="absolute top-2 right-2 bg-black/50 text-white/90 rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+        <ChevronRight size={12} className="rotate-45" />
+      </span>
+    </div>
+  );
+}
+
 /**
- * Image Gallery — แสดง grid ของรูปภาพ พร้อม lightbox
+ * Image Gallery — JS Masonry + LazyLoad + Lightbox
+ *
+ * จัดเรียงรูปไปยังคอลัมน์ที่ "สั้นที่สุด" ด้วย JavaScript (แบบ Pinterest)
+ * โดยใช้สัดส่วนจริง (aspect ratio) ของแต่ละรูปที่โหลดเสร็จ
  */
 export function ImageGallery({ images }: ImageGalleryProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const cols = useColumnCount();
+  const [ratios, setRatios] = useState<Record<number, number>>({});
+
+  const recordRatio = useCallback((idx: number, ratio: number) => {
+    setRatios((prev) => (prev[idx] === ratio ? prev : { ...prev, [idx]: ratio }));
+  }, []);
+
+  // จัดเรียงรูปเป็นคอลัมน์ (ไปยังคอลัมน์ที่สั้นที่สุด)
+  const columns = useMemo(() => {
+    const colsArr: { idx: number }[][] = Array.from({ length: cols }, () => []);
+    const heights = new Array<number>(cols).fill(0);
+
+    images.forEach((img, idx) => {
+      const ratio = ratios[idx] || 4 / 3; // fallback ก่อนรู้สัดส่วน
+      const height = 1 / ratio;
+
+      let minCol = 0;
+      for (let c = 1; c < cols; c++) {
+        if (heights[c] < heights[minCol]) minCol = c;
+      }
+      colsArr[minCol].push({ idx });
+      heights[minCol] += height;
+    });
+
+    return colsArr;
+  }, [images, ratios, cols]);
 
   const open = useCallback((idx: number) => setLightboxIndex(idx), []);
   const close = useCallback(() => setLightboxIndex(null), []);
@@ -137,45 +271,21 @@ export function ImageGallery({ images }: ImageGalleryProps) {
     [images.length]
   );
 
-  // หยุด responsive grid ตามจำนวนรูป (เหมือนกับที่ editor ใช้)
-  const gridClass =
-    images.length <= 2
-      ? "grid-cols-1 sm:grid-cols-2"
-      : images.length === 3
-      ? "grid-cols-2 sm:grid-cols-3"
-      : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4";
-
   return (
     <>
       <div className="my-6">
-        <div className={`grid gap-3 ${gridClass}`}>
-          {images.map((img, idx) => (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => open(idx)}
-              className="group relative overflow-hidden rounded-lg aspect-square cursor-zoom-in"
-              title={img.alt}
-              aria-label={img.alt || "ดูรูปภาพ"}
-            >
-              <img
-                src={img.src}
-                alt={img.alt || ""}
-                loading="lazy"
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-              />
-              {img.alt && (
-                <div className="absolute inset-0 flex items-end opacity-0 group-hover:opacity-100 transition-opacity">
-                  <div className="w-full bg-gradient-to-t from-black/80 to-transparent p-2">
-                    <span className="text-white/80 text-xs line-clamp-1">{img.alt}</span>
+        <div className="flex gap-4 items-start">
+          {columns.map((col, cIdx) => (
+            <div key={cIdx} className="flex-1 min-w-0 flex flex-col">
+              {col.map(({ idx }) => {
+                const img = images[idx];
+                return (
+                  <div key={idx} onClick={() => open(idx)}>
+                    <MasonryItem img={img} onRatio={(r) => recordRatio(idx, r)} />
                   </div>
-                </div>
-              )}
-              {/* Maximize icon on hover */}
-              <span className="absolute top-2 right-2 bg-black/50 text-white/90 rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <ChevronRight size={12} className="rotate-45" />
-              </span>
-            </button>
+                );
+              })}
+            </div>
           ))}
         </div>
       </div>

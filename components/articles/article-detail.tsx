@@ -21,6 +21,7 @@ import GlossarySection from "@/components/articles/glossary-section";
 import ExcerptSection from "@/components/articles/excerpt-section";
 import { getWikiArticle } from "@/lib/wiki-data";
 import type { WikiArticle } from "@/lib/wiki-types";
+import { ImageGallery, type GalleryImage } from "@/components/articles/image-gallery";
 
 interface ArticleDetailProps {
   article: ArticleFull;
@@ -60,34 +61,68 @@ function parseImgAttrs(tag: string): { src: string; alt: string } {
 function renderContent(content: string, translatedAlts?: Record<string, string>) {
   // Apply translated alt texts before rendering
   const processedContent = applyTranslatedAltTexts(content, translatedAlts);
+  const lines = processedContent.split("\n");
+  const result: React.ReactNode[] = [];
+  let i = 0;
 
-  return processedContent.split("\n").map((line, idx) => {
+  while (i < lines.length) {
+    const line = lines[i];
+
+    // ============================================================
+    // ★ Gallery block — {% gallery %} ... {% endgallery %}
+    //    ถ้ามีรูปมากกว่า 1 รูป ให้แสดงเป็นแกลเลอรีพร้อม lightbox
+    // ============================================================
+    if (line.trim() === "{% gallery %}") {
+      const galleryImages: GalleryImage[] = [];
+      i++;
+      while (i < lines.length && lines[i].trim() !== "{% endgallery %}") {
+        const match = lines[i].match(/!\[(.*?)\]\((.*?)\)/);
+        if (match) {
+          galleryImages.push({ src: match[2], alt: match[1] });
+        }
+        i++;
+      }
+      i++; // ข้าม {% endgallery %}
+
+      if (galleryImages.length > 0) {
+        // แสดงเป็นแกลเลอรี + lightbox (เฉพาะมากกว่า 1 รูป)
+        result.push(
+          <ImageGallery key={`gallery-${i}`} images={galleryImages} />
+        );
+      }
+      continue;
+    }
+
     // --- image: ![alt](url) เป็นบรรทัดเดี่ยว ๆ ---
     const imgMatch = line.match(/^!\[([^\]]*)\]\(([^)]+)\)\s*$/);
     if (imgMatch) {
-      return (
+      result.push(
         <img
-          key={idx}
+          key={i}
           src={imgMatch[2]}
           alt={imgMatch[1]}
           loading="lazy"
           className="rounded-xl my-6 max-w-full h-auto"
         />
       );
+      i++;
+      continue;
     }
 
     // --- image: <img ...> เป็นบรรทัดเดี่ยว ๆ ---
     if (/^<img\s[^>]*\/?\s*>$/.test(line.trim())) {
       const attrs = parseImgAttrs(line);
-      return (
+      result.push(
         <img
-          key={idx}
+          key={i}
           src={attrs.src || ""}
           alt={attrs.alt || ""}
           loading="lazy"
           className="rounded-xl my-6 max-w-full h-auto"
         />
       );
+      i++;
+      continue;
     }
 
     // --- blockquote (บรรทัดที่ขึ้นต้นด้วย > หรือ <blockquote>) ---
@@ -97,72 +132,80 @@ function renderContent(content: string, translatedAlts?: Record<string, string>)
         .replace(/^>\s*/, "")
         .replace(/^<\/?blockquote>\s*/, "")
         .replace(/<\/?blockquote>/g, "");
-      return (
+      result.push(
         <blockquote
-          key={idx}
+          key={i}
           className="border-l-4 border-amber-400/40 pl-4 py-2 my-4 text-white/70 italic bg-white/[0.02] rounded-r-lg"
         >
           {renderInlineMarkdown(quoteText)}
         </blockquote>
       );
+      i++;
+      continue;
     }
 
-    // --- style: ### **bold heading** (markdown-like) ---
-    if (line.startsWith("### **") && line.endsWith("**")) {
-      return (
-        <h3 key={idx} className="text-xl font-semibold text-white mt-8 mb-3">
-          {line.replace(/^### \*\*/, "").replace(/\*\*$/, "")}
-        </h3>
-      );
-    }
-
-    // --- style: ### **bold heading (no closing ** on same line) ---
+    // --- heading: ### **bold heading** (markdown-like) ---
     if (line.startsWith("### **")) {
-      return (
-        <h3 key={idx} className="text-xl font-semibold text-white mt-8 mb-3">
+      result.push(
+        <h3 key={i} className="text-xl font-semibold text-white mt-8 mb-3">
           {line.replace(/^### \*\*/, "").replace(/\*\*$/, "")}
         </h3>
       );
+      i++;
+      continue;
     }
 
     if (line.startsWith("## ")) {
-      return (
-        <h2 key={idx} className="text-2xl font-bold text-amber-200 mt-10 mb-4">
+      result.push(
+        <h2 key={i} className="text-2xl font-bold text-amber-200 mt-10 mb-4">
           {line.replace("## ", "")}
         </h2>
       );
+      i++;
+      continue;
     }
     if (line.startsWith("### ")) {
-      return (
-        <h3 key={idx} className="text-xl font-semibold text-white mt-8 mb-3">
+      result.push(
+        <h3 key={i} className="text-xl font-semibold text-white mt-8 mb-3">
           {line.replace("### ", "")}
         </h3>
       );
+      i++;
+      continue;
     }
     // --- bold text on its own line (**text**) ---
     if (/^\*\*[^*]+\*\*$/.test(line.trim())) {
-      return (
-        <p key={idx} className="text-white font-semibold mt-4 mb-2">
+      result.push(
+        <p key={i} className="text-white font-semibold mt-4 mb-2">
           {line.replace(/\*\*/g, "")}
         </p>
       );
+      i++;
+      continue;
     }
     if (line.startsWith("- ")) {
-      return (
-        <li key={idx} className="text-white/80 ml-4 mb-1">
+      result.push(
+        <li key={i} className="text-white/80 ml-4 mb-1">
           {renderInlineMarkdown(line.replace("- ", ""))}
         </li>
       );
+      i++;
+      continue;
     }
     if (line.trim() === "") {
-      return <div key={idx} className="h-3" />;
+      result.push(<div key={i} className="h-3" />);
+      i++;
+      continue;
     }
-    return (
-      <p key={idx} className="text-white/80 leading-relaxed mb-4">
+    result.push(
+      <p key={i} className="text-white/80 leading-relaxed mb-4">
         {renderInlineMarkdown(line)}
       </p>
     );
-  });
+    i++;
+  }
+
+  return result;
 }
 
 /** Helper to render inline markdown formatting within a line */

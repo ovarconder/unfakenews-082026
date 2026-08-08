@@ -23,8 +23,10 @@ import { LOCALE_NAMES } from "./locales";
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
 
 // Model names
-const GEMINI_FLASH_MODEL = "gemini-2.0-flash"; // High-volume, low-cost
-const GEMINI_PRO_MODEL = "gemini-2.0-pro"; // High-quality, on-demand
+// NOTE: gemini-2.0-flash / gemini-2.0-pro ถูก Google ระงับการใช้งานแล้ว (404)
+// ต้องใช้รุ่น 2.5 แทน
+const GEMINI_FLASH_MODEL = "gemini-2.5-flash"; // High-volume, low-cost
+const GEMINI_PRO_MODEL = "gemini-2.5-pro"; // High-quality, on-demand
 
 function getApiKey(): string {
   const key = process.env.GEMINI_API_KEY;

@@ -109,6 +109,10 @@ async function uploadImage(file: File): Promise<string> {
 
   const formData = new FormData();
   formData.append("file", file);
+  // 📁 จัดเก็บรูปบทความ (รวมทั้งรูปในเนื้อหา + gallery) แยกตามปี/เดือน
+  //    ที่ article-images/YYYY/MM/ — ไม่รวมกันที่ root ของ bucket
+  //    เหมือนกลไกเดิมที่แยก folder เพื่อการจัดการ
+  formData.append("folder", "article-images");
   const res = await fetch("/api/upload", { method: "POST", body: formData });
 
   if (!res.ok) {

@@ -102,7 +102,7 @@ function renderContent(content: string, translatedAlts?: Record<string, string>)
           src={imgMatch[2]}
           alt={imgMatch[1]}
           loading="lazy"
-          className="rounded-xl my-6 max-w-full h-auto"
+          className="block rounded-xl my-6 max-w-full h-auto mx-auto"
         />
       );
       i++;
@@ -118,7 +118,7 @@ function renderContent(content: string, translatedAlts?: Record<string, string>)
           src={attrs.src || ""}
           alt={attrs.alt || ""}
           loading="lazy"
-          className="rounded-xl my-6 max-w-full h-auto"
+          className="block rounded-xl my-6 max-w-full h-auto mx-auto"
         />
       );
       i++;
@@ -226,7 +226,7 @@ function renderInlineMarkdown(text: string): React.ReactNode {
             src={mdImg[2]}
             alt={mdImg[1]}
             loading="lazy"
-            className="rounded-xl my-2 max-w-full h-auto"
+            className="block rounded-xl my-2 max-w-full h-auto mx-auto"
           />
         );
       }
@@ -239,7 +239,7 @@ function renderInlineMarkdown(text: string): React.ReactNode {
             src={attrs.src || ""}
             alt={attrs.alt || ""}
             loading="lazy"
-            className="rounded-xl my-2 max-w-full h-auto"
+            className="block rounded-xl my-2 max-w-full h-auto mx-auto"
           />
         );
       }

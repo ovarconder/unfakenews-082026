@@ -209,6 +209,12 @@ export default function EditArticleClient({
   const [translateError, setTranslateError] = useState<string | null>(null);
   const [translateSuccess, setTranslateSuccess] = useState<string | null>(null);
 
+  // ★ Local status override — อัปเดตทันทีหลังกดปุ่มแปล (ไม่ต้องรอ router.refresh)
+  //   เก็บ locale → "complete" | "summary_only"
+  const [localStatus, setLocalStatus] = useState<
+    Record<string, "complete" | "summary_only">
+  >({});
+
   const handleAutoTranslate = async (locale: string) => {
     setTranslatingLocale(locale);
     setTranslateError(null);
@@ -224,6 +230,13 @@ export default function EditArticleClient({
       const data = await res.json();
 
       if (res.ok) {
+        // กำหนดสถานะ label ทันทีจาก tier ที่ API ตอบกลับ
+        //   tier "1" → complete (แปลเต็ม มี content)
+        //   tier "2" → summary_only (transl headtopic/excerpt ไม่แปล content)
+        const resultingStatus: "complete" | "summary_only" =
+          data?.tier === "2" ? "summary_only" : "complete";
+        setLocalStatus((prev) => ({ ...prev, [locale]: resultingStatus }));
+
         setTranslateSuccess(`✅ แปลภาษา ${LOCALE_NAMES[locale as keyof typeof LOCALE_NAMES]?.native || locale} สำเร็จ`);
         router.refresh();
         setTimeout(() => setTranslateSuccess(null), 5000);
@@ -346,7 +359,8 @@ export default function EditArticleClient({
 
             {/* Other locales */}
             {ALL_LOCALES.filter((l) => l !== "th").map((locale) => {
-              const status = localeStatusMap[locale];
+              // ใช้ localStatus (อัปเดตทันทีหลังกดแปล) ถ้ามี ไม่งั้นใช้จาก prop translations
+              const status = localStatus[locale] || localeStatusMap[locale];
               const isSelected = locale === selectedLocale;
               const isTranslating = translatingLocale === locale;
               return (

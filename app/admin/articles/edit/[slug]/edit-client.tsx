@@ -130,10 +130,9 @@ export default function EditArticleClient({
 
   // ================================================================
   // Save
-  //   locale === "th"  → save to articles table + auto-translate EN
+  //   locale === "th"  → save to articles table (ไม่ auto-translate)
   //   locale !== "th"  → save to translations table
   // ================================================================
-  const [translatingEn, setTranslatingEn] = useState(false);
   const handleSave = async (data: ArticleFormData) => {
     if (selectedLocale === "th") {
       // === บันทึกต้นฉบับภาษาไทย → articles table ===
@@ -149,20 +148,8 @@ export default function EditArticleClient({
         throw new Error(result.error || "Failed to update article");
       }
 
-      // Auto-translate ภาษาอังกฤษทันที
-      setTranslatingEn(true);
-      try {
-        await adminFetch("/api/translate-new", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ slug: article.slug, locale: "en" }),
-        });
-      } catch (e) {
-        console.warn("[Auto-translate EN] Failed:", e);
-        // ไม่ throw — ไม่ให้กระทบการ save หลัก
-      } finally {
-        setTranslatingEn(false);
-      }
+      // ★ ไม่ auto-translate ภาษาอังกฤษทันทีอีกต่อไป
+      //   ให้กดปุ่ม "แปลอัตโนมัติ" ทีละภาษาเอง (ตั้งใจ design แบบ manual)
 
       router.refresh();
     } else {
@@ -390,7 +377,6 @@ export default function EditArticleClient({
                     onClick={() => handleAutoTranslate(locale)}
                     disabled={
                       isTranslating ||
-                      translatingEn ||
                       translatingLocale !== null ||
                       status === "complete"
                     }
@@ -435,7 +421,7 @@ export default function EditArticleClient({
             : "bg-emerald-400/10 border border-emerald-400/20 text-emerald-300/80"
         }`}>
           {selectedLocale === "th"
-            ? "🟡 กำลังแก้ไขต้นฉบับภาษาไทย — เมื่อบันทึกแล้วจะแปลอังกฤษให้อัตโนมัติ"
+            ? "🟡 กำลังแก้ไขต้นฉบับภาษาไทย — บันทึกแล้วไม่แปลอัตโนมัติ ให้กดปุ่ม \"แปลอัตโนมัติ\" ทีละภาษาเอาเอง"
             : selectedLocale === "en"
             ? "🟢 กำลังแก้ไขภาษาอังกฤษ — ภาษาที่ไม่มีคำแปลจะ fallback เป็นภาษาไทย"
             : `🟢 กำลังแก้ไข ${LOCALE_NAMES[selectedLocale as keyof typeof LOCALE_NAMES]?.native || selectedLocale} — ฟิลด์ที่ไม่มีคำแปลของภาษานี้จะ fallback เป็นภาษาอังกฤษ (ถ้ามี) หรือภาษาไทย`}
@@ -543,15 +529,9 @@ export default function EditArticleClient({
           </h3>
           <p className="text-white/30 text-xs mt-1">
             {selectedLocale === "th"
-              ? "บันทึกที่ articles table (ต้นฉบับ) — เมื่อกดบันทึกจะแปลอังกฤษให้อัตโนมัติ"
+              ? "บันทึกที่ articles table (ต้นฉบับ) — แปลด้วยปุ่ม \"แปลอัตโนมัติ\" ด้านบน ทีละภาษา"
               : `บันทึกที่ translations table (ไม่กระทบต้นฉบับไทย) — Fallback chain: ${LOCALE_NAMES[selectedLocale as keyof typeof LOCALE_NAMES]?.native || selectedLocale} → อังกฤษ → ไทย`}
           </p>
-          {translatingEn && (
-            <p className="mt-1 text-cyan-300/60 text-xs flex items-center gap-1">
-              <RefreshCw size={10} className="animate-spin" />
-              กำลังแปลภาษาอังกฤษอัตโนมัติ...
-            </p>
-          )}
         </div>
 
         {/* ★ key={selectedLocale} = force re-mount เพื่อให้ initialData ถูกต้องเมื่อเปลี่ยน locale */}

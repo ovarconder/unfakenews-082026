@@ -577,7 +577,7 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
             {locale === "th" ? "แชร์บทความนี้" : "Share this article"}
           </span>
           <SocialShareButtons
-            url={typeof window !== 'undefined' ? window.location.href : `/${locale}/articles/${article.slug}`}
+            url={localeUrl || (typeof window !== 'undefined' ? window.location.href : `/${locale}/articles/${article.slug}`)}
             title={article.title}
             description={article.excerpt}
           />
@@ -626,7 +626,7 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
                     </div>
                     {/* Social Share Buttons */}
                     <SocialShareButtons
-                      url={typeof window !== 'undefined' ? window.location.href : `/${locale}/articles/${article.slug}`}
+                      url={localeUrl || (typeof window !== 'undefined' ? window.location.href : `/${locale}/articles/${article.slug}`)}
                       title={article.title}
                       description={article.excerpt}
                     />

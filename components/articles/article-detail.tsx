@@ -4,10 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getAllArticleMasters } from "@/lib/articles-data";
 import { createClient } from "@/lib/supabase-client";
-import { t } from "@/lib/translations";
 import type { Locale } from "@/lib/locales";
 import type { ArticleFull } from "@/lib/article-service-supabase";
-import { RefreshCw as RefreshCwIcon, ChevronRight, Share2, Facebook, Twitter, Link as LinkIcon } from "lucide-react";
+import { ChevronRight, Share2, Facebook, Twitter, Link as LinkIcon } from "lucide-react";
 import { SchemaArticle } from "@/components/schema-article";
 import ExternalLink, { getDomainLabel } from "@/components/external-link";
 import { AdUnit } from "@/components/analytics/adsense";
@@ -389,54 +388,10 @@ function SocialShareButtons({ url, title, description }: { url: string; title: s
 export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps) {
   const { adsenseId, adsenseSlotSidebar } = useSettings() || {};
 
-  const [stateArticle, setStateArticle] = useState<ArticleFull | null>(article);
-  const [loading, setLoading] = useState(false);
-  const [translating, setTranslating] = useState(false);
-  const [translatedAlts, setTranslatedAlts] = useState<Record<string, string> | undefined>(undefined);
-
-  // ================================================================
-  // JIT (Just-in-Time) Translation — สำหรับ Tier 2 (summary_only)
-  // ================================================================
-  useEffect(() => {
-    if (locale === "th") return;
-    if (!article) return;
-    
-    // ถ้าเป็น "summary_only" หรือ "pending" และ content ยังไม่ถูกแปล
-    if ((article.translationStatus === "summary_only" || article.translationStatus === "pending") && article.content) {
-      let cancelled = false;
-      
-      const fetchContent = async () => {
-        setTranslating(true);
-        try {
-          const res = await fetch(`/api/translate-content/${article.slug}?locale=${locale}`);
-          if (!res.ok) throw new Error("Failed to load content");
-          const data = await res.json();
-          
-          if (!cancelled && data.success && data.content) {
-            // อัปเดต content ที่ render
-            setStateArticle(prev => prev ? {
-              ...prev,
-              content: data.content,
-              translationStatus: "complete",
-            } : null);
-            
-            // ถ้ามี translatedAlts ให้ apply
-            if (data.imageAlts) {
-              setTranslatedAlts(data.imageAlts);
-            }
-          }
-        } catch (err) {
-          console.warn("[JIT] Failed to auto-translate content, showing original:", err);
-        } finally {
-          if (!cancelled) setTranslating(false);
-        }
-      };
-      
-      fetchContent();
-      
-      return () => { cancelled = true; };
-    }
-  }, [article?.slug, locale, article?.translationStatus]);
+  // ★ ระบบ JIT (Just-in-Time) content ถูกยกเลิกแล้ว
+  //   - ทุกภาษา (tier 1 + tier 2) แปล content เต็มด้วยมือ (ปุ่ม "แปลอัตโนมัติ")
+  //   - render content ตรงจาก `article.content` ที่ server ส่งให้ (แปลเสร็จแล้ว)
+  //   - ไม่มีการเรียก /api/translate-content ตอนเปิดอ่านอีกแล้ว
 
   // Get related articles from Supabase (instead of local JSON)
   const [relatedArticles, setRelatedArticles] = useState<any[]>([]);
@@ -604,18 +559,9 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
           <div className="flex flex-col lg:flex-row gap-10 lg:gap-12">
             {/* Main Content */}
             <div className="flex-1 min-w-0">
-              <div className="relative">
-                {translating && (
-                  <div className="absolute inset-0 z-10 bg-[#0a1628]/60 backdrop-blur-[1px] flex items-center justify-center rounded-xl">
-                    <div className="flex flex-col items-center gap-3">
-                      <RefreshCwIcon size={24} className="animate-spin text-amber-300" />
-                      <p className="text-white/60 text-sm">{t("common.translating", locale)}</p>
-                    </div>
-                  </div>
-                )}
-                <div className="max-w-none">
-                  {renderContent(stateArticle?.content || article.content, translatedAlts)}
-                </div>
+              {/* ★ render content ตรง ๆ (แปลเสร็จแล้ว ไม่มี JIT/overlay) */}
+              <div className="max-w-none">
+                {renderContent(article.content)}
               </div>
 
               <div className="mt-12 pt-8 border-t border-white/10">

@@ -11,11 +11,9 @@
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase-client";
-import { fetchContentTranslation } from "@/lib/translation-client-store";
-import { t } from "@/lib/translations";
 import type { Locale } from "@/lib/locales";
 import type { Microsite, MicrositeSettings } from "@/lib/microsite-types";
-import { Calendar, User, ArrowLeft, RefreshCw, Clock, ChevronRight, Share2, Facebook, Twitter, Link as LinkIcon, BookOpen } from "lucide-react";
+import { Calendar, User, ArrowLeft, Clock, ChevronRight, Share2, Facebook, Twitter, Link as LinkIcon, BookOpen } from "lucide-react";
 import { AdUnit } from "@/components/analytics/adsense";
 
 // ============================================================
@@ -207,8 +205,6 @@ function renderContent(content: string, translatedAlts?: Record<string, string>)
 export function MicrositeArticleDetail({ micrositeSlug, articleSlug, locale, microsite, settings }: MicrositeArticleDetailProps) {
   const [article, setArticle] = useState<ArticleData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [translating, setTranslating] = useState(false);
-  const [translatedAlts, setTranslatedAlts] = useState<Record<string, string> | undefined>(undefined);
 
   const micrositePrefix = `/${micrositeSlug}/${locale}`;
   const primaryColor = settings?.primaryColor || "#fbbf24";
@@ -251,12 +247,13 @@ export function MicrositeArticleDetail({ micrositeSlug, articleSlug, locale, mic
 
         const trans = rawTrans as { title?: string; excerpt?: string; content?: string; translation_status?: string; is_full_translated?: boolean } | null;
 
+        // ★ ใช้ content ที่แปลแล้ว (ทุกภาษาแปลเต็มด้วยมือ ไม่มี JIT แล้ว)
         const initialArticle: ArticleData = {
           id: art.id,
           slug: art.slug,
           title: trans?.title || art.original_title,
           excerpt: trans?.excerpt || art.original_excerpt,
-          content: art.original_content,
+          content: trans?.content || art.original_content,
           category: categoryName,
           author: art.author_name,
           publishedAt: art.published_at,
@@ -269,23 +266,6 @@ export function MicrositeArticleDetail({ micrositeSlug, articleSlug, locale, mic
 
         setArticle(initialArticle);
         setLoading(false);
-
-        // JIT translation for non-Thai, non-full-translated
-        if (locale !== "th" && (!trans?.is_full_translated)) {
-          setTranslating(true);
-          try {
-            const result = await fetchContentTranslation(articleSlug, locale);
-            if (result.success && result.content) {
-              setArticle(prev => prev ? { ...prev, content: result.content as string, translationStatus: "complete" } : prev);
-              if (result.imageAltTexts) {
-                setTranslatedAlts(result.imageAltTexts);
-              }
-            }
-          } catch (err) {
-            console.error("Translation failed:", err);
-          }
-          setTranslating(false);
-        }
       } catch (err) {
         console.error("Failed to load article:", err);
         setLoading(false);
@@ -387,18 +367,8 @@ export function MicrositeArticleDetail({ micrositeSlug, articleSlug, locale, mic
           <div className="flex flex-col lg:flex-row gap-10 lg:gap-12">
             {/* Main Content */}
             <div className="flex-1 min-w-0">
-              <div className="relative">
-                {translating && (
-                  <div className="absolute inset-0 z-10 bg-[#0a1628]/60 backdrop-blur-[1px] flex items-center justify-center rounded-xl">
-                    <div className="flex flex-col items-center gap-3">
-                      <RefreshCw size={24} className="animate-spin" style={{ color: primaryColor }} />
-                      <p className="text-white/60 text-sm">{t("common.translating", locale)}</p>
-                    </div>
-                  </div>
-                )}
-                <div className="prose prose-invert max-w-none">
-                  {renderContent(article.content, translatedAlts)}
-                </div>
+              <div className="prose prose-invert max-w-none">
+                {renderContent(article.content)}
               </div>
 
               {/* Tags + Share */}

@@ -17,7 +17,7 @@
 //   4. revalidatePath / revalidateTag สำหรับหน้า + หน้าที่เกี่ยวข้อง
 //
 // ฟังก์ชันนี้ DESIGN ให้ call ได้จากทุกจุดที่ "publish" เกิดขึ้น
-// (admin edit, manual translation, translate-content JIT, translate-all, ...)
+// (admin edit, manual translation (translate-new), translate-all, ...)
 // ============================================================
 
 import { revalidatePath, revalidateTag } from "next/cache";

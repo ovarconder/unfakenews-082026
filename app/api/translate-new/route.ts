@@ -27,7 +27,7 @@ import {
 } from "@/lib/translate-service";
 import type { Locale } from "@/lib/locales";
 import { createAdminClient } from "@/lib/supabase-server";
-import { isDisabled, isTier2 } from "@/lib/locales";
+import { isDisabled } from "@/lib/locales";
 import { runPublishAutomation } from "@/lib/publish-automation";
 
 export type DirtyField =
@@ -87,7 +87,6 @@ export async function POST(request: Request) {
     }
 
     const articleId: string = articleRow.id; // UUID
-    const isTier2Locale = isTier2(targetLocale);
 
     // dirtyFields — ถ้าไม่มี = แปลทุกอย่าง, ถ้ามี = แปลเฉพาะส่วนที่ dirty
     const hasDirtyFields = Array.isArray(dirtyFields) && dirtyFields.length > 0;
@@ -116,14 +115,16 @@ export async function POST(request: Request) {
       shouldTranslate("long_excerpt");
     const translateContent = shouldTranslate("content");
 
+    // ★ ทุกภาษา (รวม tier 2) แปล content เต็มเหมือน tier 1
+    //   (ผู้ใช้กดปุ่ม "แปลอัตโนมัติ" เอาเองทุกภาษา ไม่มี JIT content แล้ว)
     if (translateTitleOrExcerpt || translateContent) {
       contentResult = await translateArticleContent(targetLocale, {
         title: articleRow.original_title,
         shortExcerpt: articleRow.short_excerpt || articleRow.original_excerpt?.slice(0, 150) || "",
         longExcerpt: articleRow.long_excerpt || articleRow.original_excerpt || "",
-        content: (isTier2Locale && !translateContent) ? undefined : articleRow.original_content,
-        includeFullContent: translateContent && !(isTier2Locale && hasDirtyFields && !translateContent),
-        isTier2Lazy: isTier2Locale && !translateContent,
+        content: articleRow.original_content,
+        includeFullContent: translateContent,
+        isTier2Lazy: false,
       });
     }
 
@@ -205,16 +206,10 @@ export async function POST(request: Request) {
       if (shouldTranslate("long_excerpt")) dbUpdate.long_excerpt = contentResult.long_excerpt || null;
     }
 
-    // Handle content specially for Tier 2
+    // ★ ทุกภาษา (รวม tier 2) แปล content เต็ม → เก็บลง DB เป็น complete
     if (shouldTranslate("content")) {
-      if (isTier2Locale) {
-        // Tier 2 content dirty → clear content (JIT will re-translate on read)
-        dbUpdate.content = "";
-        dbUpdate.is_full_translated = false;
-      } else {
-        dbUpdate.content = contentResult?.content || "";
-        dbUpdate.is_full_translated = true;
-      }
+      dbUpdate.content = contentResult?.content || "";
+      dbUpdate.is_full_translated = true;
     }
 
     if (translatedTags !== undefined) {
@@ -283,10 +278,10 @@ export async function POST(request: Request) {
       success: true,
       slug,
       locale: targetLocale,
-      tier: isTier2Locale ? "2" : "1",
+      tier: "1", // ทุกภาษาแปลเต็มแล้ว → complete เสมอ
       dirtyFields: hasDirtyFields ? fields : undefined,
       title: contentResult?.title,
-      isFullTranslated: !isTier2Locale || (dbUpdate.content !== undefined && !!dbUpdate.content),
+      isFullTranslated: true,
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

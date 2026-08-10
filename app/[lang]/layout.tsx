@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Noto_Serif, Playfair_Display, Prompt, Noto_Sans_Thai } from "next/font/google";
 import { getSettings } from "@/lib/site-settings";
 import type { Locale } from "@/lib/locales";
 import { ALL_LOCALES, getActiveLocales, getVisibleLocales, isDisabled, LOCALE_NAMES } from "@/lib/locales";
@@ -11,6 +12,42 @@ import { AdSenseScript } from "@/components/analytics/adsense";
 import { MaintenancePage } from "@/components/ui/maintenance-page";
 import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
+
+// ============================================================
+// Fonts — นิยามใหม่ใน segment layout นี้ เพราะ `app/[lang]/layout.tsx`
+// render <html>/<body> ใหม่เอง ทำให้ variable classes (`--font-prompt` ฯลฯ)
+// ของ root layout ถูกแทนที่หายไป ถ้าไม่ใส่ไว้ตรงนี้ font จะไม่ถูกใช้งานจริง
+// ============================================================
+
+const notoSerif = Noto_Serif({
+  subsets: ["latin", "latin-ext"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+  variable: "--font-noto-serif",
+  display: "swap",
+});
+
+const playfairDisplay = Playfair_Display({
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-playfair",
+  display: "swap",
+});
+
+const prompt = Prompt({
+  subsets: ["thai", "latin", "latin-ext"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-prompt",
+  display: "swap",
+});
+
+const notoSansThai = Noto_Sans_Thai({
+  subsets: ["thai", "latin", "latin-ext"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-noto-sans-thai",
+  display: "swap",
+});
+
+const FONT_CLASSES = `${notoSerif.variable} ${playfairDisplay.variable} ${prompt.variable} ${notoSansThai.variable}`;
 
 // Must read fresh settings from DB on every request so dynamic values
 // (favicon, meta, colors, support...) are never statically cached.
@@ -89,7 +126,7 @@ export default async function LangLayout({ children, params }: LangLayoutProps) 
   if (settings.maintenanceMode) {
     return (
       <html lang={locale} suppressHydrationWarning>
-        <body className="antialiased bg-[#0d1b2a] text-white">
+        <body className={`${FONT_CLASSES} antialiased bg-[#0d1b2a] text-white`}>
           <link rel="icon" href={settings.favicon} data-dynamic-favicon />
           <MaintenancePage 
             message={settings.maintenanceMessage} 
@@ -102,7 +139,7 @@ export default async function LangLayout({ children, params }: LangLayoutProps) 
 
   return (
     <html lang={locale} suppressHydrationWarning>
-      <body className="antialiased bg-[#0d1b2a] text-white">
+      <body className={`${FONT_CLASSES} antialiased bg-[#0d1b2a] text-white`}>
         <link rel="icon" href={settings.favicon} data-dynamic-favicon />
         <SettingsProvider>
           <Suspense fallback={null}>
@@ -120,4 +157,3 @@ export default async function LangLayout({ children, params }: LangLayoutProps) 
     </html>
   );
 }
-

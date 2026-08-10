@@ -5,6 +5,7 @@
 // ============================================================
 
 import React from "react";
+import { ImageGallery, type GalleryImage } from "@/components/articles/image-gallery";
 
 const isImageLine = (line: string): boolean => /^!\[.*\]\(.*\)$/.test(line);
 const isLinkLine = (line: string): boolean => /^\[.*\]\(.*\)$/.test(line);
@@ -32,38 +33,10 @@ export function renderMarkdownPreview(text: string): React.ReactNode[] {
       i++;
 
       if (galleryImages.length > 0) {
+        // ★ ใช้ ImageGallery (Masonry + Lightbox) แบบเดียวกับหน้า article สาธารณะ
         result.push(
           <div key={`g-${i}`} className="my-6">
-            <div className={`grid gap-3 ${
-              galleryImages.length <= 2
-                ? "grid-cols-1 sm:grid-cols-2"
-                : galleryImages.length === 3
-                ? "grid-cols-2 sm:grid-cols-3"
-                : "grid-cols-2 sm:grid-cols-4"
-            }`}>
-              {galleryImages.map((img, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => window.open(img.src, "_blank")}
-                  className="group relative overflow-hidden rounded-lg aspect-square"
-                  title={img.alt || undefined}
-                >
-                  <img
-                    src={img.src}
-                    alt={img.alt}
-                    className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                    loading="lazy"
-                  />
-                  {img.alt && (
-                    <div className="absolute inset-0 flex items-end opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="w-full bg-gradient-to-t from-black/80 to-transparent p-2">
-                        <span className="text-white/80 text-xs">{img.alt}</span>
-                      </div>
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
+            <ImageGallery images={galleryImages as GalleryImage[]} />
           </div>
         );
       }

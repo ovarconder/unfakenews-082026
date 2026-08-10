@@ -184,7 +184,6 @@ export default function AdminSidebar({ user, onLogout }: AdminSidebarProps) {
               alt={siteName}
               className="h-8 w-auto"
             />
-            <span className="text-white font-semibold text-sm">{siteName}</span>
           </div>
           <p className="text-white/60 text-[10px] tracking-wider pl-0">Admin Panel</p>
         </Link>
@@ -195,7 +194,7 @@ export default function AdminSidebar({ user, onLogout }: AdminSidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-3 pt-4 pb-10 space-y-1 overflow-y-auto">
         {visibleItems.map((item) => {
           const Icon = item.icon;
           return (
@@ -220,7 +219,7 @@ export default function AdminSidebar({ user, onLogout }: AdminSidebarProps) {
       </nav>
 
       {/* User info + Logout */}
-      <div className="px-4 py-4 border-t border-white/10">
+      <div className="px-4 pt-6 pb-5 border-t border-white/10">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-8 h-8 rounded-full bg-amber-300/20 flex items-center justify-center text-amber-300 text-xs font-bold">
             {user.name.charAt(0).toUpperCase()}

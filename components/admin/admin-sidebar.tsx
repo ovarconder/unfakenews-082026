@@ -156,7 +156,7 @@ export default function AdminSidebar({ user, onLogout }: AdminSidebarProps) {
   }, []);
 
   const siteName = settings?.name || process.env.NEXT_PUBLIC_SITE_NAME || "UnFake News";
-  const logoUrl = settings?.logo || settings?.logoFull || "/images/logo/unfakenews-logo-light.png";
+  const logoUrl = settings?.logo || settings?.logoFull || "/images/logo/unfakenews-logo-360.png";
 
   const isActive = (href: string) => {
     if (href === "/admin") return pathname === "/admin";

@@ -1,74 +1,34 @@
-"use client";
+import type { Metadata } from "next";
+import { getSettings } from "@/lib/site-settings";
+import AdminLayoutClient from "./admin-layout-client";
 
-import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
-import AdminSidebar from "@/components/admin/admin-sidebar";
+// ต้องอ่าน settings (favicon, metaTitle...) แบบสดจาก DB ในทุก request
+// เพื่อไม่ให้ Next.js prerender/static cache หน้า admin ด้วย favicon เก่า
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-const SESSION_KEY = "siam_admin_session";
+// ============================================================
+// generateMetadata — ตั้ง favicon + title จาก site_settings ใน Supabase
+// ทำให้หน้า admin (ทุกหน้าภายใต้ app/admin) มี favicon เหมือนหน้า general
+// (หน้า general ใช้ <link rel="icon"> ใน app/[lang]/layout.tsx)
+// ============================================================
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSettings();
+
+  return {
+    title: settings.metaTitle || settings.name || "Admin",
+    description: settings.metaDescription,
+    icons: { icon: settings.favicon },
+    other: {
+      "data-favicon": settings.favicon,
+    },
+  };
+}
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = usePathname();
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const raw = sessionStorage.getItem(SESSION_KEY);
-    if (!raw) {
-      // No session — redirect to login
-      if (!pathname.startsWith("/admin/login")) {
-        window.location.href = "/admin/login";
-        return;
-      }
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const userData = JSON.parse(raw);
-      setUser(userData);
-    } catch {
-      sessionStorage.removeItem(SESSION_KEY);
-      if (!pathname.startsWith("/admin/login")) {
-        window.location.href = "/admin/login";
-        return;
-      }
-    }
-      setLoading(false);
-  }, [pathname]);
-
-  const handleLogout = () => {
-    sessionStorage.removeItem(SESSION_KEY);
-    window.location.href = "/admin/login";
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#060e1a] flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-2 border-amber-400 border-t-transparent rounded-full" />
-      </div>
-    );
-  }
-
-  if (!user && pathname.startsWith("/admin/login")) {
-    return <>{children}</>;
-  }
-
-  if (!user) {
-    return null;
-  }
-
-  return (
-    <div className="min-h-screen bg-[#060e1a]">
-      <AdminSidebar user={user} onLogout={handleLogout} />
-      <div className="lg:pl-64">
-        <main className="min-h-screen pt-4 px-6 pb-8">
-          {children}
-        </main>
-      </div>
-    </div>
-  );
+  return <AdminLayoutClient>{children}</AdminLayoutClient>;
 }

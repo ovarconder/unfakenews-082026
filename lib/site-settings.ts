@@ -93,7 +93,7 @@ const DEFAULT_SETTINGS: SiteSettings = {
   tagline: process.env.NEXT_PUBLIC_SITE_TAGLINE || "Unfake News: Real facts, true stories, and no fake news.",
   description: process.env.NEXT_PUBLIC_SITE_DESCRIPTION || "Unfake News: Uncovering the truth and setting the record straight. Your trusted source for verified facts, unbiased articles, and debunking Cambodian propaganda.",
   url: process.env.NEXT_PUBLIC_SITE_URL || "https://unfakenews.asia",
-  logo: process.env.NEXT_PUBLIC_SITE_LOGO || "/images/logo/unfakenews-logo-light.png",
+  logo: process.env.NEXT_PUBLIC_SITE_LOGO || "/images/logo/unfakenews-logo-360.png",
   logoFull: process.env.NEXT_PUBLIC_SITE_LOGO_FULL || "/images/logo/unfakenews-logo.png",
   favicon: process.env.NEXT_PUBLIC_SITE_FAVICON || "/images/logo/favicon.png",
   primaryColor: process.env.NEXT_PUBLIC_COLOR_PRIMARY || "#fbbf24",

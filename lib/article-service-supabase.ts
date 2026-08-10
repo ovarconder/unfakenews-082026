@@ -52,7 +52,7 @@ export async function getTranslatedSummaries(locale: Locale): Promise<ArticleSum
   const { data: articles } = await supabase
     .from("articles")
     .select(`
-      id, slug, original_title, original_excerpt, tags,
+      id, slug, original_title, original_excerpt, short_excerpt, long_excerpt, original_content, tags,
       categories(name_th, name_en),
       author_name, published_at, image_url, image_alt, featured
     `)
@@ -68,10 +68,10 @@ export async function getTranslatedSummaries(locale: Locale): Promise<ArticleSum
         ? article.categories?.name_th || ""
         : article.categories?.name_en || "";
 
-      // Get translation status
+      // ดึง translation ทุกฟิลด์ที่ใช้แสดงในการ์ด (title + excerpt หลากหลายแบบ)
       const { data: trans } = await supabase
         .from("translations")
-        .select("translation_status")
+        .select("title, excerpt, short_excerpt, long_excerpt, content, translation_status")
         .eq("article_id", article.id)
         .eq("locale", locale)
         .maybeSingle();
@@ -79,14 +79,19 @@ export async function getTranslatedSummaries(locale: Locale): Promise<ArticleSum
       const status: TranslationStatus =
         (trans as any)?.translation_status || "pending";
 
-      const title = await getTranslatedField(article.id, locale, "title");
-      const excerpt = await getTranslatedField(article.id, locale, "excerpt");
+      const title =
+        locale === "th"
+          ? article.original_title
+          : (trans as any)?.title || article.original_title;
+
+      // เลือก excerpt ตามลำดับ: ธรรมดา (excerpt) > สั้น > ยาว > content (ตาม locale)
+      const excerpt = resolveSummaryExcerpt(locale, article, trans as any);
 
       return {
         id: article.id,
         slug: article.slug,
-        title: title || article.original_title,
-        excerpt: cleanExcerpt(excerpt || article.original_excerpt),
+        title,
+        excerpt: cleanExcerpt(excerpt),
         category: categoryName,
         author: article.author_name,
         publishedAt: article.published_at,
@@ -102,23 +107,50 @@ export async function getTranslatedSummaries(locale: Locale): Promise<ArticleSum
   return summaries;
 }
 
-async function getTranslatedField(
-  articleId: string,
+/**
+ * เลือก excerpt ตามลำดับความสำคัญ: ธรรมดา (excerpt) > สั้น (short_excerpt) > ยาว (long_excerpt)
+ * ถ้าไม่มีเลยจริงๆ ค่อย fallback ไปใช้เนื้อหา (content)
+ * - ภาษาไทย → ใช้ field ต้นฉบับจาก articles
+ * - ภาษาอื่น → ใช้ field ที่แปลแล้วจาก translations ก่อน แล้วค่อย fallback ไปต้นฉบับ
+ */
+function resolveSummaryExcerpt(
   locale: Locale,
-  field: "title" | "excerpt"
-): Promise<string | null> {
-  // Thai = original text
-  if (locale === "th") return null;
+  article: any,
+  trans: any
+): string {
+  if (locale === "th") {
+    return (
+      article.original_excerpt ||
+      article.short_excerpt ||
+      article.long_excerpt ||
+      article.original_content ||
+      ""
+    );
+  }
 
-  const supabase = await createServerClient();
-  const { data } = await supabase
-    .from("translations")
-    .select(field)
-    .eq("article_id", articleId)
-    .eq("locale", locale)
-    .maybeSingle();
+  // มีการแปลแล้ว → ใช้ฟิลด์ที่แปลตามลำดับ แล้วค่อย fallback ไปต้นฉบับ
+  if (trans) {
+    return (
+      trans.excerpt ||
+      trans.short_excerpt ||
+      trans.long_excerpt ||
+      trans.content ||
+      article.original_excerpt ||
+      article.short_excerpt ||
+      article.long_excerpt ||
+      article.original_content ||
+      ""
+    );
+  }
 
-  return data ? (data as any)[field] : null;
+  // ยังไม่มีการแปล → fallback เป็นฟิลด์ต้นฉบับ
+  return (
+    article.original_excerpt ||
+    article.short_excerpt ||
+    article.long_excerpt ||
+    article.original_content ||
+    ""
+  );
 }
 
 /**

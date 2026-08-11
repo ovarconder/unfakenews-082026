@@ -172,6 +172,74 @@ interface GeminiAPIResponse {
 }
 
 // ============================================================
+// Helper: Extract pure JSON from Gemini response
+// ============================================================
+// Gemini 3.x บางครั้งตอบเป็น markdown code block (```json ... ```) หรือมี
+// text เกริ่น/ต่อท้าย หรือ JSON ถูกตัดกลางคัน — helper นี้ช่วยดึง & balance ให้
+// ============================================================
+
+function extractJSONText(rawText: string): string | null {
+  if (!rawText) return null;
+  const text = rawText.trim();
+
+  // 1) ถอด markdown fenced code block ก่อน (```json ... ``` / ``` ... ```)
+  let candidate = text.replace(/```[a-zA-Z]*\s*([\s\S]*?)```/g, "$1").trim();
+
+  // 2) หาตำแหน่งหลักของ JSON object แรกถึงสุดท้าย { ... }
+  const firstOpen = candidate.indexOf("{");
+  const lastClose = candidate.lastIndexOf("}");
+  if (firstOpen !== -1 && lastClose !== -1 && lastClose > firstOpen) {
+    candidate = candidate.slice(firstOpen, lastClose + 1);
+  }
+
+  // 3) check curly brace balance — ถ้าขาดปิด (ถูกตัด) → ดึงคู่ที่สมบูรณ์สุด
+  const balanced = tryBalanceBraces(candidate);
+  if (balanced !== null) return balanced;
+
+  // 4) fallback: ลอง regex เดิม (คู่ { กับ } หลังสุด)
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (jsonMatch) return jsonMatch[0];
+
+  return null;
+}
+
+/** นับ depth ของ { } โดยข้ามสตริง (handle escaped quotes) แล้วดึงคู่ที่ balance สมบูรณ์ */
+function tryBalanceBraces(candidate: string): string | null {
+  let depth = 0;
+  let start = -1;
+  let inString = false;
+  let escaped = false;
+
+  for (let i = 0; i < candidate.length; i++) {
+    const ch = candidate[i];
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (ch === "\\") {
+        escaped = true;
+      } else if (ch === '"') {
+        inString = false;
+      }
+      continue;
+    }
+    if (ch === '"') {
+      inString = true;
+      continue;
+    }
+    if (ch === "{") {
+      if (depth === 0) start = i;
+      depth++;
+    } else if (ch === "}") {
+      depth--;
+      if (depth === 0 && start !== -1) {
+        return candidate.slice(start, i + 1);
+      }
+    }
+  }
+  return null;
+}
+
+// ============================================================
 // Call Gemini API with response_mime_type: application/json
 // ============================================================
 
@@ -238,29 +306,33 @@ async function callGeminiAPI<T>(
 
   const data: GeminiAPIResponse = await response.json();
 
-  // Extract text from response
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  // Extract text from response — รองรับหลายรูปแบบของ part (Gemini 3.x)
+  let text: string | undefined;
+  const parts = data?.candidates?.[0]?.content?.parts;
+  if (parts && parts.length > 0) {
+    text = parts.find((p) => typeof (p as any).text === "string" && (p as any).text.length > 0)?.text as string | undefined;
+  }
 
   if (!text) {
+    console.error("[Gemini] Empty response. Full payload:", JSON.stringify(data).slice(0, 1000));
     throw new Error(
       `Gemini API returned empty response for model ${modelName}`
     );
   }
 
-  // With response_mime_type: application/json, the response should be clean JSON.
-  // Still handle possible markdown wrapping just in case.
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    console.error(`[Gemini] Raw response (first 500 chars):`, text.slice(0, 500));
+  // Hardened JSON extraction — รองรับ markdown wrapper, trailing text, truncated JSON
+  const rawJson = extractJSONText(text);
+  if (!rawJson) {
+    console.error(`[Gemini] No JSON found. Raw response (first 800 chars):`, text.slice(0, 800));
     throw new Error(
       `Could not parse JSON from Gemini response for model ${modelName}`
     );
   }
 
   try {
-    return JSON.parse(jsonMatch[0]) as T;
+    return JSON.parse(rawJson) as T;
   } catch (parseErr) {
-    console.error(`[Gemini] JSON parse error. Raw JSON string:`, jsonMatch[0].slice(0, 300));
+    console.error(`[Gemini] JSON parse error. Raw JSON string:`, rawJson.slice(0, 500));
     throw new Error(
       `Failed to parse Gemini response as JSON for model ${modelName}`
     );

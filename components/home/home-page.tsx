@@ -3,6 +3,7 @@ import { t } from "@/lib/translations";
 import type { Locale } from "@/lib/locales";
 import { ArticleCard } from "@/components/articles/article-card";
 import { AdUnit } from "@/components/analytics/adsense";
+import { HeroBanner } from "@/components/home/hero-banner";
 import { getSettings } from "@/lib/site-settings";
 
 interface HomePageProps {
@@ -26,6 +27,9 @@ export async function HomePage({ locale }: HomePageProps) {
 
   return (
     <>
+      {/* Hero Slider — featured slides จาก Supabase (fallback เป็น gradient hero ถ้าไม่มีสไลด์) */}
+      <HeroBanner locale={locale} />
+
       {/* Ad Unit — Homepage Banner */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
         <AdUnit
@@ -117,3 +121,4 @@ export async function HomePage({ locale }: HomePageProps) {
     </>
   );
 }
+

@@ -279,7 +279,7 @@ export default function NewMicrositePage() {
               />
               <div>
                 <p className="text-white text-sm">แสดงลิงก์ไป Main Site</p>
-                <p className="text-white/40 text-xs">มีลิงก์กลับไปยังสยามเฮอริเทจใน navbar และ footer</p>
+                <p className="text-white/40 text-xs">มีลิงก์กลับไปยัง UnFake Newsใน navbar และ footer</p>
               </div>
             </label>
 
@@ -292,7 +292,7 @@ export default function NewMicrositePage() {
               />
               <div>
                 <p className="text-white text-sm">แสดงใน Navigation ของ Main Site</p>
-                <p className="text-white/40 text-xs">เพิ่มลิงก์ไปยัง microsite นี้ใน navbar ของสยามเฮอริเทจ</p>
+                <p className="text-white/40 text-xs">เพิ่มลิงก์ไปยัง microsite นี้ใน navbar ของ UnFake News</p>
               </div>
             </label>
 

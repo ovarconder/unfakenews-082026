@@ -34,7 +34,7 @@ export const ARTICLES_MASTER: ArticleMaster[] = [
 
 วัดพระแก้วได้รับการขึ้นทะเบียนเป็นมรดกโลกโดย UNESCO ร่วมกับพระบรมมหาราชวังและวัดโพธิ์ ในฐานะกลุ่มโบราณสถานที่มีคุณค่าทางวัฒนธรรมที่โดดเด่น`,
     category: "มรดกไทย",
-    author: "ทีมงาน สยามเฮอริเทจ",
+    author: "ทีมงาน  UnFake News",
     publishedAt: "2025-01-15",
     imageUrl: "",
     imageCredit: "วัดพระศรีรัตนศาสดาราม",
@@ -67,7 +67,7 @@ export const ARTICLES_MASTER: ArticleMaster[] = [
 
 ปัจจุบันประเพณีลอยกระทงยังคงได้รับการสืบสานอย่างเข้มแข็ง มีการจัดงานทั้งในระดับชุมชนและระดับประเทศ รวมถึงการอนุรักษ์กระทงธรรมชาติที่ทำจากวัสดุย่อยสลายได้`,
     category: "ประเพณีไทย",
-    author: "ทีมงาน สยามเฮอริเทจ",
+    author: "ทีมงาน  UnFake News",
     publishedAt: "2025-02-01",
     imageUrl: "",
     imageCredit: "ประเพณีลอยกระทง",
@@ -100,7 +100,7 @@ export const ARTICLES_MASTER: ArticleMaster[] = [
 
 การนวดไทยเป็นศาสตร์แห่งการบำบัดที่ได้รับการยอมรับในระดับสากล โดย UNESCO ได้ขึ้นทะเบียนนวดไทยเป็นมรดกวัฒนธรรมที่จับต้องไม่ได้ของมนุษยชาติ`,
     category: "ภูมิปัญญาไทย",
-    author: "ทีมงาน สยามเฮอริเทจ",
+    author: "ทีมงาน  UnFake News",
     publishedAt: "2025-02-20",
     imageUrl: "",
     imageCredit: "การนวดแผนไทย",
@@ -138,7 +138,7 @@ export const ARTICLES_MASTER: ArticleMaster[] = [
 
 ในปี 2011 UNESCO ได้ขึ้นทะเบียน "อาหารไทย" เป็นมรดกทางวัฒนธรรมที่จับต้องไม่ได้ของมนุษยชาติ สะท้อนให้เห็นถึงความสำคัญของอาหารไทยในเวทีโลก`,
     category: "อาหารไทย",
-    author: "ทีมงาน สยามเฮอริเทจ",
+    author: "ทีมงาน  UnFake News",
     publishedAt: "2025-03-05",
     imageUrl: "",
     imageCredit: "อาหารไทย",
@@ -171,7 +171,7 @@ export const ARTICLES_MASTER: ArticleMaster[] = [
 
 ภาษาไทยเป็นมรดกทางวัฒนธรรมที่สำคัญที่คนไทยทุกคนควรภาคภูมิใจและร่วมกันอนุรักษ์`,
     category: "ภาษาไทย",
-    author: "ทีมงาน สยามเฮอริเทจ",
+    author: "ทีมงาน  UnFake News",
     publishedAt: "2025-03-15",
     imageUrl: "",
     imageCredit: "ภาษาไทย",
@@ -200,7 +200,7 @@ export const ARTICLES_MASTER: ArticleMaster[] = [
 
 ปัจจุบันมีหน่วยงานทั้งภาครัฐและเอกชนที่ทำงานด้านการอนุรักษ์ศิลปหัตถกรรมไทย รวมถึงการส่งเสริมให้ช่างฝีมือรุ่นใหม่ได้สืบทอดวิชาความรู้`,
     category: "ศิลปหัตถกรรม",
-    author: "ทีมงาน สยามเฮอริเทจ",
+    author: "ทีมงาน  UnFake News",
     publishedAt: "2025-04-01",
     imageUrl: "",
     featured: false,

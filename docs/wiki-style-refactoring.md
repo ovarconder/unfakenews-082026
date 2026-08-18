@@ -366,7 +366,7 @@ SchemaArticle สร้าง **2 blocks** ใน `<head>`:
 
    [socialCaption]
 
-   🏛️ สยามเฮอริเทจ
+   🏛️  UnFake News
    ```
 3. **Hidden SEO Metadata** — `itemProp`, `data-wiki` สำหรับ AI/crawler
 

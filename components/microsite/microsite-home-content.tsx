@@ -182,7 +182,7 @@ export function MicrositeHomeContent({ microsite, settings, locale, articles }: 
               className="hover:text-amber-200 transition-colors font-medium"
               style={{ color: primaryColor }}
             >
-              {locale === "th" ? "สยามเฮอริเทจ" : "Siam Heritage"}
+              {locale === "th" ? "อันเฟคนิวส์" : "UnFake News"}
             </Link>
           </p>
         </section>

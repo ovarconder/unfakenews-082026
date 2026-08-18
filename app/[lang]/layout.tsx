@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Noto_Serif, Playfair_Display, Prompt, Noto_Sans_Thai } from "next/font/google";
+import { Noto_Serif, Playfair_Display, Prompt, Noto_Sans_Thai, Kanit } from "next/font/google";
 import { getSettings } from "@/lib/site-settings";
 import type { Locale } from "@/lib/locales";
 import { ALL_LOCALES, getActiveLocales, getVisibleLocales, isDisabled, LOCALE_NAMES } from "@/lib/locales";
@@ -47,7 +47,14 @@ const notoSansThai = Noto_Sans_Thai({
   display: "swap",
 });
 
-const FONT_CLASSES = `${notoSerif.variable} ${playfairDisplay.variable} ${prompt.variable} ${notoSansThai.variable}`;
+const kanit = Kanit({
+  subsets: ["thai", "latin", "latin-ext"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-kanit",
+  display: "swap",
+});
+
+const FONT_CLASSES = `${notoSerif.variable} ${playfairDisplay.variable} ${prompt.variable} ${notoSansThai.variable} ${kanit.variable}`;
 
 // Must read fresh settings from DB on every request so dynamic values
 // (favicon, meta, colors, support...) are never statically cached.

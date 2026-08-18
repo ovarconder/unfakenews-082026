@@ -85,6 +85,36 @@
   [lang="th"] h4, [lang="th"] h5, [lang="th"] h6 {
     font-family: var(--font-prompt), "Prompt", sans-serif;
   }
+
+  /* Kanit (Hero) — override global heading rules with higher specificity,
+     so `font-kanit` utility truly applies on both th and en, and to
+     headings nested inside a `.font-kanit` container. */
+  [lang="th"] h1.font-kanit,
+  [lang="th"] h2.font-kanit,
+  [lang="th"] h3.font-kanit,
+  [lang="th"] h4.font-kanit,
+  [lang="th"] h5.font-kanit,
+  [lang="th"] h6.font-kanit,
+  h1.font-kanit,
+  h2.font-kanit,
+  h3.font-kanit,
+  h4.font-kanit,
+  h5.font-kanit,
+  h6.font-kanit,
+  [lang="th"] .font-kanit h1,
+  [lang="th"] .font-kanit h2,
+  [lang="th"] .font-kanit h3,
+  [lang="th"] .font-kanit h4,
+  [lang="th"] .font-kanit h5,
+  [lang="th"] .font-kanit h6,
+  .font-kanit h1,
+  .font-kanit h2,
+  .font-kanit h3,
+  .font-kanit h4,
+  .font-kanit h5,
+  .font-kanit h6 {
+    font-family: var(--font-kanit), "Kanit", sans-serif;
+  }
   
   /* Smooth scrolling */
   html {

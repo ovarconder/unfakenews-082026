@@ -1,7 +1,7 @@
 # 🚀 Migration Checklist — Fork to a New Site
 
 > ใช้ checklist นี้ทุกครั้งเมื่อ fork/repo ไปทำเว็บใหม่  
-> ค้นหาคำว่า `Siam Heritage`, `สยามเฮอริเทจ`, `siamheritage` และเปลี่ยนให้ตรงกับเว็บใหม่
+> ค้นหาคำว่า `Siam Heritage`, ` UnFake News`, `siamheritage` และเปลี่ยนให้ตรงกับเว็บใหม่
 
 ---
 
@@ -47,7 +47,7 @@
 grep -rn "Siam Heritage" --include="*.tsx" --include="*.ts" --include="*.sql" --include="*.json" app/ components/ lib/ supabase/
 
 # เปลี่ยนชื่อไทย
-grep -rn "สยามเฮอริเทจ" --include="*.tsx" --include="*.ts" app/ components/ lib/
+grep -rn " UnFake News" --include="*.tsx" --include="*.ts" app/ components/ lib/
 ```
 
 ### ไฟล์ที่ต้องเปลี่ยน (ชื่ออังกฤษ)

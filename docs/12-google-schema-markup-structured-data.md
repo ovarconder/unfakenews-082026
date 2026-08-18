@@ -184,7 +184,7 @@ return (
   "dateModified": "2025-02-15",
   "author": {
     "@type": "Person",
-    "name": "นักประวัติศาสตร์ สยามเฮอริเทจ"
+    "name": "นักประวัติศาสตร์  UnFake News"
   },
   "image": "https://cdn.siamheritage.org/images/naresuan-hero.webp"
 }

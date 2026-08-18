@@ -54,6 +54,7 @@ const config: Config = {
         heading: ["var(--font-playfair)", "Georgia", "Times New Roman", "serif"],
         thai: ["var(--font-noto-sans-thai)", "Noto Sans Thai", "sans-serif"],
         prompt: ["var(--font-prompt)", "Prompt", "sans-serif"],
+        kanit: ["var(--font-kanit)", "Kanit", "sans-serif"],
       },
     },
   },

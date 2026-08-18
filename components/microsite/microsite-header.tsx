@@ -155,7 +155,7 @@ export function MicrositeHeader({ locale, microsite, settings }: MicrositeHeader
               >
                 <ExternalLink size={12} />
                 <span>
-                  {locale === "th" ? "สยามเฮอริเทจ" : "Siam Heritage"}
+                  {locale === "th" ? "อันเฟคนิวส์" : "UnFake News"}
                 </span>
               </Link>
             )}
@@ -231,7 +231,7 @@ export function MicrositeHeader({ locale, microsite, settings }: MicrositeHeader
                 className="flex items-center gap-1.5 py-2 text-xs text-white/40 hover:text-amber-200 transition-colors"
               >
                 <ExternalLink size={12} />
-                {locale === "th" ? "ไปยังสยามเฮอริเทจ" : "Go to Siam Heritage"}
+                {locale === "th" ? "ไปยัง UnFake News" : "Go to Siam Heritage"}
               </Link>
             )}
 

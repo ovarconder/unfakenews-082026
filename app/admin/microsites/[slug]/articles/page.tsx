@@ -87,7 +87,7 @@ export default function MicrositeArticlesPage({
       <div className="mb-6 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
         <p className="text-blue-300 text-sm">
           บทความของ microsite นี้จะปรากฏเฉพาะใน <code className="text-blue-200 font-mono text-xs bg-blue-500/20 px-1.5 py-0.5 rounded">/{slug}/...</code> เท่านั้น 
-          และจะไม่แสดงในหน้าแรกของสยามเฮอริเทจ
+          และจะไม่แสดงในหน้าแรกของ UnFake News
         </p>
       </div>
 

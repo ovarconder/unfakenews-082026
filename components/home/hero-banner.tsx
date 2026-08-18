@@ -70,15 +70,15 @@ export function HeroBanner({ locale }: HeroBannerProps) {
   if (loading || slides.length === 0) {
     // Fallback to gradient hero while loading / no slides
     return (
-      <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden bg-[#0d1b2a]">
+      <section className="relative min-h-[85vh] flex items-end justify-center overflow-hidden bg-[#0d1b2a]">
         <div className="absolute inset-0 bg-gradient-to-b from-[#0a1628] via-[#0d1b2a] to-[#0d1b2a] z-10" />
-        <div className="relative z-20 text-center px-4 max-w-4xl mx-auto">
+        <div className="relative z-20 text-center px-4 pb-28 pt-16 max-w-4xl mx-auto">
           <div className="flex items-center justify-center gap-4 mb-6">
             <div className="h-px w-12 bg-gradient-to-r from-transparent to-amber-400/50" />
             <div className="w-2 h-2 rotate-45 bg-amber-400/60" />
             <div className="h-px w-12 bg-gradient-to-l from-transparent to-amber-400/50" />
           </div>
-          <h1 className="text-4xl sm:text-5xl md:text-7xl font-heading font-bold text-white mb-6 leading-tight">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-kanit font-bold text-white mb-6 leading-tight">
             <span className="bg-gradient-to-r from-amber-200 via-amber-300 to-amber-400 bg-clip-text text-transparent">
               {t("hero.title", locale)}
             </span>
@@ -106,24 +106,24 @@ export function HeroBanner({ locale }: HeroBannerProps) {
   const altText = locale === "th" ? slide.image_alt_th : slide.image_alt_en;
 
   return (
-    <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden bg-[#0d1b2a]">
+    <section className="relative min-h-[85vh] flex items-end justify-center overflow-hidden bg-[#0d1b2a]">
       {/* Background Image with overlay */}
       <div
         className="absolute inset-0 bg-cover bg-center transition-all duration-700 ease-in-out"
         style={{ backgroundImage: `url(${slide.image_url})` }}
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0a1628]/95 via-[#0a1628]/80 to-[#0d1b2a]/60 z-10" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0a1628]/65 via-[#0a1628]/50 to-[#0d1b2a]/30 z-10" />
       </div>
 
       {/* Content */}
-      <div className="relative z-20 text-center px-4 max-w-4xl mx-auto">
+      <div className="relative z-20 text-center px-4 pb-28 pt-16 max-w-4xl mx-auto">
         <div className="flex items-center justify-center gap-4 mb-6">
           <div className="h-px w-12 bg-gradient-to-r from-transparent to-amber-400/50" />
           <div className="w-2 h-2 rotate-45 bg-amber-400/60" />
           <div className="h-px w-12 bg-gradient-to-l from-transparent to-amber-400/50" />
         </div>
 
-        <h1 className="text-4xl sm:text-5xl md:text-7xl font-heading font-bold text-white mb-6 leading-tight animate-fade-in">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-kanit font-bold text-white mb-6 leading-tight animate-fade-in">
           <span className="bg-gradient-to-r from-amber-200 via-amber-300 to-amber-400 bg-clip-text text-transparent">
             {title}
           </span>

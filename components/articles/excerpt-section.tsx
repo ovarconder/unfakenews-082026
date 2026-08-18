@@ -35,7 +35,7 @@ export default function ExcerptSection({
 
   const handleCopySocial = async () => {
     try {
-      const textToCopy = `${seoTitle || ""}\n\n${socialCaption}\n\n🏛️ สยามเฮอริเทจ`;
+      const textToCopy = `${seoTitle || ""}\n\n${socialCaption}\n\n🏛️  UnFake News`;
       await navigator.clipboard.writeText(textToCopy);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);

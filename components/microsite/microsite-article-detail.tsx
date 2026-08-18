@@ -473,7 +473,7 @@ export function MicrositeArticleDetail({ micrositeSlug, articleSlug, locale, mic
                       className="flex items-center gap-2 text-sm text-white/60 hover:text-amber-200 transition-colors"
                     >
                       <span className="text-2xl">🏛️</span>
-                      {locale === "th" ? "สยามเฮอริเทจ" : "Siam Heritage"}
+                      {locale === "th" ? "อันเฟคนิวส์" : "UnFake News"}
                     </Link>
                   </div>
                 )}

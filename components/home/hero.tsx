@@ -8,7 +8,7 @@ interface HeroProps {
 
 export function Hero({ locale }: HeroProps) {
   return (
-    <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden bg-[#0d1b2a]">
+    <section className="relative min-h-[85vh] flex items-end justify-center overflow-hidden bg-[#0d1b2a]">
       {/* Background with gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#0a1628] via-[#0d1b2a] to-[#0d1b2a] z-10" />
       <div
@@ -30,7 +30,7 @@ export function Hero({ locale }: HeroProps) {
         }}
       />
 
-      <div className="relative z-20 text-center px-4 max-w-4xl mx-auto">
+      <div className="relative z-20 text-center px-4 pb-28 pt-16 max-w-4xl mx-auto">
         {/* Decorative top */}
         <div className="flex items-center justify-center gap-4 mb-6">
           <div className="h-px w-12 bg-gradient-to-r from-transparent to-amber-400/50" />
@@ -38,7 +38,7 @@ export function Hero({ locale }: HeroProps) {
           <div className="h-px w-12 bg-gradient-to-l from-transparent to-amber-400/50" />
         </div>
 
-        <h1 className="text-4xl sm:text-5xl md:text-7xl font-heading font-bold text-white mb-6 leading-tight">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-kanit font-bold text-white mb-6 leading-tight">
           <span className="bg-gradient-to-r from-amber-200 via-amber-300 to-amber-400 bg-clip-text text-transparent">
             {t("hero.title", locale)}
           </span>

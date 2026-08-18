@@ -89,7 +89,7 @@ const translations: Record<TranslationKey, Partial<Record<Locale, string>>> = {
   },
   "hero.title": {
     en: process.env.NEXT_PUBLIC_SITE_NAME_EN || process.env.NEXT_PUBLIC_SITE_NAME || "Siam Heritage",
-    th: process.env.NEXT_PUBLIC_SITE_NAME_TH || "สยามเฮอริเทจ",
+    th: process.env.NEXT_PUBLIC_SITE_NAME_TH || " UnFake News",
     zh: process.env.NEXT_PUBLIC_SITE_NAME_ZH || "暹罗遗产",
     ja: process.env.NEXT_PUBLIC_SITE_NAME_JA || "サイアムヘリテージ",
     es: process.env.NEXT_PUBLIC_SITE_NAME_ES || "Siam Heritage",
@@ -121,7 +121,7 @@ const translations: Record<TranslationKey, Partial<Record<Locale, string>>> = {
   },
   "about.title": {
     en: `About ${process.env.NEXT_PUBLIC_SITE_NAME_EN || process.env.NEXT_PUBLIC_SITE_NAME || "Siam Heritage"}`,
-    th: `เกี่ยวกับ${process.env.NEXT_PUBLIC_SITE_NAME_TH || "สยามเฮอริเทจ"}`,
+    th: `เกี่ยวกับ${process.env.NEXT_PUBLIC_SITE_NAME_TH || " UnFake News"}`,
     zh: `关于${process.env.NEXT_PUBLIC_SITE_NAME_ZH || "暹罗遗产"}`,
     ja: `${process.env.NEXT_PUBLIC_SITE_NAME_JA || "サイアムヘリテージ"}について`,
     es: `Sobre ${process.env.NEXT_PUBLIC_SITE_NAME_ES || "Siam Heritage"}`,

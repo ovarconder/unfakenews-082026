@@ -90,7 +90,7 @@ export function MicrositeFooter({ locale, microsite, settings }: MicrositeFooter
                   className="flex items-center gap-1.5 text-white/60 hover:text-amber-200 text-sm transition-colors"
                 >
                   <ExternalLink size={12} />
-                  {locale === "th" ? "สยามเฮอริเทจ" : "Siam Heritage"}
+                  {locale === "th" ? "อันเฟคนิวส์" : "UnFake News"}
                 </Link>
               </li>
             </ul>

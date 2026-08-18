@@ -33,7 +33,7 @@ git rm --cached .env 2>/dev/null
 |---|---|---|
 | `NEXT_PUBLIC_SITE_URL` | `https://siamheritage.org` | |
 | `NEXT_PUBLIC_SITE_NAME` | `Siam Heritage` | ใช้ใน constants |
-| `NEXT_PUBLIC_SITE_NAME_TH` | `สยามเฮอริเทจ` | ใช้ใน translations |
+| `NEXT_PUBLIC_SITE_NAME_TH` | ` UnFake News` | ใช้ใน translations |
 | `NEXT_PUBLIC_SITE_NAME_EN` | `Siam Heritage` | ใช้ใน translations |
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://xxx.supabase.co` | Public ปลอดภัย |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `eyJ...` (ใหม่) | สร้างใหม่ |

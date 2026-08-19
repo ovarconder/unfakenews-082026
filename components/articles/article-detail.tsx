@@ -422,15 +422,64 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
           return;
         }
 
+        // ★ Fallback 2 ชั้น สำหรับ locale ≠ th:
+        //   ดึง translation ทุกภาษาที่เป็นไปได้ (ภาษาปัจจุบัน + en + th) พร้อมกัน
+        //   แล้วเลือกตามลำดับความสำคัญ: ภาษาปัจจุบัน > en > th (ต้นฉบับ)
+        //   เพื่อให้ related articles แสดงภาษาเดียวกับหน้าที่อ่านเสมอ
+        const articleIds = (articles as any[]).map((a) => a.id);
+
+        // ชุดภาษาที่จะดึง (dedupe ถ้า locale เป็น th/en ซ้ำกับที่รวมไว้)
+        const localesToFetch = Array.from(new Set([locale, "en", "th"]));
+        let translationsByArticle: Record<string, any> = {};
+
+        if (locale !== "th") {
+          const { data: translations } = await supabase
+            .from("translations")
+            .select("article_id, locale, title, excerpt, translation_status")
+            .in("article_id", articleIds)
+            .in("locale", localesToFetch);
+          if (translations) {
+            // จัดกลุ่ม per article_id + per locale
+            const grouped: Record<string, Record<string, any>> = {};
+            (translations as any[]).forEach((t) => {
+              if (!grouped[t.article_id]) grouped[t.article_id] = {};
+              grouped[t.article_id][t.locale] = t;
+            });
+            // เลือกตามลำดับความสำคัญ: ภาษาปัจจุบัน > en > th
+            for (const [aid, byLocale] of Object.entries(grouped)) {
+              const order = localesToFetch; // [current, en, th] (เรียงลำดับสำคัญ)
+              for (const loc of order) {
+                const t = byLocale[loc];
+                // ใช้เมื่อมี title จริง (ถือว่ามี 'การแปล')
+                if (t?.title) {
+                  translationsByArticle[aid] = t;
+                  break;
+                }
+              }
+            }
+          }
+        }
+
         // Map to a simple structure for display
         const mapped = articles.slice(0, 4).map((a: any) => {
           const categoryName = locale === "th"
             ? a.categories?.name_th || ""
             : a.categories?.name_en || "";
+
+          const trans = translationsByArticle[a.id];
+          const title = locale === "th"
+            ? a.original_title
+            : (trans?.title || a.original_title);
+          const excerpt = locale === "th"
+            ? a.original_excerpt
+            : (trans?.excerpt || a.original_excerpt);
+
           return {
             slug: a.slug,
             originalTitle: a.original_title,
             originalExcerpt: a.original_excerpt,
+            title,      // ★ title ตาม locale (จาก fallback: current > en > th)
+            excerpt,    // ★ excerpt ตาม locale
             category: categoryName,
             imageUrl: a.image_url || undefined,
             tags: a.tags || [],
@@ -630,7 +679,7 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
                           <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
                             <img
                               src={rel.imageUrl}
-                              alt={rel.originalTitle}
+                              alt={rel.title || rel.originalTitle}
                               className="w-full h-full object-cover"
                               loading="lazy"
                             />
@@ -638,7 +687,7 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
                         )}
                         <div className="min-w-0 flex-1">
                           <p className="text-white text-xs font-medium leading-snug line-clamp-2 group-hover:text-amber-200 transition-colors">
-                            {rel.originalTitle}
+                            {rel.title || rel.originalTitle}
                           </p>
                           <p className="text-white/30 text-[10px] mt-1">{rel.category}</p>
                         </div>
@@ -716,10 +765,10 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
                     <div className="p-4">
                       <p className="text-white/40 text-[10px] uppercase tracking-wider mb-2">{rel.category}</p>
                       <h3 className="text-white font-medium text-sm leading-snug line-clamp-2 group-hover:text-amber-200 transition-colors">
-                        {rel.originalTitle}
+                        {rel.title || rel.originalTitle}
                       </h3>
                       <p className="text-white/40 text-xs mt-2 line-clamp-2">
-                        {rel.originalExcerpt}
+                        {rel.excerpt || rel.originalExcerpt}
                       </p>
                     </div>
                   </Link>

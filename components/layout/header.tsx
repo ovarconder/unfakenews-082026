@@ -76,7 +76,8 @@ export function Header({ locale }: HeaderProps) {
     { href: `/${locale}/articles`, key: "nav.articles" as const },
     { href: `/${locale}/contact`, key: "nav.contact" as const },
   ];
-  const supportLink = { label: "☕ สนับสนุน", href: `/${locale}/support` };
+  // แปล language-aware: ใช้ t() เพื่อให้เปลี่ยนตาม locale
+  const supportLink = { label: t("nav.support", locale), href: `/${locale}/support` };
 
   const currentLangName = LOCALE_NAMES[locale]?.native || locale.toUpperCase();
 
@@ -125,7 +126,7 @@ export function Header({ locale }: HeaderProps) {
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-amber-300/40 text-amber-300 text-sm font-medium hover:bg-amber-300/10 transition-colors"
               >
                 <LayoutDashboard size={14} />
-                Admin
+                {t("common.admin", locale)}
               </Link>
             )}
 
@@ -136,7 +137,7 @@ export function Header({ locale }: HeaderProps) {
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-white/20 text-white/80 text-sm font-medium hover:bg-white/10 hover:text-amber-200 transition-all"
               >
                 <LogOut size={14} />
-                ออกจากระบบ
+                {t("common.logout", locale)}
               </button>
             ) : (
               <Link
@@ -144,7 +145,7 @@ export function Header({ locale }: HeaderProps) {
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-white/20 text-white/80 text-sm font-medium hover:bg-white/10 hover:text-amber-200 transition-all"
               >
                 <LogIn size={14} />
-                เข้าสู่ระบบ
+                {t("common.login", locale)}
               </Link>
             )}
 
@@ -226,7 +227,7 @@ export function Header({ locale }: HeaderProps) {
                 className="block py-2 text-sm font-medium text-amber-300 hover:text-amber-200 transition-colors"
               >
                 <span className="inline-flex items-center gap-2">
-                  <LayoutDashboard size={16} /> Admin Dashboard
+                  <LayoutDashboard size={16} /> {t("common.admin", locale)}
                 </span>
               </Link>
             )}
@@ -238,7 +239,7 @@ export function Header({ locale }: HeaderProps) {
                 className="block w-full text-left py-2 text-sm font-medium text-white/80 hover:text-amber-200 transition-colors"
               >
                 <span className="inline-flex items-center gap-2">
-                  <LogOut size={16} /> ออกจากระบบ
+                  <LogOut size={16} /> {t("common.logout", locale)}
                 </span>
               </button>
             ) : (
@@ -248,7 +249,7 @@ export function Header({ locale }: HeaderProps) {
                 className="block py-2 text-sm font-medium text-white/80 hover:text-amber-200 transition-colors"
               >
                 <span className="inline-flex items-center gap-2">
-                  <LogIn size={16} /> เข้าสู่ระบบ
+                  <LogIn size={16} /> {t("common.login", locale)}
                 </span>
               </Link>
             )}

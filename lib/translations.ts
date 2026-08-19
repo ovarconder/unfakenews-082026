@@ -12,6 +12,15 @@ export type TranslationKey =
   | "nav.about"
   | "nav.articles"
   | "nav.contact"
+  | "nav.support"
+  | "common.login"
+  | "common.logout"
+  | "common.admin"
+  | "footer.menu"
+  | "footer.privacy"
+  | "footer.terms"
+  | "footer.support"
+  | "lang.language"
   | "hero.title"
   | "hero.subtitle"
   | "hero.cta"
@@ -89,6 +98,78 @@ const translations: Record<TranslationKey, Partial<Record<Locale, string>>> = {
     ja: "お問い合わせ",
     es: "Contacto",
     pt: "Contato",
+  },
+  "nav.support": {
+    en: "Support",
+    th: "สนับสนุน",
+    zh: "支持",
+    ja: "支援",
+    es: "Apoyar",
+    pt: "Apoiar",
+  },
+  "common.login": {
+    en: "Log in",
+    th: "เข้าสู่ระบบ",
+    zh: "登录",
+    ja: "ログイン",
+    es: "Iniciar sesión",
+    pt: "Entrar",
+  },
+  "common.logout": {
+    en: "Log out",
+    th: "ออกจากระบบ",
+    zh: "退出登录",
+    ja: "ログアウト",
+    es: "Cerrar sesión",
+    pt: "Sair",
+  },
+  "common.admin": {
+    en: "Admin",
+    th: "ผู้ดูแลระบบ",
+    zh: "管理后台",
+    ja: "管理者",
+    es: "Administración",
+    pt: "Administração",
+  },
+  "footer.menu": {
+    en: "Menu",
+    th: "เมนู",
+    zh: "菜单",
+    ja: "メニュー",
+    es: "Menú",
+    pt: "Menu",
+  },
+  "footer.privacy": {
+    en: "Privacy Policy",
+    th: "นโยบายความเป็นส่วนตัว",
+    zh: "隐私政策",
+    ja: "プライバシーポリシー",
+    es: "Política de privacidad",
+    pt: "Política de privacidade",
+  },
+  "footer.terms": {
+    en: "Terms of Service",
+    th: "ข้อกำหนดการใช้งาน",
+    zh: "服务条款",
+    ja: "利用規約",
+    es: "Términos de servicio",
+    pt: "Termos de serviço",
+  },
+  "footer.support": {
+    en: "☕ Buy the creator a coffee",
+    th: "☕ สนับสนุนผู้ทำเว็บ",
+    zh: "☕ 请创作者喝杯咖啡",
+    ja: "☕ サイト運営者に支援する",
+    es: "☕ Apoya al creador",
+    pt: "☕ Apoie o criador",
+  },
+  "lang.language": {
+    en: "Language",
+    th: "ภาษา",
+    zh: "语言",
+    ja: "言語",
+    es: "Idioma",
+    pt: "Idioma",
   },
   "hero.title": {
     en: process.env.NEXT_PUBLIC_SITE_NAME_EN || process.env.NEXT_PUBLIC_SITE_NAME || "Siam Heritage",

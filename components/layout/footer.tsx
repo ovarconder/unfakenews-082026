@@ -2,6 +2,7 @@
 
 import { t } from "@/lib/translations";
 import type { Locale } from "@/lib/locales";
+import { getVisibleLocales, LOCALE_NAMES } from "@/lib/locales";
 import Link from "next/link";
 import { useSettings } from "@/components/admin/settings-context";
 
@@ -36,7 +37,7 @@ export function Footer({ locale }: FooterProps) {
           {/* Quick Links */}
           <div>
             <h3 className="text-white font-semibold mb-4 text-sm uppercase tracking-wider">
-              "Menu"
+              {t("footer.menu", locale)}
             </h3>
             <ul className="space-y-2">
               <li>
@@ -76,7 +77,7 @@ export function Footer({ locale }: FooterProps) {
                   href={`/${locale}/privacy`}
                   className="text-white/60 hover:text-amber-200 text-sm transition-colors"
                 >
-                  Privacy Policy
+                  {t("footer.privacy", locale)}
                 </Link>
               </li>
               <li>
@@ -84,7 +85,7 @@ export function Footer({ locale }: FooterProps) {
                   href={`/${locale}/terms`}
                   className="text-white/60 hover:text-amber-200 text-sm transition-colors"
                 >
-                  Terms of Service
+                  {t("footer.terms", locale)}
                 </Link>
               </li>
               <li>
@@ -92,7 +93,7 @@ export function Footer({ locale }: FooterProps) {
                   href={`/${locale}/support`}
                   className="text-white/60 hover:text-amber-200 text-sm transition-colors"
                 >
-                  ☕ สนับสนุนผู้ทำเว็บ
+                  {t("footer.support", locale)}
                 </Link>
               </li>
             </ul>
@@ -101,29 +102,22 @@ export function Footer({ locale }: FooterProps) {
           {/* Language */}
           <div>
             <h3 className="text-white font-semibold mb-4 text-sm uppercase tracking-wider">
-              "Language"
+              {t("lang.language", locale)}
             </h3>
-            <div className="flex gap-3">
-              <Link
-                href={`/th`}
-                className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
-                  locale === "en"
-                    ? "bg-amber-300/20 text-amber-300 border border-amber-300/30"
-                    : "text-white/60 hover:text-white border border-white/10 hover:border-white/30"
-                }`}
-              >
-                ภาษาไทย
-              </Link>
-              <Link
-                href={`/en`}
-                className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
-                  locale === "en"
-                    ? "bg-amber-300/20 text-amber-300 border border-amber-300/30"
-                    : "text-white/60 hover:text-white border border-white/10 hover:border-white/30"
-                }`}
-              >
-                English
-              </Link>
+            <div className="flex flex-wrap gap-2">
+              {getVisibleLocales().map((l) => (
+                <Link
+                  key={l}
+                  href={`/${l}`}
+                  className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
+                    locale === l
+                      ? "bg-amber-300/20 text-amber-300 border border-amber-300/30"
+                      : "text-white/60 hover:text-white border border-white/10 hover:border-white/30"
+                  }`}
+                >
+                  {LOCALE_NAMES[l]?.native || l}
+                </Link>
+              ))}
             </div>
           </div>
         </div>

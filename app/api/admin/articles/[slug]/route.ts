@@ -232,12 +232,21 @@ export async function PUT(
 
     // ============================================================
     // ★ Post-Publish Automation — ภาษาไทย (ต้นฉบับ)
-    // เมื่อ status ของบทความ (ภาษาไทย) เปลี่ยนเป็น "published" จริง
-    // ให้ trigger IndexNow + Google Indexing + revalidate
-    // (guardrail เช็คสถานะจริงจาก DB ใน runPublishAutomation อีกครั้ง)
+    // เมื่อมีการ save/แก้ไขบทความภาษาไทย ที่ "เผยแพร่แล้ว" (published)
+    //  → trigger IndexNow + Google Indexing + revalidate ใหม่ทุกครั้ง
+    //    (ครอบคลุมทั้ง publish ครั้งแรก + แก้ไขเนื้อหาภายหลัง)
+    // และ guardrail เช็คสถานะจริงจาก DB ใน runPublishAutomation อีกครั้ง
     // ============================================================
     let seoResult: Awaited<ReturnType<typeof runPublishAutomation>> | null = null;
-    if (updateData.status === "published" && existing.status !== "published") {
+    const isBecomingPublished =
+      updateData.status === "published" && existing.status !== "published";
+    const isEditingPublishedContent =
+      (updateData.status === undefined || updateData.status === "published") &&
+      existing.status === "published";
+    // trigger ทุกครั้งที่มีการแก้ไขเนื้อหา/ตัวกรอง ของบทความที่เผยแพร่แล้ว
+    const shouldTriggerSeo = isBecomingPublished || isEditingPublishedContent;
+
+    if (shouldTriggerSeo) {
       try {
         seoResult = await runPublishAutomation({
           slug: updated.slug,

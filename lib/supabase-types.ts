@@ -188,12 +188,19 @@ export interface TranslationRow {
   content: string;
   seo_title: string | null;
   seo_description: string | null;
+  short_excerpt: string | null;
+  long_excerpt: string | null;
+  tags: string[] | null;
+  image_alt_texts: Record<string, string> | null;
+  /** Google Schema Markup (JSON-LD structured data) ที่แปลแล้ว */
+  google_schema_markup: any | null;
   /** Entity Name ที่แปลแล้ว (เช่น "Khon Thai Masked Dance") */
   entity_name: string | null;
   /** Quick Facts ที่แปลแล้ว — JSON array ของ { label, value } */
   quick_facts: any | null;
   /** Glossary ที่แปลแล้ว — JSON array ของ { term, definition } */
   glossary: any | null;
+  social_caption: string | null;
   translation_status: "complete" | "summary_only" | "pending";
   is_full_translated: boolean;
   translated_at: string;
@@ -209,9 +216,15 @@ export interface TranslationInsert {
   content?: string;
   seo_title?: string | null;
   seo_description?: string | null;
+  short_excerpt?: string | null;
+  long_excerpt?: string | null;
+  tags?: string[] | null;
+  image_alt_texts?: Record<string, string> | null;
+  google_schema_markup?: any | null;
   entity_name?: string | null;
   quick_facts?: any | null;
   glossary?: any | null;
+  social_caption?: string | null;
   translation_status?: "complete" | "summary_only" | "pending";
   is_full_translated?: boolean;
 }
@@ -222,9 +235,15 @@ export interface TranslationUpdate {
   content?: string;
   seo_title?: string | null;
   seo_description?: string | null;
+  short_excerpt?: string | null;
+  long_excerpt?: string | null;
+  tags?: string[] | null;
+  image_alt_texts?: Record<string, string> | null;
+  google_schema_markup?: any | null;
   entity_name?: string | null;
   quick_facts?: any | null;
   glossary?: any | null;
+  social_caption?: string | null;
   translation_status?: "complete" | "summary_only" | "pending";
   is_full_translated?: boolean;
 }

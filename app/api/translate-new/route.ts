@@ -24,6 +24,7 @@ import {
   translateStructuredData,
   translateImageAlts,
   translateTags,
+  translateGoogleSchemaMarkup,
 } from "@/lib/translate-service";
 import type { Locale } from "@/lib/locales";
 import { createAdminClient } from "@/lib/supabase-server";
@@ -35,11 +36,14 @@ export type DirtyField =
   | "short_excerpt"
   | "long_excerpt"
   | "content"
+  | "seo_title"
+  | "seo_description"
   | "tags"
   | "image_alts"
   | "entity_name"
   | "quick_facts"
-  | "glossary";
+  | "glossary"
+  | "google_schema_markup";
 
 // ================================================================
 // fetchArticleMasterBySlug — ดึง article ภาษาไทยจาก Supabase
@@ -196,6 +200,54 @@ export async function POST(request: Request) {
     }
 
     // ================================================================
+    // 4.5 SEO + Google Schema Markup (สำหรับ Google ของแต่ละภาษา)
+    // ================================================================
+
+    // --- seo_title / seo_description ---
+    // ไม่มี field แยกจากบทความ → สร้างจาก title + excerpt ที่แปลแล้ว
+    // (guard null/empty ก่อน)
+    let translatedSeoTitle: string | undefined;
+    let translatedSeoDescription: string | undefined;
+
+    const translateSeo =
+      shouldTranslate("seo_title") ||
+      shouldTranslate("seo_description");
+
+    if (translateSeo && contentResult) {
+      // guard: ใช้เฉพาะที่มีค่า ไม่เป็น null/empty
+      const baseTitle = (contentResult.title || "").trim();
+      const baseDesc =
+        (contentResult.long_excerpt || "").trim() ||
+        (contentResult.short_excerpt || "").trim();
+
+      if (shouldTranslate("seo_title") && baseTitle) {
+        // SEO title — ปกติต่อท้ายชื่อเว็บ ใช้ title ที่แปลแล้วตรงๆ
+        translatedSeoTitle = baseTitle.slice(0, 60); // จำกัดความยาว
+      }
+      if (shouldTranslate("seo_description") && baseDesc) {
+        translatedSeoDescription = baseDesc.slice(0, 160); // meta description 160
+      }
+    }
+
+    // --- google_schema_markup (JSON-LD) ---
+    // แปลเฉพาะข้อความ ข้าม URL / ตัวเลข / null / empty
+    let translatedSchema: Record<string, unknown> | null | undefined;
+    const originalSchema = articleRow.google_schema_markup as Record<string, unknown> | null | undefined;
+
+    if (shouldTranslate("google_schema_markup")) {
+      // guard: ถ้าไม่มีค่า หรือไม่ใช่ object → ข้าม
+      if (originalSchema && typeof originalSchema === "object" && !Array.isArray(originalSchema)) {
+        translatedSchema = await translateGoogleSchemaMarkup(targetLocale, originalSchema);
+        // ถ้า null (เกิด error) → เก็บเป็น undefined (ไม่เขียนทับ)
+        if (translatedSchema !== null && Object.keys(translatedSchema).length === 0) {
+          translatedSchema = undefined; // ป้องกันเขียน object ว่าง
+        }
+      } else {
+        translatedSchema = undefined;
+      }
+    }
+
+    // ================================================================
     // 5. Build DB update object (column names = translations table)
     // ================================================================
     const dbUpdate: Record<string, any> = {};
@@ -204,6 +256,15 @@ export async function POST(request: Request) {
       if (shouldTranslate("title")) dbUpdate.title = contentResult.title;
       if (shouldTranslate("short_excerpt")) dbUpdate.short_excerpt = contentResult.short_excerpt || null;
       if (shouldTranslate("long_excerpt")) dbUpdate.long_excerpt = contentResult.long_excerpt || null;
+    }
+
+    // SEO — guard null/empty ไม่เขียนค่าเปล่าไป DB
+    if (translatedSeoTitle) dbUpdate.seo_title = translatedSeoTitle;
+    if (translatedSeoDescription) dbUpdate.seo_description = translatedSeoDescription;
+
+    // Google Schema Markup — guard null/empty
+    if (translatedSchema && Object.keys(translatedSchema).length > 0) {
+      dbUpdate.google_schema_markup = translatedSchema;
     }
 
     // ★ ทุกภาษา (รวม tier 2) แปล content เต็ม → เก็บลง DB เป็น complete

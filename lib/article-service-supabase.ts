@@ -272,8 +272,19 @@ export async function getFullArticle(
     ...getImageFields(art),
   };
 
-  // Shared schema markup object (from DB custom JSON-LD)
-  const googleSchema = googleSchemaMarkup || undefined;
+  // Google Schema Markup สำหรับบทความแปล:
+  //   - ยังไม่มีการแปล (locale == th) → ใช้จาก articles table (ต้นฉบับ)
+  //   - มีคำแปล → ใช้จาก translations table (ที่แปลแล้ว) ถ้ามี ไม่ใช่ fallback ไปต้นฉบับ
+  //   - ถ้า translations.google_schema_markup เป็น null → fallback ไป articles table
+  let googleSchema: Record<string, unknown> | undefined = undefined;
+
+  if (locale !== "th" && trans && trans.google_schema_markup) {
+    googleSchema = typeof trans.google_schema_markup === "string"
+      ? JSON.parse(trans.google_schema_markup)
+      : trans.google_schema_markup;
+  } else {
+    googleSchema = googleSchemaMarkup || undefined;
+  }
 
   // If Thai, return original
   if (locale === "th") {

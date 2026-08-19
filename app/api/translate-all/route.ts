@@ -13,6 +13,7 @@ import {
   translateStructuredData,
   translateImageAlts,
   translateTags,
+  translateGoogleSchemaMarkup,
 } from "@/lib/translate-service";
 import type { Locale } from "@/lib/locales";
 import { isDisabled, isTier2 } from "@/lib/locales";
@@ -126,6 +127,22 @@ export async function POST(request: Request) {
           structuredResult = await translateStructuredData(targetLocale, structuredInput);
         }
 
+        // 4.5 SEO title/description + Google Schema Markup
+        // guard null/empty ก่อน; URL ของ schema ข้ามไม่แปล (ใน helper)
+        const baseTitle = (contentResult.title || "").trim();
+        const baseDesc =
+          (contentResult.long_excerpt || "").trim() ||
+          (contentResult.short_excerpt || "").trim();
+        const seoTitle = baseTitle ? baseTitle.slice(0, 60) : undefined;
+        const seoDescription = baseDesc ? baseDesc.slice(0, 160) : undefined;
+
+        let translatedSchema: Record<string, unknown> | null = null;
+        const originalSchema = row.google_schema_markup as Record<string, unknown> | null | undefined;
+        if (originalSchema && typeof originalSchema === "object" && !Array.isArray(originalSchema)) {
+          const res = await translateGoogleSchemaMarkup(targetLocale, originalSchema);
+          if (res !== null && Object.keys(res).length > 0) translatedSchema = res;
+        }
+
         // 5. Save to translations table (ใช้ UUID id)
         const { error } = await supabase.from("translations").upsert(
           {
@@ -134,9 +151,12 @@ export async function POST(request: Request) {
             title: contentResult.title,
             excerpt: contentResult.short_excerpt || contentResult.long_excerpt,
             content: isTier2Locale ? "" : contentResult.content,
+            seo_title: seoTitle || null,
+            seo_description: seoDescription || null,
             entity_name: structuredResult?.entity_values?.entity_name || null,
             quick_facts: structuredResult?.quick_facts ? JSON.parse(JSON.stringify(structuredResult.quick_facts)) : null,
             glossary: structuredResult?.glossary ? JSON.parse(JSON.stringify(structuredResult.glossary)) : null,
+            google_schema_markup: translatedSchema || null,
             short_excerpt: contentResult.short_excerpt || null,
             long_excerpt: contentResult.long_excerpt || null,
             tags: translatedTags.length > 0 ? translatedTags : null,

@@ -46,12 +46,12 @@ export async function HomePage({ locale }: HomePageProps) {
               <div className="flex items-center justify-center gap-3 mb-4">
                 <div className="h-px w-8 bg-gradient-to-r from-transparent to-amber-400/40" />
                 <span className="text-amber-300/60 text-xs uppercase tracking-[0.2em] font-medium">
-                  {t("home.featured", locale)}
+                  {t("home.highlight", locale)}
                 </span>
                 <div className="h-px w-8 bg-gradient-to-l from-transparent to-amber-400/40" />
               </div>
               <h2 className="text-3xl md:text-4xl font-prompt font-bold text-white">
-                Highlight
+                {t("home.highlight", locale)}
               </h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -75,7 +75,7 @@ export async function HomePage({ locale }: HomePageProps) {
             <div className="flex items-center justify-center gap-3 mb-4">
               <div className="h-px w-8 bg-gradient-to-r from-transparent to-amber-400/40" />
               <span className="text-amber-300/60 text-xs uppercase tracking-[0.2em] font-medium">
-                Latest
+                {t("home.latest", locale)}
               </span>
               <div className="h-px w-8 bg-gradient-to-l from-transparent to-amber-400/40" />
             </div>
@@ -90,7 +90,7 @@ export async function HomePage({ locale }: HomePageProps) {
           {latestArticles.length === 0 ? (
             <div className="text-center py-20">
               <p className="text-white/40 text-lg">
-                "No articles yet"
+                {t("home.noArticles", locale)}
               </p>
             </div>
           ) : (

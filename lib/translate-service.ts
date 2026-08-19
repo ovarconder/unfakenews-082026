@@ -185,20 +185,34 @@ function extractJSONText(rawText: string): string | null {
   // 1) ถอด markdown fenced code block ก่อน (```json ... ``` / ``` ... ```)
   let candidate = text.replace(/```[a-zA-Z]*\s*([\s\S]*?)```/g, "$1").trim();
 
-  // 2) หาตำแหน่งหลักของ JSON object แรกถึงสุดท้าย { ... }
-  const firstOpen = candidate.indexOf("{");
-  const lastClose = candidate.lastIndexOf("}");
-  if (firstOpen !== -1 && lastClose !== -1 && lastClose > firstOpen) {
-    candidate = candidate.slice(firstOpen, lastClose + 1);
+  // 2) หาตำแหน่งหลักของ JSON (object { ... } หรือ array [ ... ])
+  //    ก่อนอื่นลอง object { ... } (กรณีทั่วไป เช่น title/content/structured data)
+  const firstOpenBrace = candidate.indexOf("{");
+  const lastCloseBrace = candidate.lastIndexOf("}");
+  if (firstOpenBrace !== -1 && lastCloseBrace !== -1 && lastCloseBrace > firstOpenBrace) {
+    const sub = candidate.slice(firstOpenBrace, lastCloseBrace + 1);
+    const balancedObj = tryBalanceBraces(sub);
+    if (balancedObj !== null) return balancedObj;
   }
 
-  // 3) check curly brace balance — ถ้าขาดปิด (ถูกตัด) → ดึงคู่ที่สมบูรณ์สุด
+  // 3) กรณี array [ ... ] — เช่น translateTags ที่ Gemini คืนเป็น array of strings
+  const firstOpenBracket = candidate.indexOf("[");
+  const lastCloseBracket = candidate.lastIndexOf("]");
+  if (firstOpenBracket !== -1 && lastCloseBracket !== -1 && lastCloseBracket > firstOpenBracket) {
+    const sub = candidate.slice(firstOpenBracket, lastCloseBracket + 1);
+    const balancedArr = tryBalanceBrackets(sub);
+    if (balancedArr !== null) return balancedArr;
+  }
+
+  // 4) check curly brace balance — ถ้าขาดปิด (ถูกตัด) → ดึงคู่ที่สมบูรณ์สุด
   const balanced = tryBalanceBraces(candidate);
   if (balanced !== null) return balanced;
 
-  // 4) fallback: ลอง regex เดิม (คู่ { กับ } หลังสุด)
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (jsonMatch) return jsonMatch[0];
+  // 5) fallback: ลอง regex เดิม (คู่ { กับ } หลังสุด หรือคู่ [ กับ ] )
+  const jsonObjMatch = text.match(/\{[\s\S]*\}/);
+  if (jsonObjMatch) return jsonObjMatch[0];
+  const jsonArrMatch = text.match(/\[[\s\S]*\]/);
+  if (jsonArrMatch) return jsonArrMatch[0];
 
   return null;
 }
@@ -230,6 +244,42 @@ function tryBalanceBraces(candidate: string): string | null {
       if (depth === 0) start = i;
       depth++;
     } else if (ch === "}") {
+      depth--;
+      if (depth === 0 && start !== -1) {
+        return candidate.slice(start, i + 1);
+      }
+    }
+  }
+  return null;
+}
+
+/** นับ depth ของ [ ] โดยข้ามสตริง (handle escaped quotes) แล้วดึงคู่ที่ balance สมบูรณ์ */
+function tryBalanceBrackets(candidate: string): string | null {
+  let depth = 0;
+  let start = -1;
+  let inString = false;
+  let escaped = false;
+
+  for (let i = 0; i < candidate.length; i++) {
+    const ch = candidate[i];
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (ch === "\\") {
+        escaped = true;
+      } else if (ch === '"') {
+        inString = false;
+      }
+      continue;
+    }
+    if (ch === '"') {
+      inString = true;
+      continue;
+    }
+    if (ch === "[") {
+      if (depth === 0) start = i;
+      depth++;
+    } else if (ch === "]") {
       depth--;
       if (depth === 0 && start !== -1) {
         return candidate.slice(start, i + 1);
@@ -413,7 +463,20 @@ export async function translateStructuredData(
     userPrompt,
     "flash"
   );
-  return result;
+
+  // 🌟 คำแปล structured data บางครั้ง Gemini คืน field เป็น null/undefined
+  //   (เช่น glossary ว่าง หรือ quick_facts ไม่มี) → normalize เป็นค่าที่ปลอดภัย
+  const safeResult: GeminiStructuredResponse = {
+    glossary: Array.isArray(result?.glossary) ? result.glossary : undefined,
+    quick_facts: result?.quick_facts && typeof result.quick_facts === "object"
+      ? { ...result.quick_facts }
+      : undefined,
+    entity_values: result?.entity_values && typeof result.entity_values === "object"
+      ? { ...result.entity_values }
+      : undefined,
+  };
+
+  return safeResult;
 }
 
 // ============================================================
@@ -562,7 +625,32 @@ ${JSON.stringify(thaiTags)}`;
 
   try {
     console.log(`[Gemini] Translating ${thaiTags.length} Thai tags to ${targetLanguage} using ${GEMINI_FLASH_MODEL}`);
-    const translatedArray = await callGeminiAPI<string[]>(systemPrompt, userPrompt, "flash");
+    const translated = await callGeminiAPI<unknown>(systemPrompt, userPrompt, "flash");
+
+    // 🌟 Gemini บางครั้งคืนเป็น object { "tags": [...] } หรือ { "translated_tags": [...] }
+    //   แทนที่จะเป็น array ตรง ๆ — normalize ให้เป็น array ของ string ก่อน spread
+    let translatedArray: string[] = [];
+    if (Array.isArray(translated)) {
+      translatedArray = translated.filter((x): x is string => typeof x === "string");
+    } else if (translated && typeof translated === "object") {
+      const obj = translated as Record<string, unknown>;
+      // ไล่ดูทุก key ที่ value เป็น array ของ string
+      for (const key of Object.keys(obj)) {
+        const val = obj[key];
+        if (Array.isArray(val) && val.every((x) => typeof x === "string")) {
+          translatedArray = val as string[];
+          break;
+        } else if (typeof val === "string") {
+          translatedArray.push(val);
+        }
+      }
+    }
+
+    // ถ้ายังได้ array ว่าง (Gemini คืน not parseable) → fallback
+    if (translatedArray.length === 0 && thaiTags.length > 0) {
+      console.warn("[Gemini] Tag translation returned empty/unexpected shape, using original Thai tags:", translated);
+      return [...new Set([...resultTags, ...thaiTags])];
+    }
 
     // Merge with existing English tags + deduplicate
     const allTranslated = [...resultTags, ...translatedArray];
@@ -571,5 +659,236 @@ ${JSON.stringify(thaiTags)}`;
     // Fallback: return original tags if translation fails
     console.warn("[Gemini] Tag translation failed, returning original tags:", err);
     return [...new Set(resultTags)];
+  }
+}
+
+// ============================================================
+// Public API: Translate Google Schema Markup (JSON-LD)
+// ============================================================
+// แปลเฉพาะ "ข้อความ" ในค่าต่างๆ ของ JSON-LD ให้เป็น targetLanguage
+// - คง key / @type / โครงสร้าง nesting ไว้เป๊ะ
+// - ไม่แปล URL / email / ตัวเลข / boolean
+// - guard null / empty / URL → ข้าม ไม่เรียก Gemini
+// ============================================================
+
+/** ตรวจว่า string เป็น URL/link หรือไม่ */
+function isLikelyUrl(value: string): boolean {
+  if (!value) return false;
+  const trimmed = value.trim().toLowerCase();
+  return /^(https?:\/\/|www\.|mailto:|tel:|ftp:\/\/|data:|blob:|\/\/)/.test(trimmed);
+}
+
+/** Key ใน schema ที่เป็น URL/ลิงก์ — ควรข้ามการแปลค่า */
+const SCHEMA_URL_KEYS = /^(url|image|images|thumbnailUrl|contentUrl|sameAs|mainEntityOfPage|isPartOf|screenshot|videourl|caption|embedurl|citation|source|creator|author|publisher|provider)$/i;
+
+/**
+ * แก้ path ของ URL ภายในเว็บให้ชี้เป็นภาษา-specific
+ * เช่น  https://site.com/th/articles/slug  →  https://site.com/en/articles/slug
+ * หรือ   /th/articles/slug                →  /en/articles/slug
+ *
+ * - แก้เฉพาะส่วน `/th/...` (หรือ `/{srcLocale}/...`) ที่เป็น path ภาษาไทย/เดิม
+ * - ไม่แตะ URL ภายนอก (wikidata, official site, image CDN ฯลฯ)
+ * - ถ้า URL ยังไม่มี path ภาษา → ปล่อยตามเดิม
+ */
+function rewriteInternalUrlPath(
+  url: string,
+  targetLocale: string
+): string {
+  if (!url || typeof url !== "string") return url;
+
+  // แยก origin กับ path (รองรับทั้ง absolute และ relative)
+  let origin = "";
+  let path = url;
+  try {
+    // ถ้าเป็น absolute URL → แยก origin ออก
+    if (/^https?:\/\//i.test(url)) {
+      const u = new URL(url);
+      origin = u.origin;
+      path = u.pathname + (u.search || "") + (u.hash || "");
+    }
+  } catch {
+    // ไม่ใช่ URL ที่ parse ได้ → คืนเดิม
+    return url;
+  }
+
+  // แทนที่ path ภาษาไทย/ภาษาแรก (เช่น /th/articles/, /th/...) → /{locale}/...
+  // ใช้ regex ขับเคลื่อน ไม่ให้พลาด ครอบคลุม /th/, /en/, /ja/, /ko/ ...
+  const langPathPattern = /^\/([a-z]{2})\//i;
+  let newPath = path;
+  if (langPathPattern.test(path)) {
+    newPath = path.replace(langPathPattern, `/${targetLocale}/`);
+  }
+  // กรณี path ไม่มีภาษา เช่น /articles/slug (แค่ /en/) → เพิ่มภาษาเข้าไป (แต่ข้ามถ้าเป็น
+  // path ที่ไม่ใช่บทความ เช่น /images/... static)
+
+  return origin ? origin + newPath : newPath;
+}
+
+/**
+ * เดิน recursive ผ่าน schema ทั้งหมด และแก้ URL path ให้เป็นภาษา-specific
+ * - เข้าถึง field ที่เป็น URL ทั้ง absolute และ relative
+ * - ใช้สำหรับ URL ภายในเว็บ (มี /th/ /en/ /ja/ ฯลฯ)
+ */
+function localizeSchemaUrls(
+  node: unknown,
+  targetLocale: string
+): void {
+  if (Array.isArray(node)) {
+    node.forEach((item) => localizeSchemaUrls(item, targetLocale));
+    return;
+  }
+  if (node && typeof node === "object") {
+    const obj = node as Record<string, unknown>;
+    for (const key of Object.keys(obj)) {
+      const val = obj[key];
+      // ถ้า value เป็น string และดูเหมือน URL/link ภายในเว็บ → เปลี่ยน path ภาษา
+      if (typeof val === "string") {
+        const v = val.trim();
+        // ดูเฉพาะ URL ที่มี /{lang}/ ใน path (ภาษา 2 ตัว) หรือ relative path ของบทความ
+        if (
+          (v.startsWith("/") || /^https?:\/\//i.test(v)) &&
+          (/\/(th|en|zh|ja|ko|es|pt|fr|de|it|ru|hi|ms|vi|ar|tr)\//i.test(v) ||
+            /\/articles\//i.test(v))
+        ) {
+          obj[key] = rewriteInternalUrlPath(v, targetLocale);
+          continue;
+        }
+      }
+      // recurse ลึกต่อไป (object/array)
+      localizeSchemaUrls(val, targetLocale);
+    }
+  }
+}
+
+/**
+ * แปล Google Schema Markup (JSON-LD) เป็น targetLocale
+ * - เดิน recursive ผ่าน object/array
+ * - แปลเฉพาะค่า string ที่ไม่ใช่ URL และไม่ใช่ key @ / URL / ตัวเลข
+ * - ถ้าค่าเป็น null / empty string → ตัดทิ้ง ไม่ส่งไปแปล
+ * - input null/empty → คืน null (ไม่แปล)
+ */
+export async function translateGoogleSchemaMarkup(
+  targetLocale: Locale,
+  schema: Record<string, unknown> | null | undefined
+): Promise<Record<string, unknown> | null> {
+  const targetLanguage = getTargetLanguage(targetLocale);
+
+  // Guard: input ไม่มีค่า → ไม่แปล
+  if (!schema || Object.keys(schema).length === 0) return null;
+  if (typeof schema !== "object" || Array.isArray(schema)) return null;
+
+  // 1) เดิน recursive เก็บข้อความที่ควรแปล (ไม่ใช่ URL / ตัวเลข / empty)
+  const stringsToTranslate: { path: string; value: string }[] = [];
+
+  const urlLikeKeys = SCHEMA_URL_KEYS;
+
+  function collectStrings(node: unknown, path: string): void {
+    if (Array.isArray(node)) {
+      node.forEach((item, idx) => collectStrings(item, `${path}[${idx}]`));
+      return;
+    }
+    if (node && typeof node === "object") {
+      const obj = node as Record<string, unknown>;
+      for (const key of Object.keys(obj)) {
+        const val = obj[key];
+        const childKey = path ? `${path}.${key}` : key;
+        // ข้าม key ที่เป็น URL/link (เช่น image, url, sameAs) — ไม่แปลค่ามัน
+        if (urlLikeKeys.test(key)) continue;
+        if (val === null || val === undefined || val === "") continue; // guard null/empty
+        collectStrings(val, childKey);
+      }
+      return;
+    }
+    // primitive
+    if (typeof node === "string") {
+      const s = (node as string).trim();
+      if (s && !isLikelyUrl(s) && !/^[\d\s.,%\-:/-]+$/.test(s)) {
+        // ไม่ใช่ URL และไม่ใช่ตัวเลข/อักขระพิเศษ → ค่าข้อความที่ควรแปล
+        stringsToTranslate.push({ path, value: s });
+      }
+    }
+  }
+
+  collectStrings(schema, "");
+
+  // 2) ถ้าไม่มีข้อความต้องแปล → คืน schema เดิม (ไม่เรียก Gemini)
+  //    แต่ยังต้องแก้อ URL path ให้เป็นภาษา-specific
+  if (stringsToTranslate.length === 0) {
+    const noTranslateResult = JSON.parse(JSON.stringify(schema));
+    localizeSchemaUrls(noTranslateResult, targetLocale);
+    return noTranslateResult;
+  }
+
+  const valuesToSend = stringsToTranslate.map((s) => s.value);
+
+  const systemPrompt = `You are a precise data localization engine for the "Siam Heritage" encyclopedia JSON-LD structured data (Google Schema.org).
+Translate ONLY the natural-language text values into ${targetLanguage}.
+Keep ALL structural keys, @type, URLs, numeric values, and boolean values EXACTLY as-is.
+Do NOT change the JSON key names, the array/object nesting structure, or the number of items.
+
+### Input (JSON):
+{ "values": ["value_1_to_translate", "value_2_to_translate", ...] }
+
+### Expected Output:
+Return ONLY a JSON object of the same shape with translated values:
+{ "values": ["translated_value_1", "translated_value_2", ...] }
+Keep the order and count exactly the same as input. No markdown wrappers or extra text.`;
+
+  const userPrompt = JSON.stringify({ values: valuesToSend });
+
+  try {
+    console.log(`[Gemini] Translating ${valuesToSend.length} Google Schema text values to ${targetLanguage} using ${GEMINI_FLASH_MODEL}`);
+    const translated = await callGeminiAPI<{ values?: unknown }>(systemPrompt, userPrompt, "flash");
+
+    const tv = translated?.values;
+    const translatedValues = Array.isArray(tv) ? tv as unknown[] : [];
+
+    if (translatedValues.length !== stringsToTranslate.length) {
+      console.warn(`[Gemini] Google Schema translation count mismatch (got ${translatedValues.length}, expected ${stringsToTranslate.length}), using original values`);
+    }
+
+    // map ผลลัพธ์กลับเข้าตำแหน่งเดิม (ถ้าขาด/เกิน ใช้ค่าเดิม)
+    const translatedByPath: Record<string, string> = {};
+    stringsToTranslate.forEach((s, idx) => {
+      const cand = translatedValues[idx];
+      translatedByPath[s.path] = (typeof cand === "string" && cand.trim()) ? cand.trim() : s.value;
+    });
+
+    const result: Record<string, unknown> = JSON.parse(JSON.stringify(schema));
+
+    function applyTranslated(node: unknown, path: string): void {
+      if (Array.isArray(node)) {
+        node.forEach((item, idx) => applyTranslated(item, `${path}[${idx}]`));
+        return;
+      }
+      if (node && typeof node === "object") {
+        const obj = node as Record<string, unknown>;
+        for (const key of Object.keys(obj)) {
+          const val = obj[key];
+          const childKey = path ? `${path}.${key}` : key;
+          // ข้าม key ที่เป็น URL/link + guard null
+          if (urlLikeKeys.test(key)) continue;
+          if (val === null || val === undefined) continue;
+          if (translatedByPath[childKey] !== undefined && typeof val === "string") {
+            obj[key] = translatedByPath[childKey];
+          } else {
+            applyTranslated(val, childKey);
+          }
+        }
+      }
+    }
+
+    applyTranslated(result, "");
+
+    // 🌍 แก้ path ของ URL ภายใน schema ให้ชี้ภาษา-specific (/th/ → /{locale}/)
+    localizeSchemaUrls(result, targetLocale);
+
+    return result;
+  } catch (err) {
+    console.warn("[Gemini] Google Schema translation failed, returning original:", err);
+    const fallback = JSON.parse(JSON.stringify(schema));
+    // ยังแก้ URL path ให้ถูกภาษาแม้การแปลล้มเหลว
+    localizeSchemaUrls(fallback, targetLocale);
+    return fallback;
   }
 }

@@ -35,6 +35,9 @@ export type TranslationKey =
   | "articles.category"
   | "home.featured"
   | "home.latestArticles"
+  | "home.highlight"
+  | "home.latest"
+  | "home.noArticles"
   | "about.missionDesc"
   | "about.visionDesc"
   | "about.value1Title"
@@ -342,6 +345,30 @@ const translations: Record<TranslationKey, Partial<Record<Locale, string>>> = {
     ja: "最新記事",
     es: "Últimos artículos",
     pt: "Últimos artigos",
+  },
+  "home.highlight": {
+    en: "Highlight",
+    th: "ไฮไลต์",
+    zh: "精选",
+    ja: "ハイライト",
+    es: "Destacado",
+    pt: "Destaque",
+  },
+  "home.latest": {
+    en: "Latest",
+    th: "ล่าสุด",
+    zh: "最新",
+    ja: "最新",
+    es: "Recientes",
+    pt: "Recentes",
+  },
+  "home.noArticles": {
+    en: "No articles yet",
+    th: "ยังไม่มีบทความ",
+    zh: "暂无文章",
+    ja: "記事がまだありません",
+    es: "Aún no hay artículos",
+    pt: "Ainda não há artigos",
   },
   "articles.title": {
     en: "All Articles",

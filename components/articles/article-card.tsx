@@ -93,7 +93,7 @@ export function ArticleCard({ article, locale, featured = false }: ArticleCardPr
           </span>
           {article.featured && (
             <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 text-white text-[10px] font-medium">
-              Featured
+              {t("home.featured", locale)}
             </span>
           )}
         </div>

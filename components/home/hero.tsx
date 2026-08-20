@@ -39,7 +39,7 @@ export function Hero({ locale }: HeroProps) {
         </div>
 
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-kanit font-bold text-white mb-6 leading-tight">
-          <span className="bg-gradient-to-r from-amber-200 via-amber-300 to-amber-400 bg-clip-text text-transparent">
+          <span className="font-kanit bg-gradient-to-r from-amber-200 via-amber-300 to-amber-400 bg-clip-text text-transparent">
             {t("hero.title", locale)}
           </span>
         </h1>

@@ -122,8 +122,10 @@
   [lang="th"] h1 span, [lang="th"] h2 span,
   h1 span, h2 span,
   .font-kanit h1 span,
-  .font-kanit h2 span {
-    font-family: var(--font-kanit), "Kanit", sans-serif;
+  .font-kanit h2 span,
+  h1 span b, h2 span b,
+  .font-kanit h1 span b {
+    font-family: var(--font-kanit), "Kanit", sans-serif !important;
   }
   
   /* Smooth scrolling */

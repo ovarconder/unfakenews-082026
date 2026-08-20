@@ -115,6 +115,16 @@
   .font-kanit h6 {
     font-family: var(--font-kanit), "Kanit", sans-serif;
   }
+
+  /* ★ Kanit ภายใน hero heading — ครอบคลุม <span> ที่ซ้อนอยู่ใน h1/h2
+     (เช่น gradient title ใน HeroBanner) — `[lang="th"] *` จะ override
+     font-family ของ span ได้ ต้องบังคับให้ชัดเจนทั้ง th กับ en */
+  [lang="th"] h1 span, [lang="th"] h2 span,
+  h1 span, h2 span,
+  .font-kanit h1 span,
+  .font-kanit h2 span {
+    font-family: var(--font-kanit), "Kanit", sans-serif;
+  }
   
   /* Smooth scrolling */
   html {

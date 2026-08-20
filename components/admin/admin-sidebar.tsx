@@ -56,7 +56,7 @@ const navItems = [
     roles: ["writer", "editor", "admin"] as UserRole[],
   },
   {
-    label: "ไฮไลต์ (หน้าหลัก)",
+    label: "จัดการไฮไลต์",
     href: "/admin/highlights",
     icon: Star,
     permission: "article:edit_any" as const,

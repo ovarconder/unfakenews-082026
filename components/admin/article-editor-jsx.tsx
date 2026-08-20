@@ -442,7 +442,7 @@ export function ArticleEditorJSX(props: ArticleEditorJSXProps) {
               onChange={(e) => setFeatured(e.target.checked)}
               className="rounded bg-white/10 border-white/20"
             />
-            <span className="text-white/50 text-xs">Featured</span>
+            <span className="text-white/50 text-xs">Highlight</span>
           </label>
           {/* Category */}
           <select

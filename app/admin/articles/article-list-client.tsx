@@ -273,7 +273,7 @@ export default function ArticleListClient({
           className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-amber-300/50 text-sm"
         >
           <option value="">สถานะทั้งหมด</option>
-          <option value="featured">บทความเด่น</option>
+          <option value="featured">ไฮไลต์ (Highlight)</option>
           <option value="translated">มีคำแปลแล้ว</option>
           <option value="untranslated">ยังไม่มีคำแปล</option>
         </select>
@@ -343,7 +343,7 @@ export default function ArticleListClient({
                       <button
                         onClick={() => toggleFeatured(article)}
                         disabled={!isEditor || featuredToggling === article.slug}
-                        title={article.featured ? "เอาออกจากบทความเด่น (Highlight)" : "ตั้งเป็นบทความเด่น (Highlight)"}
+                        title={article.featured ? "เอาออกจากไฮไลต์ (Highlight)" : "ตั้งเป็นไฮไลต์ (Highlight)"}
                         className={`p-1.5 rounded-lg border transition-all disabled:opacity-40 ${
                           article.featured
                             ? "bg-amber-400/15 border-amber-400/40 text-amber-300 hover:bg-amber-400/25"

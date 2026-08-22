@@ -361,9 +361,9 @@ export default function ArticleListClient({
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        {/* Preview - visible to all */}
+                        {/* Preview - visible to all (เพิ่ม ?preview=1 ให้ draft ดูได้) */}
                         <Link
-                          href={`/${"th"}/articles/${article.slug}`}
+                          href={`/${"th"}/articles/${article.slug}?preview=1`}
                           target="_blank"
                           className="p-1.5 rounded hover:bg-white/10 text-white/40 hover:text-amber-300 transition-all"
                           title="ดูตัวอย่าง"

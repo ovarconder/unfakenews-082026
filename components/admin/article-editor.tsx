@@ -36,6 +36,7 @@ import {
   Check,
   AlertCircle,
   LayoutDashboard,
+  ExternalLink,
 } from "lucide-react";
 import { ImageUploader } from "@/components/ui/image-uploader";
 
@@ -1288,6 +1289,28 @@ export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorPr
         </div>
 
         <div className="flex items-center gap-3 justify-end">
+          {/* เปิดดูตัวอย่างบนหน้าเว็บจริง (ดึง ?preview=1 ให้ draft ดูได้) */}
+          {slug ? (
+            <a
+              href={`/${"th"}/articles/${slug}?preview=1`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-white/15 text-white/70 hover:text-amber-300 hover:border-amber-300/40 transition-all"
+              title="เปิดดูตัวอย่างบนหน้าเว็บจริง"
+            >
+              <ExternalLink size={16} />
+              เปิดดูหน้าเว็บ
+            </a>
+          ) : (
+            <span
+              className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-white/10 text-white/25 cursor-not-allowed"
+              title="บันทึกบทความก่อน แล้วจึงเปิดดูตัวอย่างได้"
+            >
+              <ExternalLink size={16} />
+              เปิดดูหน้าเว็บ
+            </span>
+          )}
+
           <button
             onClick={handleSave}
             disabled={saving || translating}

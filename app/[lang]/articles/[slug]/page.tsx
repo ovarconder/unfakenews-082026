@@ -1,5 +1,5 @@
 import { ArticleDetail } from "@/components/articles/article-detail";
-import { getFullArticle } from "@/lib/article-service-supabase";
+import { getFullArticle, canPreviewArticle } from "@/lib/article-service-supabase";
 import { getSettings } from "@/lib/site-settings";
 import type { Locale } from "@/lib/locales";
 import type { Metadata } from "next";
@@ -9,15 +9,35 @@ import { SchemaClaimReview } from "@/components/schema-claimreview";
 
 interface Props {
   params: Promise<{ lang: string; slug: string }>;
+  searchParams?: Promise<{ preview?: string }>;
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+// ตรวจสอบว่าเป็น preview mode และผู้ใช้มีสิทธิ์ดู draft หรือไม่
+async function resolvePreview(searchParams?: Props["searchParams"]): Promise<boolean> {
+  try {
+    if (searchParams) {
+      const sp = await searchParams;
+      if (sp?.preview !== "1") return false;
+    } else {
+      return false;
+    }
+    // preview=1 → ต้องเป็น writer/editor/admin เท่านั้น
+    return await canPreviewArticle();
+  } catch {
+    return false;
+  }
+}
+
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { lang, slug } = await params;
   const locale = lang as Locale;
 
+  // อยู่ในโหมด preview (เฉพาะผู้ที่มีสิทธิ์) หรือไม่
+  const isPreview = await resolvePreview(searchParams);
+
   // ดึงข้อมูลบทความ + settings
   const [article, settings] = await Promise.all([
-    getFullArticle(slug, locale),
+    getFullArticle(slug, locale, { preview: isPreview }),
     getSettings(),
   ]);
 
@@ -96,21 +116,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: article.seoTitle || article.title,
       description: article.seoDescription || article.excerpt,
     },
-    // ไม่มี noindex — ให้ Google index ทุกบทความที่เผยแพร่
-    robots: {
-      index: true,
-      follow: true,
-    },
+    // ปกติให้ Google index เฉพาะบทความที่เผยแพร่
+    // ถ้าเป็นโหมด preview (draft) ให้ noindex เพื่อไม่ให้หลุดสู่ผลค้นหา
+    robots: isPreview
+      ? { index: false, follow: false }
+      : { index: true, follow: true },
   };
 }
 
-export default async function LangArticlePage({ params }: Props) {
+export default async function LangArticlePage({ params, searchParams }: Props) {
   const { lang, slug } = await params;
   const locale = lang as Locale;
 
+  // โหมด preview (เฉพาะผู้มีสิทธิ์) → ให้เห็นบทความ draft ได้
+  const isPreview = await resolvePreview(searchParams);
+
   // Fetch article from Supabase
   const [article, publishedVariants] = await Promise.all([
-    getFullArticle(slug, locale),
+    getFullArticle(slug, locale, { preview: isPreview }),
     (async () => {
       try {
         const { createAdminClient } = await import("@/lib/supabase-server");
@@ -146,6 +169,13 @@ export default async function LangArticlePage({ params }: Props) {
 
   return (
     <>
+      {/* Preview mode banner — แจ้งผู้ใช้ (admin/editor/writer) ว่ากำลังดู draft */}
+      {isPreview && (
+        <div className="sticky top-0 z-50 bg-amber-400/95 text-[#0a1628] px-4 py-2 text-center text-sm font-semibold shadow-lg">
+          👁‍🗨 โหมดดูตัวอย่าง (Draft) — บทความนี้ยังไม่เผยแพร่สู่สาธารณะ
+        </div>
+      )}
+
       {/* ClaimReview JSON-LD — เฉพาะเมื่อบทความ variant นี้เผยแพร่จริง */}
       {currentVariant && (
         <SchemaClaimReview

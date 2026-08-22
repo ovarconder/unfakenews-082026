@@ -200,33 +200,63 @@ export async function getLatestSummaries(locale: Locale, count?: number): Promis
 }
 
 // ============================================================
+// Server-side: ตรวจสอบสิทธิ์ preview บทความ (draft)
+// ============================================================
+// ใช้ session ของ Supabase Auth + permission
+// มีสิทธิ์ preview เมื่อ user เป็น writer/editor/admin
+//   (ใครมีสิทธิ์ article:create ขึ้นไป)
+
+export async function canPreviewArticle(): Promise<boolean> {
+  try {
+    const { getCurrentSession } = await import("./auth-service");
+    const { hasPermission } = await import("./auth-types");
+    const { user } = await getCurrentSession();
+    if (!user) return false;
+    return hasPermission(user.role, "article:create");
+  } catch (err: any) {
+    console.error("[canPreviewArticle] error:", err?.message || err);
+    return false;
+  }
+}
+
+// ============================================================
 // Server-side: Get full article with content
 // ============================================================
 
 export async function getFullArticle(
   slug: string,
-  locale: Locale
+  locale: Locale,
+  opts?: { preview?: boolean }
 ): Promise<ArticleFull | null> {
+  const isPreview = opts?.preview === true;
   const supabase = await createServerClient();
   const adminClient = createAdminClient();
 
+  // Preview → ใช้ admin client (bypass RLS) และไม่กรอง status เพื่อให้เห็น draft
+  const client = isPreview ? adminClient : supabase;
+
   // Get article
-  let { data: article } = await supabase
+  let { data: article } = await client
     .from("articles")
     .select(`
       id, slug, original_title, original_excerpt, original_content, tags,
       categories(name_th, name_en),
-      author_name, published_at, image_url, image_alt, featured,
+      author_name, published_at, created_at, image_url, image_alt, featured,
       image_credit, image_photographer, image_source_url, image_year,
       google_schema_markup
     `)
     .eq("slug", slug)
-    .eq("status", "published")
     .is("microsite_id", null) // ★ เฉพาะของ main site
     .maybeSingle();
 
   if (!article) {
     console.error(`[getFullArticle] No article found for slug="${slug}" locale="${locale}"`);
+    return null;
+  }
+
+  // ไม่ใช่ preview → ต้องเป็น published เท่านั้น (กัน draft หลุดถึงสาธารณะ)
+  if (!isPreview && (article as any).status !== "published") {
+    console.error(`[getFullArticle] Article "${slug}" is not published (status=${(article as any).status})`);
     return null;
   }
 
@@ -265,7 +295,8 @@ export async function getFullArticle(
     slug: art.slug,
     category: categoryName,
     author: art.author_name,
-    publishedAt: art.published_at,
+    // Fallback ไป created_at เผื่อ draft ยังไม่มี published_at
+    publishedAt: art.published_at || art.created_at,
     imageUrl: art.image_url || undefined,
     imageAlt: art.image_alt || undefined,
     featured: art.featured,

@@ -70,20 +70,27 @@ export function renderMarkdownPreview(text: string): React.ReactNode[] {
       i++;
       let imgLine = lines[i] || "";
       let imgMatch = imgLine.match(/!\[(.*?)\]\((.*?)\)/);
+      let imgIdx = i;
       if (!imgMatch) {
         i++;
+        imgIdx = i;
         imgLine = lines[i] || "";
         imgMatch = imgLine.match(/!\[(.*?)\]\((.*?)\)/);
       }
       if (imgMatch) {
-        // Check for caption after
+        // caption อาจอยู่ใน div หรืออยู่หลัง </div>
         let caption = "";
-        const nextIdx = i + 1;
-        if (nextIdx < lines.length) {
-          const nextLine = lines[nextIdx].trim();
-          if (nextLine.startsWith("*") && nextLine.endsWith("*") && !nextLine.startsWith("**")) {
-            caption = nextLine.slice(1, -1).trim();
+        let scan = imgIdx + 1;
+        while (scan < lines.length) {
+          const t = lines[scan].trim();
+          if (t === "</div>") {
+            scan++;
+            continue;
           }
+          if (/^\*[^*]+\*$/.test(t) && !t.startsWith("**")) {
+            caption = t.slice(1, -1).trim();
+          }
+          break;
         }
         result.push(
           <div key={i}>
@@ -95,6 +102,13 @@ export function renderMarkdownPreview(text: string): React.ReactNode[] {
           i++;
         }
         i++;
+        // ข้าม caption ที่อยู่นอก div (ถ้ามี)
+        if (i < lines.length) {
+          const t = lines[i].trim();
+          if (/^\*[^*]+\*$/.test(t) && !t.startsWith("**")) {
+            i++;
+          }
+        }
         continue;
       }
     }

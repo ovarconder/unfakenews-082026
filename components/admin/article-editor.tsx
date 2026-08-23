@@ -374,18 +374,16 @@ export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorPr
         const caption = insertCaptions[i]?.trim();
         const align = insertAlignments[i];
         const width = insertWidths[i] || "full";
+        const capLine = caption ? `\n*${caption}*` : "";
         let md = "";
         if (align === "center") {
           if (width === "full") {
-            md = `![${alt}](${url})`;
+            md = `![${alt}](${url})${capLine}`;
           } else {
-            md = `<div class="image-center image-w-${width}">\n![${alt}](${url})\n</div>`;
+            md = `<div class="image-center image-w-${width}">\n![${alt}](${url})${capLine}\n</div>`;
           }
         } else {
-          md = `<div class="image-${align} image-w-${width}">\n![${alt}](${url})\n</div>`;
-        }
-        if (caption) {
-          md += `\n*${caption}*`;
+          md = `<div class="image-${align} image-w-${width}">\n![${alt}](${url})${capLine}\n</div>`;
         }
         return md;
       });
@@ -429,15 +427,16 @@ export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorPr
   const markdownToHtml = (md: string): string => {
     // 0) แปลง image-block wrapper (align/width/caption) → <div data-type="imageBlock">
     let html = md.replace(
-      /<div\s+class="image-(center|left|right)((?:\s+image-w-(full|25|50|75))?)">\s*\n?\s*!\[(.*?)\]\((.*?)\)\s*\n?\s*<\/div>\s*\n?\s*(?:\*([^*]*)\*)?\s*/gi,
-      (_full, align: string, _wc: string, width: string, alt: string, src: string, caption: string) => {
+      /<div\s+class="image-(center|left|right)((?:\s+image-w-(full|25|50|75))?)">\s*\n?\s*!\[(.*?)\]\((.*?)\)\s*\n?\s*(?:\*([^*]*)\*)?\s*<\/div>\s*\n?\s*(?:\*([^*]*)\*)?\s*/gi,
+      (_full, align: string, _wc: string, width: string, alt: string, src: string, capIn: string, capOut: string) => {
         const w = (width || "full").toLowerCase();
         const safeAlign: ImageAlign = align as ImageAlign;
+        const caption = (capIn || capOut || "").trim();
         return (
           `<div data-type="imageBlock" ` +
           `data-src="${src.replace(/"/g, '&quot;')}" ` +
           `data-alt="${alt.replace(/"/g, '&quot;')}" ` +
-          `data-caption="${(caption || "").trim().replace(/"/g, '&quot;')}" ` +
+          `data-caption="${caption.replace(/"/g, '&quot;')}" ` +
           `data-align="${safeAlign}" ` +
           `data-width="${w}"></div>`
         );
@@ -737,19 +736,28 @@ export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorPr
         i++;
         let imgLine = lines[i] || "";
         let imgMatch = imgLine.match(/!\[(.*?)\]\((.*?)\)/);
+        let imgIdx = i;
         if (!imgMatch) {
           i++;
+          imgIdx = i;
           imgLine = lines[i] || "";
           imgMatch = imgLine.match(/!\[(.*?)\]\((.*?)\)/);
         }
         if (imgMatch) {
+          // caption อาจอยู่ใน div (nextIdx) หรืออยู่หลัง </div>
           let caption = "";
-          const nextIdx = i + 1;
-          if (nextIdx < lines.length) {
-            const nextLine = lines[nextIdx].trim();
-            if (nextLine.startsWith("*") && nextLine.endsWith("*") && !nextLine.startsWith("**")) {
-              caption = nextLine.slice(1, -1).trim();
+          let scan = imgIdx + 1;
+          while (scan < lines.length) {
+            const t = lines[scan].trim();
+            if (t === "</div>") {
+              // ข้ามไปดูบรรทัดถัดจาก </div>
+              scan++;
+              continue;
             }
+            if (/^\*[^*]+\*$/.test(t) && !t.startsWith("**")) {
+              caption = t.slice(1, -1).trim();
+            }
+            break;
           }
           result.push(
             <div key={i}>
@@ -760,6 +768,13 @@ export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorPr
             i++;
           }
           i++;
+          // ข้าม caption ที่อยู่นอก div (ถ้ามี) เพื่อไม่ให้ render ซ้ำเป็นข้อความ
+          if (i < lines.length) {
+            const t = lines[i].trim();
+            if (/^\*[^*]+\*$/.test(t) && !t.startsWith("**")) {
+              i++;
+            }
+          }
           continue;
         }
       }

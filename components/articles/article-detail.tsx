@@ -131,15 +131,17 @@ function renderContent(content: string, translatedAlts?: Record<string, string>)
         }
         cursor++;
       }
-      // caption บรรทัดถัดไป (ถ้าเป็น *italic* / **bold** เดี่ยว ๆ)
+      // caption อาจอยู่ใน div (ถัดจาก img) หรืออยู่หลัง </div> (รองรับ format เก่า)
       let caption = "";
-      let nextIdx = cursor + 1;
-      while (nextIdx < lines.length) {
-        const t = lines[nextIdx].trim();
+      let scan = cursor + 1;
+      while (scan < lines.length) {
+        const t = lines[scan].trim();
+        if (t === "</div>") {
+          scan++;
+          continue;
+        }
         if (/^\*[^*]+\*$/.test(t) && !t.startsWith("**")) {
           caption = t.slice(1, -1).trim();
-          nextIdx++;
-          break;
         }
         break;
       }
@@ -155,6 +157,13 @@ function renderContent(content: string, translatedAlts?: Record<string, string>)
         i++;
       }
       i++; // ข้าม </div>
+      // ข้าม caption ที่อยู่นอก div (ถ้ามี) เพื่อไม่ให้ render ซ้ำเป็นข้อความ
+      if (i < lines.length) {
+        const t = lines[i].trim();
+        if (/^\*[^*]+\*$/.test(t) && !t.startsWith("**")) {
+          i++;
+        }
+      }
       continue;
     }
 

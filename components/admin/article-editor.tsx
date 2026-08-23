@@ -20,6 +20,8 @@ import { WysiwygEditor } from "./wysiwyg-editor";
 import { adminFetch } from "@/lib/use-admin-fetch";
 import { addNotification } from "@/lib/notification-store";
 import { ImageGallery, type GalleryImage } from "@/components/articles/image-gallery";
+import { YouTubeThumb } from "@/components/articles/youtube-thumb";
+import { extractYouTubeId, parseYouTubeShortcode, parseYouTubeIframe } from "@/lib/youtube";
 import {
   Image,
   Bold,
@@ -37,6 +39,7 @@ import {
   AlertCircle,
   LayoutDashboard,
   ExternalLink,
+  Youtube,
 } from "lucide-react";
 import { ImageUploader } from "@/components/ui/image-uploader";
 
@@ -549,6 +552,20 @@ export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorPr
     }, 0);
   };
 
+  // แทรกวิดีโอ YouTube — กรอก URL/ID → เก็บเป็น shortcode {% youtube VIDEO_ID %}
+  const handleInsertYouTube = () => {
+    const input = window.prompt(
+      "วาง URL หรือ Video ID ของ YouTube\n(เช่น https://youtube.com/watch?v=VIDEO_ID หรืออะไรก็ได้)"
+    );
+    if (!input || !input.trim()) return;
+    const videoId = extractYouTubeId(input);
+    if (!videoId) {
+      alert("ไม่พบ Video ID ของ YouTube ในลิงก์ที่ให้มา กรุณาตรวจสอบอีกครั้ง");
+      return;
+    }
+    insertAtCursor(`\n\n{% youtube ${videoId} %}\n\n`);
+  };
+
   const isImageLine = (line: string): boolean => /^!\[.*\]\(.*\)$/.test(line);
   const isLinkLine = (line: string): boolean => /^\[.*\]\(.*\)$/.test(line);
 
@@ -559,6 +576,21 @@ export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorPr
 
     while (i < lines.length) {
       const line = lines[i];
+
+      // ★ YouTube embed — {% youtube VIDEO_ID %} หรือ <iframe ...>
+      const ytShortcode = parseYouTubeShortcode(line);
+      const ytIframe =
+        line.trim().toLowerCase().startsWith("<iframe")
+          ? parseYouTubeIframe(line)
+          : null;
+      if (ytShortcode || ytIframe) {
+        const videoId = (ytShortcode || ytIframe)!.videoId;
+        result.push(
+          <YouTubeThumb key={`yt-${i}`} videoId={videoId} title="วิดีโอ YouTube" />
+        );
+        i++;
+        continue;
+      }
 
       // Gallery block
       if (line.trim() === "{% gallery %}") {
@@ -906,6 +938,7 @@ export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorPr
                   <button onClick={() => insertMarkdown("[", "](url)")} className="p-1.5 hover:bg-white/5 rounded text-white/60 hover:text-white" title="ลิงก์"><Link size={14} /></button>
                   <button onClick={() => openInsertModal(false)} className="p-1.5 hover:bg-white/5 rounded text-white/60 hover:text-white" title="แทรกรูปภาพ"><Image size={14} /></button>
                   <button onClick={() => openInsertModal(true)} className="p-1.5 hover:bg-white/5 rounded text-amber-400/80 hover:text-amber-300" title="แทรกแกลเลอรีรูปภาพ"><LayoutDashboard size={14} /></button>
+                  <button onClick={handleInsertYouTube} className="p-1.5 hover:bg-white/5 rounded text-white/60 hover:text-red-400" title="แทรกวิดีโอ YouTube"><Youtube size={14} /></button>
                 </div>
               )}
             </div>

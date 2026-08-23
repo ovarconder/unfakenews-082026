@@ -6,6 +6,8 @@
 
 import React from "react";
 import { ImageGallery, type GalleryImage } from "@/components/articles/image-gallery";
+import { YouTubeThumb } from "@/components/articles/youtube-thumb";
+import { parseYouTubeShortcode, parseYouTubeIframe } from "@/lib/youtube";
 
 const isImageLine = (line: string): boolean => /^!\[.*\]\(.*\)$/.test(line);
 const isLinkLine = (line: string): boolean => /^\[.*\]\(.*\)$/.test(line);
@@ -17,6 +19,23 @@ export function renderMarkdownPreview(text: string): React.ReactNode[] {
 
   while (i < lines.length) {
     const line = lines[i];
+
+    // ============================================================
+    // ★ YouTube embed — {% youtube VIDEO_ID %} หรือ <iframe ...>
+    // ============================================================
+    const ytShortcode = parseYouTubeShortcode(line);
+    const ytIframe =
+      line.trim().toLowerCase().startsWith("<iframe")
+        ? parseYouTubeIframe(line)
+        : null;
+    if (ytShortcode || ytIframe) {
+      const videoId = (ytShortcode || ytIframe)!.videoId;
+      result.push(
+        <YouTubeThumb key={`yt-${i}`} videoId={videoId} title="วิดีโอ YouTube" />
+      );
+      i++;
+      continue;
+    }
 
     // Gallery block
     if (line.trim() === "{% gallery %}") {

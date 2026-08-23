@@ -21,6 +21,8 @@ import ExcerptSection from "@/components/articles/excerpt-section";
 import { getWikiArticle } from "@/lib/wiki-data";
 import type { WikiArticle } from "@/lib/wiki-types";
 import { ImageGallery, type GalleryImage } from "@/components/articles/image-gallery";
+import { YouTubeThumb } from "@/components/articles/youtube-thumb";
+import { parseYouTubeShortcode, parseYouTubeIframe } from "@/lib/youtube";
 
 interface ArticleDetailProps {
   article: ArticleFull;
@@ -66,6 +68,24 @@ function renderContent(content: string, translatedAlts?: Record<string, string>)
 
   while (i < lines.length) {
     const line = lines[i];
+
+    // ============================================================
+    // ★ YouTube embed — {% youtube VIDEO_ID %} หรือ <iframe ...>
+    //    แสดง thumbnail ที่คลิกแล้วเปิด YouTube ในหน้าต่างใหม่
+    // ============================================================
+    const ytShortcode = parseYouTubeShortcode(line);
+    const ytIframe =
+      line.trim().toLowerCase().startsWith("<iframe")
+        ? parseYouTubeIframe(line)
+        : null;
+    if (ytShortcode || ytIframe) {
+      const videoId = (ytShortcode || ytIframe)!.videoId;
+      result.push(
+        <YouTubeThumb key={`yt-${i}`} videoId={videoId} title="วิดีโอ YouTube" />
+      );
+      i++;
+      continue;
+    }
 
     // ============================================================
     // ★ Gallery block — {% gallery %} ... {% endgallery %}

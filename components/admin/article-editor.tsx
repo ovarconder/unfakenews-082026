@@ -385,7 +385,27 @@ export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorPr
   };
 
   const markdownToHtml = (md: string): string => {
-    let html = md
+    // 1) แปลง gallery block → <div data-type="gallery">
+    let html = md.replace(
+      /\{%\s*gallery\s*%\}\s*([\s\S]*?)\{%\s*endgallery\s*%\}/gi,
+      (_full, inner: string) => {
+        const images = Array.from(inner.matchAll(/!\[(.*?)\]\((.*?)\)/g)).map((m) => ({
+          src: m[2],
+          alt: m[1] || undefined,
+        }));
+        return `<div data-type="gallery" data-images='${JSON.stringify(images)}'></div>`;
+      }
+    );
+
+    // 2) แปลง youtube shortcode → <div data-type="youtube">
+    html = html.replace(
+      /\{%\s*youtube\s+([a-zA-Z0-9_-]{11})\s*%\}/g,
+      (_full, videoId: string) =>
+        `<div data-type="youtube" data-video-id="${videoId}"></div>`
+    );
+
+    // 3) แปลง markdown ที่เหลือ (เหมือนเดิม)
+    html = html
       .replace(/### (.+)/g, '<h3>$1</h3>')
       .replace(/## (.+)/g, '<h2>$1</h2>')
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
@@ -403,7 +423,29 @@ export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorPr
   };
 
   const htmlToMarkdown = (html: string): string => {
-    let md = html
+    // 0) แปลง gallery <div> กลับเป็น markdown block (ก่อนขั้นตอนลบ div)
+    let md = html.replace(
+      /<div[^>]*data-type="gallery"[^>]*data-images='([^']*)'[^>]*><\/div>/gi,
+      (_full, dataImages: string) => {
+        let images: { src: string; alt?: string }[] = [];
+        try {
+          images = JSON.parse(dataImages);
+        } catch {
+          return "";
+        }
+        const inner = images.map((img) => `![${img.alt || ""}](${img.src})`).join("\n");
+        return `{% gallery %}\n${inner}\n{% endgallery %}`;
+      }
+    );
+
+    // 0b) แปลง youtube <div> กลับเป็น shortcode
+    md = md.replace(
+      /<div[^>]*data-type="youtube"[^>]*data-video-id="([^"]*)"[^>]*><\/div>/gi,
+      (_full, videoId: string) => videoId ? `{% youtube ${videoId} %}` : ""
+    );
+
+    // 1) แปลง HTML ที่เหลือ (เหมือนเดิม)
+    md = md
       .replace(/<h2[^>]*>(.*?)<\/h2>/gi, '## $1')
       .replace(/<h3[^>]*>(.*?)<\/h3>/gi, '### $1')
       .replace(/<strong>(.*?)<\/strong>/gi, '**$1**')
@@ -418,7 +460,9 @@ export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorPr
       .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '[$2]($1)')
       .replace(/<p[^>]*>/gi, '')
       .replace(/<\/p>/gi, '\n\n')
-      .replace(/<div[^>]*>[\s\S]*?<\/div>/gi, '')
+      .replace(/\n{2,}<div[^>]*>[\s\S]*?<\/div>/gi, '')
+      .replace(/<div[^>]*>/gi, '')
+      .replace(/<\/div>/gi, '')
       .replace(/&nbsp;/g, ' ')
       .replace(/&amp;/g, '&')
       .replace(/&lt;/g, '<')

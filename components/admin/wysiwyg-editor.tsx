@@ -19,7 +19,12 @@ import {
   Link,
   Image,
   X,
+  LayoutDashboard,
+  Youtube,
 } from "lucide-react";
+import { GalleryExtension } from "./tiptap-extensions/gallery";
+import { YouTubeExtension } from "./tiptap-extensions/youtube";
+import { extractYouTubeId } from "@/lib/youtube";
 
 interface WysiwygEditorProps {
   initialHtml: string;
@@ -53,6 +58,8 @@ export const WysiwygEditor = forwardRef<WysiwygEditorHandle, WysiwygEditorProps>
       Placeholder.configure({
         placeholder: "เริ่มเขียนเนื้อหาที่นี่...",
       }),
+      GalleryExtension,
+      YouTubeExtension,
       // Bubble menu extension - uses the ref element rendered in JSX
       // (configured below via plugin reference)
     ],
@@ -89,6 +96,52 @@ export const WysiwygEditor = forwardRef<WysiwygEditorHandle, WysiwygEditorProps>
     if (url && editor) {
       editor.chain().focus().setImage({ src: url }).run();
     }
+  }, [editor]);
+
+  // แทรกวิดีโอ YouTube — กรอก URL/Video ID → ฝังเป็น youtube node (NodeView)
+  const insertYouTube = useCallback(() => {
+    if (!editor) return;
+    const input = window.prompt(
+      "วาง URL หรือ Video ID ของ YouTube\n(เช่น https://youtube.com/watch?v=VIDEO_ID)"
+    );
+    if (!input || !input.trim()) return;
+    const videoId = extractYouTubeId(input);
+    if (!videoId) {
+      alert("ไม่พบ Video ID ของ YouTube ในลิงก์ที่ให้มา กรุณาตรวจสอบอีกครั้ง");
+      return;
+    }
+    editor.chain().focus().insertContent({
+      type: "youtube",
+      attrs: { videoId },
+    }).run();
+  }, [editor]);
+
+  // แทรกแกลเลอรี (album) — กรอก URL รูปภาพหลายรูป (คั่นด้วย enter) + caption
+  const insertGallery = useCallback(() => {
+    if (!editor) return;
+    const input = window.prompt(
+      "วาง URL รูปภาพสำหรับแกลเลอรี\n(หลายรูปให้คั่นด้วยบรรทัดใหม่)\n\nรูปแบบ: URL|alt text"
+    );
+    if (!input || !input.trim()) return;
+    const images = input
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const [src, ...altParts] = line.split("|");
+        return { src: src.trim(), alt: altParts.join("|").trim() || undefined };
+      })
+      .filter((img) => img.src);
+
+    if (images.length === 0) {
+      alert("ไม่พบ URL รูปภาพ");
+      return;
+    }
+
+    editor.chain().focus().insertContent({
+      type: "gallery",
+      attrs: { images },
+    }).run();
   }, [editor]);
 
   const setLink = useCallback(() => {
@@ -186,6 +239,12 @@ export const WysiwygEditor = forwardRef<WysiwygEditorHandle, WysiwygEditorProps>
         </ToolBtn>
         <ToolBtn onClick={insertImage} title="Insert Image">
           <Image size={16} />
+        </ToolBtn>
+        <ToolBtn onClick={insertGallery} title="Insert Gallery (Album)">
+          <LayoutDashboard size={16} />
+        </ToolBtn>
+        <ToolBtn onClick={insertYouTube} title="Insert YouTube">
+          <Youtube size={16} />
         </ToolBtn>
         <div className="flex-1" />
       </div>

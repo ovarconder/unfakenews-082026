@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { GalleryExtension } from "./tiptap-extensions/gallery";
 import { YouTubeExtension } from "./tiptap-extensions/youtube";
+import { ImageBlockExtension } from "./tiptap-extensions/image-block";
 import { extractYouTubeId } from "@/lib/youtube";
 
 interface WysiwygEditorProps {
@@ -60,6 +61,7 @@ export const WysiwygEditor = forwardRef<WysiwygEditorHandle, WysiwygEditorProps>
       }),
       GalleryExtension,
       YouTubeExtension,
+      ImageBlockExtension,
       // Bubble menu extension - uses the ref element rendered in JSX
       // (configured below via plugin reference)
     ],

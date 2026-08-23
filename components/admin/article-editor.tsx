@@ -22,6 +22,8 @@ import { addNotification } from "@/lib/notification-store";
 import { ImageGallery, type GalleryImage } from "@/components/articles/image-gallery";
 import { YouTubeThumb } from "@/components/articles/youtube-thumb";
 import { extractYouTubeId, parseYouTubeShortcode, parseYouTubeIframe } from "@/lib/youtube";
+import { renderImageBlock } from "@/components/articles/image-block";
+import { isImageBlockOpen, parseImageBlockOpen, type ImageAlign } from "@/lib/image-block";
 import {
   Image,
   Bold,
@@ -205,6 +207,7 @@ export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorPr
   const [insertAltTexts, setInsertAltTexts] = useState<string[]>([]);
   const [insertCaptions, setInsertCaptions] = useState<string[]>([]);
   const [insertAlignments, setInsertAlignments] = useState<("center" | "left" | "right")[]>([]);
+  const [insertWidths, setInsertWidths] = useState<("full" | "75" | "50" | "25")[]>([]);
   const [insertAsGallery, setInsertAsGallery] = useState(false);
 
   // UI Flow States
@@ -296,9 +299,11 @@ export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorPr
       setError(null);
       try {
         const urls: string[] = [];
+        const defaultWidths: ("full" | "75" | "50" | "25")[] = [];
         for (const file of files) {
           const url = await uploadImage(file);
           urls.push(url);
+          defaultWidths.push(await detectDefaultImageWidth(file));
         }
         uploadedUrlsRef.current = urls;
         const names = urls.map(u => decodeURIComponent(u.split('/').pop() || 'image.jpg'));
@@ -306,6 +311,7 @@ export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorPr
         setInsertAltTexts(files.map(() => ""));
         setInsertCaptions(files.map(() => ""));
         setInsertAlignments(files.map(() => "center"));
+        setInsertWidths(defaultWidths);
         setInsertAsGallery(asGallery);
         setShowInsertModal(true);
       } catch (err: any) {
@@ -315,6 +321,37 @@ export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorPr
       }
     };
     input.click();
+  };
+
+  // กำหนด default ความกว้างของภาพเดี่ยวตามสัดส่วน (aspect ratio):
+  //   - ภาพแนวตั้ง & สี่เหลี่ยมจัตุรัส → 50%
+  //   - ภาพแนวนอน → 75%
+  //   (บน mobile จะถูกบังคับให้ 100% ผ่าน CSS media query ตอน render)
+  const detectDefaultImageWidth = (
+    file: File
+  ): Promise<"full" | "75" | "50" | "25"> => {
+    return new Promise((resolve) => {
+      const url = URL.createObjectURL(file);
+      const img = document.createElement("img");
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const w = img.naturalWidth;
+        const h = img.naturalHeight;
+        if (!w || !h) return resolve("full");
+        const ratio = w / h;
+        // landscape (กว้างกว่าสูงมากพอ) → 75 ; portrait/square → 50
+        if (ratio > 1.15) {
+          resolve("75");
+        } else {
+          resolve("50");
+        }
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve("full");
+      };
+      img.src = url;
+    });
   };
 
   const insertImages = () => {
@@ -336,11 +373,16 @@ export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorPr
         const alt = insertAltTexts[i] || "รูป";
         const caption = insertCaptions[i]?.trim();
         const align = insertAlignments[i];
+        const width = insertWidths[i] || "full";
         let md = "";
         if (align === "center") {
-          md = `![${alt}](${url})`;
+          if (width === "full") {
+            md = `![${alt}](${url})`;
+          } else {
+            md = `<div class="image-center image-w-${width}">\n![${alt}](${url})\n</div>`;
+          }
         } else {
-          md = `<div class="image-${align}">\n![${alt}](${url})\n</div>`;
+          md = `<div class="image-${align} image-w-${width}">\n![${alt}](${url})\n</div>`;
         }
         if (caption) {
           md += `\n*${caption}*`;
@@ -385,8 +427,25 @@ export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorPr
   };
 
   const markdownToHtml = (md: string): string => {
-    // 1) แปลง gallery block → <div data-type="gallery">
+    // 0) แปลง image-block wrapper (align/width/caption) → <div data-type="imageBlock">
     let html = md.replace(
+      /<div\s+class="image-(center|left|right)((?:\s+image-w-(full|25|50|75))?)">\s*\n?\s*!\[(.*?)\]\((.*?)\)\s*\n?\s*<\/div>\s*\n?\s*(?:\*([^*]*)\*)?\s*/gi,
+      (_full, align: string, _wc: string, width: string, alt: string, src: string, caption: string) => {
+        const w = (width || "full").toLowerCase();
+        const safeAlign: ImageAlign = align as ImageAlign;
+        return (
+          `<div data-type="imageBlock" ` +
+          `data-src="${src.replace(/"/g, '&quot;')}" ` +
+          `data-alt="${alt.replace(/"/g, '&quot;')}" ` +
+          `data-caption="${(caption || "").trim().replace(/"/g, '&quot;')}" ` +
+          `data-align="${safeAlign}" ` +
+          `data-width="${w}"></div>`
+        );
+      }
+    );
+
+    // 1) แปลง gallery block → <div data-type="gallery">
+    html = html.replace(
       /\{%\s*gallery\s*%\}\s*([\s\S]*?)\{%\s*endgallery\s*%\}/gi,
       (_full, inner: string) => {
         const images = Array.from(inner.matchAll(/!\[(.*?)\]\((.*?)\)/g)).map((m) => ({
@@ -423,8 +482,20 @@ export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorPr
   };
 
   const htmlToMarkdown = (html: string): string => {
-    // 0) แปลง gallery <div> กลับเป็น markdown block (ก่อนขั้นตอนลบ div)
+    // 0a) แปลง imageBlock <div> กลับเป็น markdown wrapper
     let md = html.replace(
+      /<div[^>]*data-type="imageBlock"[^>]*data-src="([^"]*)"[^>]*data-alt="([^"]*)"[^>]*data-caption="([^"]*)"[^>]*data-align="([^"]*)"[^>]*data-width="([^"]*)"[^>]*><\/div>/gi,
+      (_full, src: string, alt: string, caption: string, align: string, width: string) => {
+        let block = `<div class="image-${align} image-w-${width}">\n![${alt}](${src})\n</div>`;
+        if (caption && caption.trim()) {
+          block += `\n*${caption.trim()}*`;
+        }
+        return block;
+      }
+    );
+
+    // 0) แปลง gallery <div> กลับเป็น markdown block (ก่อนขั้นตอนลบ div)
+    md = md.replace(
       /<div[^>]*data-type="gallery"[^>]*data-images='([^']*)'[^>]*><\/div>/gi,
       (_full, dataImages: string) => {
         let images: { src: string; alt?: string }[] = [];
@@ -660,9 +731,9 @@ export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorPr
         continue;
       }
 
-      // Image with alignment div wrapper
-      if (line.match(/<div class="image-(left|right)">/)) {
-        const align = line.match(/image-(left|right)/)?.[1] || "center";
+      // Image with alignment + width div wrapper (รองรับ center/left/right + ปรับขนาด)
+      if (isImageBlockOpen(line)) {
+        const { align, width } = parseImageBlockOpen(line);
         i++;
         let imgLine = lines[i] || "";
         let imgMatch = imgLine.match(/!\[(.*?)\]\((.*?)\)/);
@@ -678,22 +749,11 @@ export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorPr
             const nextLine = lines[nextIdx].trim();
             if (nextLine.startsWith("*") && nextLine.endsWith("*") && !nextLine.startsWith("**")) {
               caption = nextLine.slice(1, -1).trim();
-              i = nextIdx + 1; 
             }
           }
           result.push(
-            <div key={i} className={`my-4 ${align === "left" ? "float-left mr-4" : "float-right ml-4"} max-w-[40%]`}>
-              <div className="relative group">
-                <img src={imgMatch[2]} alt={imgMatch[1]} className="rounded-xl w-full" />
-                {imgMatch[1] && (
-                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity px-2 py-1 rounded bg-black/70 text-white/80 text-[10px] pointer-events-none whitespace-nowrap">
-                    {imgMatch[1]}
-                  </div>
-                )}
-              </div>
-              {caption && (
-                <p className="text-white/50 text-xs mt-1 text-center italic">{caption}</p>
-              )}
+            <div key={i}>
+              {renderImageBlock({ src: imgMatch[2], alt: imgMatch[1], caption, align, width })}
             </div>
           );
           while (i < lines.length && !lines[i].includes("</div>")) {
@@ -1473,10 +1533,32 @@ export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorPr
                           }}
                           className="w-full px-3 py-1.5 bg-black/20 border border-white/10 rounded text-xs text-white"
                         >
-                          <option value="center">ตรงกลาง (กว้างเต็ม)</option>
-                          <option value="left">ชิดซ้าย (Float Left)</option>
-                          <option value="right">ชิดขวา (Float Right)</option>
+                          <option value="center">ตรงกลาง</option>
+                          <option value="left">ชิดซ้าย</option>
+                          <option value="right">ชิดขวา</option>
                         </select>
+                      </div>
+                    )}
+                    {!insertAsGallery && (
+                      <div>
+                        <label className="block text-white/50 text-xs mb-1">ความกว้าง (Width)</label>
+                        <select
+                          value={insertWidths[i]}
+                          onChange={(e) => {
+                            const updated = [...insertWidths];
+                            updated[i] = e.target.value as any;
+                            setInsertWidths(updated);
+                          }}
+                          className="w-full px-3 py-1.5 bg-black/20 border border-white/10 rounded text-xs text-white"
+                        >
+                          <option value="full">เต็มความกว้าง (100%)</option>
+                          <option value="75">75%</option>
+                          <option value="50">50%</option>
+                          <option value="25">25%</option>
+                        </select>
+                        <p className="text-white/30 text-[10px] mt-1">
+                          * บนมือถือแสดงเต็มกว้างเสมอ
+                        </p>
                       </div>
                     )}
                   </div>

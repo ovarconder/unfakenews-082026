@@ -23,6 +23,8 @@ import type { WikiArticle } from "@/lib/wiki-types";
 import { ImageGallery, type GalleryImage } from "@/components/articles/image-gallery";
 import { YouTubeThumb } from "@/components/articles/youtube-thumb";
 import { parseYouTubeShortcode, parseYouTubeIframe } from "@/lib/youtube";
+import { renderImageBlock } from "@/components/articles/image-block";
+import { isImageBlockOpen, parseImageBlockOpen } from "@/lib/image-block";
 
 interface ArticleDetailProps {
   article: ArticleFull;
@@ -109,6 +111,50 @@ function renderContent(content: string, translatedAlts?: Record<string, string>)
           <ImageGallery key={`gallery-${i}`} images={galleryImages} />
         );
       }
+      continue;
+    }
+
+    // --- image block wrapper: <div class="image-center|left|right image-w-..."> ---
+    //    รองรับภาพเดี่ยวที่ปรับขนาดได้ + caption กลาง (ใช้ Component เดียวกับ editor)
+    if (isImageBlockOpen(line)) {
+      const { align, width } = parseImageBlockOpen(line);
+      // ไล่หาบรรทัดรูปภาพ `![alt](url)`
+      let src = "";
+      let alt = "";
+      let cursor = i + 1;
+      while (cursor < lines.length && lines[cursor].trim() !== "</div>" && lines[cursor].trim() !== "") {
+        const mm = lines[cursor].match(/!\[(.*?)\]\((.*?)\)/);
+        if (mm) {
+          src = mm[2];
+          alt = mm[1] || "";
+          break;
+        }
+        cursor++;
+      }
+      // caption บรรทัดถัดไป (ถ้าเป็น *italic* / **bold** เดี่ยว ๆ)
+      let caption = "";
+      let nextIdx = cursor + 1;
+      while (nextIdx < lines.length) {
+        const t = lines[nextIdx].trim();
+        if (/^\*[^*]+\*$/.test(t) && !t.startsWith("**")) {
+          caption = t.slice(1, -1).trim();
+          nextIdx++;
+          break;
+        }
+        break;
+      }
+      if (src) {
+        result.push(
+          <div key={`imgblock-${i}`}>
+            {renderImageBlock({ src, alt, caption, align, width })}
+          </div>
+        );
+      }
+      // ข้ามไปจนเจอ </div>
+      while (i < lines.length && lines[i].trim() !== "</div>") {
+        i++;
+      }
+      i++; // ข้าม </div>
       continue;
     }
 

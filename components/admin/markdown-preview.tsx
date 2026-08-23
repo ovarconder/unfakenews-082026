@@ -8,6 +8,8 @@ import React from "react";
 import { ImageGallery, type GalleryImage } from "@/components/articles/image-gallery";
 import { YouTubeThumb } from "@/components/articles/youtube-thumb";
 import { parseYouTubeShortcode, parseYouTubeIframe } from "@/lib/youtube";
+import { renderImageBlock } from "@/components/articles/image-block";
+import { isImageBlockOpen, parseImageBlockOpen } from "@/lib/image-block";
 
 const isImageLine = (line: string): boolean => /^!\[.*\]\(.*\)$/.test(line);
 const isLinkLine = (line: string): boolean => /^\[.*\]\(.*\)$/.test(line);
@@ -62,14 +64,13 @@ export function renderMarkdownPreview(text: string): React.ReactNode[] {
       continue;
     }
 
-    // Image with alignment div wrapper
-    if (line.match(/<div class="image-(left|right)">/)) {
-      const align = line.match(/image-(left|right)/)?.[1] || "center";
+    // Image with alignment + width div wrapper (รองรับ center/left/right + ปรับขนาด)
+    if (isImageBlockOpen(line)) {
+      const { align, width } = parseImageBlockOpen(line);
       i++;
       let imgLine = lines[i] || "";
       let imgMatch = imgLine.match(/!\[(.*?)\]\((.*?)\)/);
       if (!imgMatch) {
-        // try next line
         i++;
         imgLine = lines[i] || "";
         imgMatch = imgLine.match(/!\[(.*?)\]\((.*?)\)/);
@@ -82,22 +83,11 @@ export function renderMarkdownPreview(text: string): React.ReactNode[] {
           const nextLine = lines[nextIdx].trim();
           if (nextLine.startsWith("*") && nextLine.endsWith("*") && !nextLine.startsWith("**")) {
             caption = nextLine.slice(1, -1).trim();
-            i = nextIdx + 1; // skip caption + </div>
           }
         }
         result.push(
-          <div key={i} className={`my-4 ${align === "left" ? "float-left mr-4" : "float-right ml-4"} max-w-[40%]`}>
-            <div className="relative group">
-              <img src={imgMatch[2]} alt={imgMatch[1]} className="rounded-xl w-full" />
-              {imgMatch[1] && (
-                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity px-2 py-1 rounded bg-black/70 text-white/80 text-[10px] pointer-events-none whitespace-nowrap">
-                  {imgMatch[1]}
-                </div>
-              )}
-            </div>
-            {caption && (
-              <p className="text-white/50 text-xs mt-1 text-center italic">{caption}</p>
-            )}
+          <div key={i}>
+            {renderImageBlock({ src: imgMatch[2], alt: imgMatch[1], caption, align, width })}
           </div>
         );
         // skip remaining div lines if not already skipped

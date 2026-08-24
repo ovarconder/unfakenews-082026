@@ -26,9 +26,17 @@ const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
 // NOTE:
 //  - gemini-2.0-flash / gemini-2.0-pro ถูก Google shut down แล้ว (404)
 //  - gemini-2.5-flash / gemini-2.5-pro "no longer available to new users" (404)
-// โมเดลที่ผู้ใช้ใหม่ใช้ได้ชัวร์คือกลุ่ม Gemini 3 → ใช้ gemini-3.x
-const GEMINI_FLASH_MODEL = "gemini-3.5-flash"; // High-volume, low-cost
+//  - gemini-3.5-flash ยังใช้ได้ แต่ Google แนะนำให้ย้ายไป gemini-3.6-flash
+// โมเดลที่ผู้ใช้ใหม่ใช้ได้ชัวร์คือกลุ่ม Gemini 3.x → ใช้ gemini-3.6-flash
+const GEMINI_FLASH_MODEL = "gemini-3.6-flash"; // High-volume, low-cost (อัปเกรดจาก 3.5 ตามที่ Google แนะนำ)
 const GEMINI_PRO_MODEL = "gemini-3.1-pro-preview"; // High-quality, on-demand
+
+// max output tokens ที่โมเดลรองรับ
+// Gemini 3.x เป็น "thinking model" — `thoughtSignature` กิน tokens ไปมหาศาล
+// ถ้า maxOutputTokens น้อยเกินไป (เช่น 8192) → output text ถูกตัดกลาง (MAX_TOKENS)
+// → JSON แตก → parse fail → error 500
+// ใช้ค่า 65536 (outputTokenLimit ของ gemini-3.6-flash) เพื่อกันการ truncate
+const GEMINI_MAX_OUTPUT_TOKENS = 65536;
 
 function getApiKey(): string {
   const key = process.env.GEMINI_API_KEY;
@@ -299,94 +307,122 @@ async function callGeminiAPI<T>(
   model: GeminiModel
 ): Promise<T> {
   const modelName = getModelName(model);
-  const url = `${GEMINI_BASE_URL}/models/${modelName}:generateContent?key=${getApiKey()}`;
 
-  console.log(`[Gemini] Calling ${modelName}...`);
+  // retry สูงสุด 3 ครั้ง — กัน response ถูกตัด (MAX_TOKENS) / JSON แตก เป็นครั้งคราว
+  const MAX_ATTEMPTS = 3;
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      contents: [
-        {
-          role: "user",
-          parts: [
-            {
-              text: `${systemPrompt}\n\n===== CONTENT TO TRANSLATE =====\n${userPrompt}`,
-            },
-          ],
-        },
-      ],
-      generationConfig: {
-        temperature: 0.3, // Low temperature for consistent, factual translations
-        topP: 0.95,
-        topK: 40,
-        maxOutputTokens: 8192,
-        response_mime_type: "application/json", // Force JSON output
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    console.log(`[Gemini] Calling ${modelName}... (attempt ${attempt}/${MAX_ATTEMPTS})`);
+
+    const url = `${GEMINI_BASE_URL}/models/${modelName}:generateContent?key=${getApiKey()}`;
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
-      safetySettings: [
-        {
-          category: "HARM_CATEGORY_HARASSMENT",
-          threshold: "BLOCK_NONE",
+      body: JSON.stringify({
+        contents: [
+          {
+            role: "user",
+            parts: [
+              {
+                text: `${systemPrompt}\n\n===== CONTENT TO TRANSLATE =====\n${userPrompt}`,
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.3, // Low temperature for consistent, factual translations
+          topP: 0.95,
+          topK: 40,
+          maxOutputTokens: GEMINI_MAX_OUTPUT_TOKENS, // ★ 65536 ไม่ใช่ 8192 — ป้องกัน truncate
+          response_mime_type: "application/json", // Force JSON output
         },
-        {
-          category: "HARM_CATEGORY_HATE_SPEECH",
-          threshold: "BLOCK_NONE",
-        },
-        {
-          category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-          threshold: "BLOCK_NONE",
-        },
-        {
-          category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-          threshold: "BLOCK_NONE",
-        },
-      ],
-    }),
-  });
+        safetySettings: [
+          {
+            category: "HARM_CATEGORY_HARASSMENT",
+            threshold: "BLOCK_NONE",
+          },
+          {
+            category: "HARM_CATEGORY_HATE_SPEECH",
+            threshold: "BLOCK_NONE",
+          },
+          {
+            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+            threshold: "BLOCK_NONE",
+          },
+          {
+            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+            threshold: "BLOCK_NONE",
+          },
+        ],
+      }),
+    });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `Gemini API error (${response.status}) [${modelName}]: ${errorText}`
-    );
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Gemini API error (${response.status}) [${modelName}]: ${errorText}`
+      );
+    }
+
+    const data: GeminiAPIResponse = await response.json();
+
+    // ★ ตรวจสอบ finishReason — ถ้าเป็น MAX_TOKENS แปลว่าถูกตัด → retry
+    const finishReason = (data as any)?.candidates?.[0]?.finishReason;
+    if (finishReason === "MAX_TOKENS") {
+      console.warn(`[Gemini] ${modelName} returned MAX_TOKENS (truncated) on attempt ${attempt}. Retrying...`);
+      // ให้ retry ใหม่โดยไม่ต้องรอ — ระบบ try/parse ด้านล่างจะจับ JSON แตกแล้ว retry ด้วย
+      if (attempt < MAX_ATTEMPTS) {
+        // ต่อนิดหน่อยก่อน retry
+        await new Promise((r) => setTimeout(r, 500 * attempt));
+      }
+      // ถ้าเป็น attempt สุดท้ายจบ loop ไปตรวจ parse ด้านล่าง (จะทำให้ error ชัดขึ้น)
+    }
+
+    // Extract text from response — รองรับหลายรูปแบบของ part (Gemini 3.x)
+    let text: string | undefined;
+    const parts = data?.candidates?.[0]?.content?.parts;
+    if (parts && parts.length > 0) {
+      text = parts.find((p) => typeof (p as any).text === "string" && (p as any).text.length > 0)?.text as string | undefined;
+    }
+
+    if (!text) {
+      console.error("[Gemini] Empty response. Full payload:", JSON.stringify(data).slice(0, 1000));
+      if (attempt < MAX_ATTEMPTS) continue;
+      throw new Error(
+        `Gemini API returned empty response for model ${modelName}`
+      );
+    }
+
+    // Hardened JSON extraction — รองรับ markdown wrapper, trailing text, truncated JSON
+    const rawJson = extractJSONText(text);
+    if (!rawJson) {
+      console.error(`[Gemini] No JSON found. Raw response (first 800 chars):`, text.slice(0, 800));
+      if (attempt < MAX_ATTEMPTS) continue;
+      throw new Error(
+        `Could not parse JSON from Gemini response for model ${modelName}`
+      );
+    }
+
+    try {
+      return JSON.parse(rawJson) as T;
+    } catch (parseErr) {
+      console.error(`[Gemini] JSON parse error on attempt ${attempt}. Raw JSON string:`, rawJson.slice(0, 500));
+      if (attempt < MAX_ATTEMPTS) {
+        await new Promise((r) => setTimeout(r, 500 * attempt));
+        continue; // retry ใหม่
+      }
+      throw new Error(
+        `Failed to parse Gemini response as JSON for model ${modelName} (after ${MAX_ATTEMPTS} attempts)`
+      );
+    }
   }
 
-  const data: GeminiAPIResponse = await response.json();
-
-  // Extract text from response — รองรับหลายรูปแบบของ part (Gemini 3.x)
-  let text: string | undefined;
-  const parts = data?.candidates?.[0]?.content?.parts;
-  if (parts && parts.length > 0) {
-    text = parts.find((p) => typeof (p as any).text === "string" && (p as any).text.length > 0)?.text as string | undefined;
-  }
-
-  if (!text) {
-    console.error("[Gemini] Empty response. Full payload:", JSON.stringify(data).slice(0, 1000));
-    throw new Error(
-      `Gemini API returned empty response for model ${modelName}`
-    );
-  }
-
-  // Hardened JSON extraction — รองรับ markdown wrapper, trailing text, truncated JSON
-  const rawJson = extractJSONText(text);
-  if (!rawJson) {
-    console.error(`[Gemini] No JSON found. Raw response (first 800 chars):`, text.slice(0, 800));
-    throw new Error(
-      `Could not parse JSON from Gemini response for model ${modelName}`
-    );
-  }
-
-  try {
-    return JSON.parse(rawJson) as T;
-  } catch (parseErr) {
-    console.error(`[Gemini] JSON parse error. Raw JSON string:`, rawJson.slice(0, 500));
-    throw new Error(
-      `Failed to parse Gemini response as JSON for model ${modelName}`
-    );
-  }
+  throw new Error(
+    `Failed to parse Gemini response as JSON for model ${modelName} (after ${MAX_ATTEMPTS} attempts)`
+  );
 }
 
 // ============================================================

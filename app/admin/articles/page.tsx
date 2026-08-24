@@ -54,9 +54,9 @@ export default function AdminArticlesPage() {
       .then((data: any) => {
         const map: Record<string, string> = {};
         if (Array.isArray(data)) {
-          data.forEach((c: any) => { map[c.id] = c.name_th || c.name_en || c.id; });
+          data.forEach((c: any) => { map[c.id] = c.nameTH || c.nameEN || c.id; });
         } else if (data.categories) {
-          data.categories.forEach((c: any) => { map[c.id] = c.name_th || c.name_en || c.id; });
+          data.categories.forEach((c: any) => { map[c.id] = c.nameTH || c.nameEN || c.id; });
         }
         setCategoryMap(map);
       })
@@ -82,3 +82,4 @@ export default function AdminArticlesPage() {
     />
   );
 }
+

@@ -264,7 +264,7 @@ export default function ArticleListClient({
         >
           <option value="">หมวดหมู่ทั้งหมด</option>
           {categories.map((cat) => (
-            <option key={cat} value={cat}>{cat}</option>
+            <option key={cat} value={cat}>{categoryMap[cat] || cat}</option>
           ))}
         </select>
         <select

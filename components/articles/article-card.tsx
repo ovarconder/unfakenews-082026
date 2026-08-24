@@ -3,13 +3,33 @@
 import Link from "next/link";
 import { t } from "@/lib/translations";
 import type { Locale } from "@/lib/locales";
+import { LOCALE_NAMES } from "@/lib/locales";
 import type { ArticleSummary } from "@/lib/article-service-supabase";
-import { Calendar, User } from "lucide-react";
+import { Calendar, User, Globe } from "lucide-react";
 
 interface ArticleCardProps {
   article: ArticleSummary;
   locale: Locale;
   featured?: boolean;
+}
+
+// ★ Badge แสดงภาษาที่บทความนี้มี (จาก availableLocales ใน summary)
+function LanguageBadges({ locales }: { locales?: string[] }) {
+  if (!locales || locales.length === 0) return null;
+  return (
+    <span className="inline-flex items-center gap-1 text-[10px] text-white/50">
+      <Globe size={11} className="text-amber-300/70" />
+      {locales.map((l) => (
+        <span
+          key={l}
+          className="uppercase font-semibold tracking-wide"
+          title={LOCALE_NAMES[l as Locale]?.english || l}
+        >
+          {l}
+        </span>
+      ))}
+    </span>
+  );
 }
 
 export function ArticleCard({ article, locale, featured = false }: ArticleCardProps) {
@@ -52,7 +72,7 @@ export function ArticleCard({ article, locale, featured = false }: ArticleCardPr
           <p className="text-white/60 text-sm leading-relaxed mb-4 line-clamp-3 font-thai">
             {article.excerpt}
           </p>
-          <div className="flex items-center gap-4 text-white/40 text-xs">
+          <div className="flex items-center gap-4 text-white/40 text-xs flex-wrap">
             <span className="flex items-center gap-1">
               <Calendar size={12} />
               {date}
@@ -61,6 +81,7 @@ export function ArticleCard({ article, locale, featured = false }: ArticleCardPr
               <User size={12} />
               {article.author}
             </span>
+            <LanguageBadges locales={article.availableLocales} />
           </div>
           <div className="mt-4 flex items-center gap-1 text-amber-300 text-sm font-medium group-hover:gap-2 transition-all">
             {t("articles.readMore", locale)}
@@ -103,7 +124,7 @@ export function ArticleCard({ article, locale, featured = false }: ArticleCardPr
         <p className="text-white/50 text-xs leading-relaxed mb-3 line-clamp-2 font-thai">
           {article.excerpt}
         </p>
-        <div className="flex items-center gap-3 text-white/30 text-[10px]">
+        <div className="flex items-center gap-3 text-white/30 text-[10px] flex-wrap">
           <span className="flex items-center gap-1">
             <Calendar size={10} />
             {date}
@@ -112,6 +133,7 @@ export function ArticleCard({ article, locale, featured = false }: ArticleCardPr
             <User size={10} />
             {article.author}
           </span>
+          <LanguageBadges locales={article.availableLocales} />
         </div>
       </div>
     </Link>

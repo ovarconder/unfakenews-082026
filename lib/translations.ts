@@ -61,6 +61,7 @@ export type TranslationKey =
   | "common.loading"
   | "common.translating"
   | "lang.switchTo"
+  | "lang.articleLocales"
   | "hero.learnMore"
   | "hero.tagline";
 
@@ -498,6 +499,14 @@ const translations: Record<TranslationKey, Partial<Record<Locale, string>>> = {
     ja: "言語",
     es: "Idioma",
     pt: "Idioma",
+  },
+  "lang.articleLocales": {
+    en: "Available languages for this article",
+    th: "ภาษาที่บทความนี้มี",
+    zh: "本文可用的语言",
+    ja: "この記事の利用可能な言語",
+    es: "Idiomas disponibles para este artículo",
+    pt: "Idiomas disponíveis para este artigo",
   },
   "hero.tagline": {
     en: "A hub for news, articles, and fact-checking to combat fake news and deliver accurate information.",

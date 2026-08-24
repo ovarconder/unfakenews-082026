@@ -26,6 +26,8 @@ export interface ArticleSummary {
   featured?: boolean;
   tags?: string[];
   translationStatus: TranslationStatus;
+  /** ภาษาที่บทความนี้ "เผยแพร่จริง" */
+  availableLocales?: string[];
 }
 
 export interface ArticleFull extends ArticleSummary {
@@ -55,6 +57,7 @@ export function getTranslatedSummaries(locale: Locale): ArticleSummary[] {
     featured: master.featured,
     tags: master.tags,
     translationStatus: "complete" as TranslationStatus,
+    availableLocales: ["th"], // hardcoded sample มีเฉพาะไทย
   }));
 }
 
@@ -97,6 +100,7 @@ export async function getFullArticle(
     featured: master.featured,
     tags: master.tags,
     translationStatus: "complete" as TranslationStatus,
+    availableLocales: ["th"], // hardcoded sample มีเฉพาะไทย
     seoTitle: master.originalTitle,
     seoDescription: master.originalExcerpt,
   };

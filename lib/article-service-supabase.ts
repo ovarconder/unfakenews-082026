@@ -27,6 +27,8 @@ export interface ArticleSummary {
   featured?: boolean;
   tags?: string[];
   translationStatus: TranslationStatus;
+  /** ภาษาที่บทความนี้ "เผยแพร่จริง" (ต้นฉบับ TH + translation_status=complete) */
+  availableLocales?: string[];
 }
 
 export interface ArticleFull extends ArticleSummary {
@@ -87,6 +89,28 @@ export async function getTranslatedSummaries(locale: Locale): Promise<ArticleSum
       // เลือก excerpt ตามลำดับ: ธรรมดา (excerpt) > สั้น > ยาว > content (ตาม locale)
       const excerpt = resolveSummaryExcerpt(locale, article, trans as any);
 
+      // ★ availableLocales — ภาษาทั้งหมดที่บทความนี้ "เผยแพร่จริง"
+      //    (เปลี่ยนค่าเฉพาะที่เป็น translation_status = 'complete')
+      //    โดยปกติ языкไทย (ต้นฉบับ) มีเสมอ เพราะบทความนี้ status = published แล้ว
+      const { data: allTrans } = await supabase
+        .from("translations")
+        .select("locale, translation_status")
+        .eq("article_id", article.id);
+
+      const availableLocales = ["th"];
+      if (Array.isArray(allTrans)) {
+        for (const tr of allTrans as any[]) {
+          if (
+            tr?.locale &&
+            tr.locale !== "th" &&
+            tr.translation_status === "complete" &&
+            !availableLocales.includes(tr.locale)
+          ) {
+            availableLocales.push(tr.locale);
+          }
+        }
+      }
+
       return {
         id: article.id,
         slug: article.slug,
@@ -100,6 +124,7 @@ export async function getTranslatedSummaries(locale: Locale): Promise<ArticleSum
         featured: article.featured,
         tags: (article as any).tags || [],
         translationStatus: status,
+        availableLocales,
       };
     })
   );
@@ -297,6 +322,26 @@ export async function getFullArticle(
 
   const trans = rawTrans as any;
 
+  // ★ availableLocales — ภาษาทั้งหมดที่บทความนี้ "เผยแพร่จริง"
+  //    (ไทยต้นฉบับเสมอ + translation_status = 'complete')
+  const { data: allTrans } = await supabase
+    .from("translations")
+    .select("locale, translation_status")
+    .eq("article_id", art.id);
+  const availableLocales: string[] = ["th"];
+  if (Array.isArray(allTrans)) {
+    for (const tr of allTrans as any[]) {
+      if (
+        tr?.locale &&
+        tr.locale !== "th" &&
+        tr.translation_status === "complete" &&
+        !availableLocales.includes(tr.locale)
+      ) {
+        availableLocales.push(tr.locale);
+      }
+    }
+  }
+
   const baseArticle = {
     id: art.id,
     slug: art.slug,
@@ -307,6 +352,7 @@ export async function getFullArticle(
     imageUrl: art.image_url || undefined,
     imageAlt: art.image_alt || undefined,
     featured: art.featured,
+    availableLocales,
     ...getImageFields(art),
   };
 

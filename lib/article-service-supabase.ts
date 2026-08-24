@@ -200,6 +200,13 @@ export async function getLatestSummaries(locale: Locale, count?: number): Promis
 }
 
 // ============================================================
+// ★ IMPORTANT: getFullArticle (ด้านล่าง)
+//    ต้องรวม column `status` ในการ select เสมอ
+//    เพราะ function เช็ค status ที่ JS (ถ้า select ไม่ได้ → status=undefined
+//    → ตีความเป็น "not published" → คืน null → หน้า detail 404 ทุกบทความ published)
+// ============================================================
+
+// ============================================================
 // Server-side: ตรวจสอบสิทธิ์ preview บทความ (draft)
 // ============================================================
 // ใช้ session ของ Supabase Auth + permission
@@ -239,7 +246,7 @@ export async function getFullArticle(
   let { data: article } = await client
     .from("articles")
     .select(`
-      id, slug, original_title, original_excerpt, original_content, tags,
+      id, slug, status, original_title, original_excerpt, original_content, tags,
       categories(name_th, name_en),
       author_name, published_at, created_at, image_url, image_alt, featured,
       image_credit, image_photographer, image_source_url, image_year,

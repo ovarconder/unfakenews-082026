@@ -1,4 +1,4 @@
-import { getTranslatedSummaries } from "@/lib/article-service";
+import { getTranslatedSummaries } from "@/lib/article-service-supabase";
 import { t } from "@/lib/translations";
 import type { Locale } from "@/lib/locales";
 import { ArticleCard } from "@/components/articles/article-card";
@@ -7,8 +7,8 @@ interface ArticlesPageProps {
   locale: Locale;
 }
 
-export function ArticlesPage({ locale }: ArticlesPageProps) {
-  const articles = getTranslatedSummaries(locale);
+export async function ArticlesPage({ locale }: ArticlesPageProps) {
+  const articles = await getTranslatedSummaries(locale);
 
   return (
     <div className="min-h-screen pt-24 pb-16">
@@ -49,3 +49,4 @@ export function ArticlesPage({ locale }: ArticlesPageProps) {
     </div>
   );
 }
+

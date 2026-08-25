@@ -73,6 +73,25 @@ function generateLogId(): string {
   return `log_${Date.now()}_${logIdCounter}`;
 }
 
+// ================================================================
+// ★ แจ้ง Publish Automation เมื่อ translation ของ locale หนึ่งๆ
+//    เพิ่ง 'complete' — endpoint /api/seo/notify-publish จะ
+//    re-verify สถานะจาก DB แล้ว trigger:
+//      sitemap / IndexNow / Google Indexing API / revalidatePath
+//    เรียกแบบ fire-and-forget เพื่อไม่ block/ล่าช้า loop การแปล
+// ================================================================
+function notifySeoPublish(slug: string, locale: string): void {
+  try {
+    fetch("/api/seo/notify-publish", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ slug, locale }),
+    }).catch(err => console.warn(`[notifySeoPublish] ${slug} [${locale}] error:`, err?.message || err));
+  } catch (err) {
+    console.warn(`[notifySeoPublish] ${slug} [${locale}] failed to fire:`, err);
+  }
+}
+
 export default function TranslationDashboard({ articles, categories }: TranslationDashboardProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("by_article");
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
@@ -81,6 +100,8 @@ export default function TranslationDashboard({ articles, categories }: Translati
   const [search, setSearch] = useState("");
   const [translating, setTranslating] = useState<Set<string>>(new Set());
   const [translationLogs, setTranslationLogs] = useState<TranslationBatchLog[]>([]);
+  /** Cache สถานะการแปลจริงของแต่ละบทความ (จาก /api/admin/translations/status) */
+  const [statusCache, setStatusCache] = useState<Record<string, ArticleWithTranslations>>({});
 
   // ส่งสถานะการแปลไปยัง parent page ผ่าน CustomEvent
   const dispatchTranslationEvent = useCallback((data: {
@@ -185,6 +206,27 @@ export default function TranslationDashboard({ articles, categories }: Translati
   }, []);
 
   // ================================================================
+  // Prefetch สถานะจริงของทุกบทความครั้งเดียว (เผื่อให้ UI โชว์สถานะจริง)
+  // ================================================================
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const built = await Promise.all(
+        articles.map(a => buildArticleStatus(a))
+      );
+      if (cancelled) return;
+      const map: Record<string, ArticleWithTranslations> = {};
+      built.forEach(b => { map[b.master.slug] = b; });
+      setStatusCache(map);
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ใช้เพื่อบอก render ว่ามีสถานะใน cache แล้วหรือยัง
+  const statusReady = Object.keys(statusCache).length > 0;
+
+  // ================================================================
   // Trigger translation for an article
   // ================================================================
   const triggerTranslate = async (master: ArticleMaster, locale?: string) => {
@@ -250,6 +292,9 @@ export default function TranslationDashboard({ articles, categories }: Translati
         if (data.success) {
           results.push({ locale: l, status: "success" });
           successCount++;
+          // ★ แจ้ง Publish Automation (sitemap / IndexNow / Google Indexing / revalidate)
+          //    fire-and-forget — ไม่ block loop การแปล
+          notifySeoPublish(master.slug, l);
         } else {
           results.push({ locale: l, status: "error", message: data.error });
           errorCount++;
@@ -268,6 +313,11 @@ export default function TranslationDashboard({ articles, categories }: Translati
     }
 
     const finalStatus: "done" | "error" = errorCount > 0 && successCount === 0 ? "error" : "done";
+
+    // ★ รีเฟรชสถานะจริงทันทีหลังแปลเสร็จ (ให้ UI แสดงผลใหม่ทันที ไม่ต้องโหลดใหม่)
+    buildArticleStatus(master).then(s => {
+      setStatusCache(prev => ({ ...prev, [master.slug]: s }));
+    });
 
     setActiveTranslation(prev => prev ? {
       ...prev,
@@ -384,6 +434,8 @@ export default function TranslationDashboard({ articles, categories }: Translati
           if (data.success) {
             results.push({ locale: l, status: "success" });
             totalSuccess++;
+            // ★ แจ้ง Publish Automation (sitemap / IndexNow / Google Indexing / revalidate)
+            notifySeoPublish(article.master.slug, l);
           } else {
             results.push({ locale: l, status: "error", message: data.error });
             totalError++;
@@ -424,6 +476,15 @@ export default function TranslationDashboard({ articles, categories }: Translati
     }
 
     refreshLogs();
+
+    // ★ รีเฟรชสถานะจริงทั้งหมดหลัง batch เสร็จ (ให้ UI แสดงผลใหม่ทันที)
+    Promise.all(
+      articles.map(a => buildArticleStatus(a))
+    ).then(built => {
+      const map: Record<string, ArticleWithTranslations> = {};
+      built.forEach(b => { map[b.master.slug] = b; });
+      setStatusCache(map);
+    }).catch(() => {});
 
     // 🔔 ส่ง Notification สำหรับ Batch
     if (totalSuccess > 0) {
@@ -501,15 +562,19 @@ export default function TranslationDashboard({ articles, categories }: Translati
                 </div>
               </div>
 
-              {/* Status dots */}
+              {/* Status dots — ใช้สถานะจริงจาก statusCache */}
               <div className="hidden md:flex items-center gap-1 mr-4">
                 {ALL_LOCALES.filter(l => l !== "th").slice(0, 8).map(l => {
-                  // We'll fetch real status later, for now show pending
+                  const st = statusCache[master.slug]?.translations.find(t => t.locale === l)?.status;
+                  const dotClass = st === "complete" ? "bg-emerald-400"
+                    : st === "summary_only" ? "bg-amber-400"
+                    : st === "error" ? "bg-red-400"
+                    : "bg-white/15";
                   return (
                     <span
                       key={l}
-                      className="w-2 h-2 rounded-full bg-white/10"
-                      title={`${LOCALE_NAMES[l as Locale]?.english || l}: pending`}
+                      className={`w-2 h-2 rounded-full ${dotClass}`}
+                      title={`${LOCALE_NAMES[l as Locale]?.english || l}: ${st || "loading"}`}
                     />
                   );
                 })}
@@ -552,6 +617,19 @@ export default function TranslationDashboard({ articles, categories }: Translati
                     // ใช้ tier config จริง
             const tierVal = (window as any).__tierConfig?.[l] || "1";
             const isT1 = tierVal !== "2";
+                    // สถานะจริงจาก statusCache (เดี๋ยวนี้ไม่ใช่ Pending hardcode)
+                    const info = statusCache[master.slug]?.translations.find(t => t.locale === l);
+                    const st = info?.status || "pending";
+                    const stLabel =
+                      st === "complete" ? "แปลแล้ว"
+                      : st === "summary_only" ? "สรุปเท่านั้น"
+                      : st === "error" ? "ผิดพลาด"
+                      : "รอแปล";
+                    const stColor =
+                      st === "complete" ? "text-emerald-400"
+                      : st === "summary_only" ? "text-amber-400"
+                      : st === "error" ? "text-red-400"
+                      : "text-white/30";
                     return (
                       <button
                         key={l}
@@ -567,7 +645,7 @@ export default function TranslationDashboard({ articles, categories }: Translati
                             isT1 ? "bg-emerald-400/10 text-emerald-400" : "bg-amber-400/10 text-amber-400"
                           }`}>T{isT1 ? "1" : "2"}</span>
                         </div>
-                        <span className="text-white/30 text-[10px]">Pending</span>
+                        <span className={`text-[10px] ${stColor}`}>{stLabel}</span>
                       </button>
                     );
                   })}
@@ -654,8 +732,17 @@ export default function TranslationDashboard({ articles, categories }: Translati
                       <p className="text-white text-xs truncate">{master.originalTitle}</p>
                     </div>
                     <div className="flex items-center gap-2 ml-4">
-                      {/* Status indicator */}
-                      <span className="w-2 h-2 rounded-full bg-white/10" />
+                      {/* Status indicator — สถานะจริง */}
+                      <span
+                        className={`w-2 h-2 rounded-full ${(() => {
+                          const st = statusCache[master.slug]?.translations.find(t => t.locale === locale)?.status;
+                          return st === "complete" ? "bg-emerald-400"
+                            : st === "summary_only" ? "bg-amber-400"
+                            : st === "error" ? "bg-red-400"
+                            : "bg-white/15";
+                        })()}`}
+                        title={`${LOCALE_NAMES[locale as Locale]?.english || locale}`}
+                      />
                       <button
                         onClick={() => triggerTranslate(master, locale)}
                         disabled={translating.has(master.slug)}
@@ -737,11 +824,16 @@ export default function TranslationDashboard({ articles, categories }: Translati
                       <p className="text-white text-xs truncate">{master.originalTitle}</p>
                     </div>
                     <div className="flex items-center gap-2 ml-4">
-                      {/* Mini status dots */}
+                      {/* Mini status dots — สถานะจริง */}
                       <div className="flex items-center gap-0.5">
-                        {ALL_LOCALES.filter(l => l !== "th").slice(0, 5).map(l => (
-                          <span key={l} className="w-1.5 h-1.5 rounded-full bg-white/10" />
-                        ))}
+                        {ALL_LOCALES.filter(l => l !== "th").slice(0, 5).map(l => {
+                          const st = statusCache[master.slug]?.translations.find(t => t.locale === l)?.status;
+                          const c = st === "complete" ? "bg-emerald-400"
+                            : st === "summary_only" ? "bg-amber-400"
+                            : st === "error" ? "bg-red-400"
+                            : "bg-white/15";
+                          return <span key={l} className={`w-1.5 h-1.5 rounded-full ${c}`} />;
+                        })}
                       </div>
                       <button
                         onClick={() => triggerTranslate(master)}

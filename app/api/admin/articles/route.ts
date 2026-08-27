@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth-service";
 import { getAllArticleMasters } from "@/lib/articles-data";
 import { createAdminClient } from "@/lib/supabase-server";
+import { runPublishAutomation } from "@/lib/publish-automation";
 import type { ArticleMaster } from "@/lib/types";
 
 // ============================================================
@@ -218,6 +219,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Map back to ArticleMaster for response
+    // Map back to ArticleMaster for response
     const newArticle: ArticleMaster = {
       id: inserted.id,
       slug: inserted.slug,
@@ -249,9 +251,37 @@ export async function POST(request: NextRequest) {
       googleSchemaMarkup: inserted.google_schema_markup || undefined,
     };
 
+    // ============================================================
+    // ★ Post-Publish Automation — เมื่อสร้างบทความใหม่
+    // ถ้าสร้างพร้อมสถานะ "published" ตั้งแต่แรก
+    //  → trigger IndexNow + Google Indexing + revalidate ทั้งหมด
+    //    (ครอบคลุม flow "สร้างใหม่แล้ว publish ทันที")
+    // guardrail เช็คสถานะจริงจาก DB ใน runPublishAutomation อีกครั้ง
+    // ============================================================
+    let seoResult: Awaited<ReturnType<typeof runPublishAutomation>> | null = null;
+    if ((inserted.status || "draft") === "published") {
+      try {
+        seoResult = await runPublishAutomation({
+          slug: inserted.slug,
+          locale: "th",
+        });
+        console.log(
+          `[Article POST] SEO automation for new "${inserted.slug}" [th]:`,
+          seoResult
+        );
+      } catch (seoErr: any) {
+        // automation ล้มเหลวไม่ควร block การสร้างบทความ
+        console.error(
+          `[Article POST] SEO automation failed for "${inserted.slug}":`,
+          seoErr
+        );
+      }
+    }
+
     return NextResponse.json({
       success: true,
       article: newArticle,
+      seo: seoResult,
     });
   } catch (err: any) {
     console.error("[API] Error in POST /api/admin/articles:", err);

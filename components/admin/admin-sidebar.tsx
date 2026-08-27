@@ -24,11 +24,15 @@ import {
   BookMarked,
   Bell,
   Star,
+  RefreshCw,
+  CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
 import type { UserRole } from "@/lib/auth-types";
 import { ROLE_LABELS, hasPermission } from "@/lib/auth-types";
 import { useSettings } from "@/components/admin/settings-context";
 import { NotificationBell } from "@/components/admin/notification-bell";
+import { adminFetch } from "@/lib/use-admin-fetch";
 
 interface AdminSidebarProps {
   user: {
@@ -142,6 +146,47 @@ export default function AdminSidebar({ user, onLogout }: AdminSidebarProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState<string>("");
 
+  // ================================================================
+  // Resync All — อัปเดต SEO ทั้งหมด (IndexNow + Google Indexing + revalidate)
+  // แสดงเฉพาะ editor/admin
+  // ================================================================
+  const canResync = ["admin", "editor"].includes(user.role);
+  const [resyncState, setResyncState] = useState<
+    "idle" | "loading" | "done" | "error"
+  >("idle");
+  const [resyncMessage, setResyncMessage] = useState<string | null>(null);
+
+  const handleResync = async () => {
+    if (!confirm(
+      "🔄 อัปเดต SEO ทั้งหมด?\n\nจะแจ้ง Google/Bing ให้รู้ URL บทความที่เผยแพร่จริงทั้งหมดพร้อมทุกภาษา และรีเฟรช sitemap + หน้าแรก\n\nดำเนินการต่อ?"
+    )) return;
+
+    setResyncState("loading");
+    setResyncMessage(null);
+    try {
+      const res = await adminFetch("/api/seo/resync-all", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ includeGoogle: true }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || "Resync failed");
+      }
+      setResyncState("done");
+      setResyncMessage(
+        `✅ อัปเดต ${data.processedArticles || 0} บทความ / ${data.urls?.length || 0} URL`
+      );
+    } catch (err: any) {
+      console.error("[Resync] Error:", err);
+      setResyncState("error");
+      setResyncMessage(`❌ ${err?.message || "อัปเดตล้มเหลว"}`);
+    } finally {
+      // reset message หลังแสดง ~5 วิ (ไม่ reset state เพื่อให้สีคงอยู่)
+      setTimeout(() => setResyncMessage(null), 6000);
+    }
+  };
+
   // Real-time clock
   useEffect(() => {
     const update = () => {
@@ -217,6 +262,49 @@ export default function AdminSidebar({ user, onLogout }: AdminSidebarProps) {
           );
         })}
       </nav>
+
+      {/* Resync All SEO — อัปเดตทั้งหมด */}
+      {canResync && (
+        <div className="px-3 pb-4 pt-2 border-t border-white/10">
+          <button
+            onClick={handleResync}
+            disabled={resyncState === "loading"}
+            className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
+              border border-white/10 bg-white/5 text-white/70 hover:text-white hover:bg-white/10
+              disabled:opacity-50 disabled:cursor-not-allowed
+              ${resyncState === "done" ? "border-emerald-400/40 text-emerald-300" : ""}
+              ${resyncState === "error" ? "border-red-400/40 text-red-300" : ""}`}
+          >
+            {resyncState === "loading" ? (
+              <RefreshCw size={16} className="animate-spin" />
+            ) : resyncState === "done" ? (
+              <CheckCircle2 size={16} />
+            ) : resyncState === "error" ? (
+              <AlertTriangle size={16} />
+            ) : (
+              <RefreshCw size={16} />
+            )}
+            <span>
+              {resyncState === "loading"
+                ? "กำลังอัปเดต SEO..."
+                : resyncState === "done"
+                ? "อัปเดตแล้ว"
+                : resyncState === "error"
+                ? "อัปเดตล้มเหลว"
+                : "อัปเดต SEO ทั้งหมด"}
+            </span>
+          </button>
+          {resyncMessage && (
+            <p className={`mt-2 px-3 py-2 rounded-lg text-[11px] leading-snug ${
+              resyncState === "error"
+                ? "bg-red-500/10 text-red-300"
+                : "bg-emerald-500/10 text-emerald-300"
+            }`}>
+              {resyncMessage}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* User info + Logout */}
       <div className="px-4 pt-6 pb-5 border-t border-white/10">

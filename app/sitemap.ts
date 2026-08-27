@@ -1,12 +1,12 @@
 // ============================================================
-// sitemap.xml — Dynamic Sitemap Generator (เฉพาะภาษาที่มีเนื้อหาจริง)
+// sitemap.xml — Dynamic Sitemap Generator (sitemap รวมทุกภาษา)
 // ============================================================
 // - รองรับ 15 ภาษา (เฉพาะ active locale)
-// - รวมหน้า static + รายการบทความ (แต่ละภาษา)
 // - ดึงบทความที่ "เผยแพร่จริง" จาก Supabase เท่านั้น
-//   (กรอง variant ภาษาที่ยังไม่ published ออก — ป้องกัน 404/half-baked)
-// - static pages จะถูกสร้างเฉพาะ locale ที่มีบทความเผยแพร่จริงข้อขึ้นไป
-//   (ภาษาเปล่าๆ เช่น es/ja ที่ยังไม่มีเนื้อหา จะไม่ถูกใส่ใน sitemap)
+// - ใช้ "alternates.languages" เพื่อสร้าง <xhtml:link rel="alternate" hreflang>
+//   แบบกลุ่มต่อ entity (บทความ / หน้า static) ตามมาตรฐาน Next.js MetadataRoute.Sitemap
+// - lastmod ถูกทำความสะอาดให้ไม่มี milliseconds (ผ่าน toSitemapLastmod)
+//   เพื่อให้ Googlebot อ่าน XML ได้โดยไม่มีปัญหา
 // ============================================================
 
 import type { MetadataRoute } from "next";
@@ -16,6 +16,7 @@ import {
   getPublishedArticleRows,
   getPublishedVariants,
   STATIC_PUBLIC_PATHS,
+  toSitemapLastmod,
 } from "@/lib/seo-utils";
 
 export const dynamic = "force-dynamic";
@@ -27,30 +28,49 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const entries: MetadataRoute.Sitemap = [];
 
+  // ชุด locale ที่ "มีข้อมูลจริง" (มี variant ที่เผยแพร่จริงอย่างน้อยหนึ่งบทความ)
+  const liveLocales = new Set<Locale>();
+
   //
   // === Published Articles (จาก Supabase) ===
-  // รวบรวม variant ที่เผยแพร่จริง และเก็บชุด locale ที่ "มีข้อมูลจริง" ไว้
+  // เราจัดกลุ่ม variant ทุกภาษา (เดียวกันบทความ) เข้าเป็น node เดียว
+  // เพื่อให้ Next.js สร้าง hreflang alternates อย่างถูกต้อง
   //
-  const liveLocales = new Set<Locale>();
   try {
     const articleRows = await getPublishedArticleRows();
 
     for (const article of articleRows) {
       const variants = getPublishedVariants(article);
 
-      for (const v of variants) {
-        // ข้าม variant ภาษาที่ถูกปิด
-        if (!activeLocales.includes(v.locale)) continue;
+      // กรองเฉพาะ variant ภาษาที่ยัง active อยู่
+      const activeVariants = variants.filter((v) =>
+        activeLocales.includes(v.locale)
+      );
 
-        liveLocales.add(v.locale);
+      if (activeVariants.length === 0) continue;
 
-        entries.push({
-          url: v.url,
-          lastModified: new Date(v.dateModified),
-          changeFrequency: "weekly",
-          priority: 0.8,
-        });
-      }
+      // เก็บ locale ที่มีข้อมูลจริง
+      for (const v of activeVariants) liveLocales.add(v.locale);
+
+      // เลือก "ต้นฉบับ" (ไทย) เป็น canonical/default
+      const canonical =
+        activeVariants.find((v) => v.locale === "th") || activeVariants[0];
+
+      entries.push({
+        url: canonical.url,
+        lastModified: new Date(canonical.dateModified),
+        changeFrequency: "weekly",
+        priority: 0.8,
+        alternates: {
+          languages: {
+            ...Object.fromEntries(
+              activeVariants.map((v) => [v.locale, v.url])
+            ),
+            // x-default ให้ชี้ไปที่ภาษาไทย (ต้นฉบับ) สำรองไว้เพื่อ SEO
+            "x-default": canonical.url,
+          },
+        },
+      });
     }
   } catch (err) {
     console.error("[Sitemap] Error loading published articles:", err);
@@ -58,33 +78,79 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   //
   // === Static Pages (เฉพาะ locale ที่มี "ข้อมูลจริง" เท่านั้น) ===
-  // ถ้า locale ยังไม่มีบทความที่เผยแพร่เลย → หน้านั้นจะว่าง/200 เปล่า
-  // ⇒ อย่าใส่ใน sitemap จะได้ไม่เปลือง crawl budget / ดูเป็น junk
+  // กลุ่มตามหน้า static เดียวกัน แล้วเพิ่ม alternate ไปทุก locale
   //
-  for (const locale of liveLocales) {
-    for (const path of Object.values(STATIC_PUBLIC_PATHS)) {
-      const p = path();
-      entries.push({
-        url: `${baseUrl}/${locale}${p}`,
-        lastModified: new Date(),
-        changeFrequency: p === "" ? "daily" : "monthly",
-        priority: p === "" ? 1.0 : 0.5,
-      });
-    }
+  // ถ้าไม่มี locale ไหน live เลย (เช่น DB ว่าง) → fallback เป็น activeLocales
+  // เพื่อไม่ให้ URL กลายเป็น "undefined" และไม่ให้ sitemap ว่างเปล่า
+  //
+  const staticLocales: Locale[] =
+    liveLocales.size > 0 ? [...liveLocales] : activeLocales;
 
-    // Article index page
+  const staticPaths = Object.values(STATIC_PUBLIC_PATHS).map((fn) => fn());
+
+  for (const path of staticPaths) {
+    const localeUrls = Object.fromEntries(
+      staticLocales.map((locale) => [
+        locale,
+        `${baseUrl}/${locale}${path}`,
+      ])
+    );
+
+    // canonical = หน้า th (ต้นฉบับ) ก่อน แล้วค่อยเป็น locale แรก
+    const firstLocale = staticLocales.includes("th")
+      ? "th"
+      : staticLocales[0];
+
     entries.push({
-      url: `${baseUrl}/${locale}/articles`,
+      url: `${baseUrl}/${firstLocale}${path}`,
       lastModified: new Date(),
-      changeFrequency: "daily",
-      priority: 0.6,
+      changeFrequency: path === "" ? "daily" : "monthly",
+      priority: path === "" ? 1.0 : 0.5,
+      alternates: {
+        languages: {
+          ...localeUrls,
+          "x-default": `${baseUrl}/${firstLocale}${path}`,
+        },
+      },
     });
   }
 
+  // Article index page (รวมภาษาที่ live)
+  const articleIndexLocaleUrls = Object.fromEntries(
+    staticLocales.map((locale) => [
+      locale,
+      `${baseUrl}/${locale}/articles`,
+    ])
+  );
+  const articleIndexFirst = staticLocales.includes("th")
+    ? "th"
+    : staticLocales[0];
+
+  entries.push({
+    url: `${baseUrl}/${articleIndexFirst}/articles`,
+    lastModified: new Date(),
+    changeFrequency: "daily",
+    priority: 0.6,
+    alternates: {
+      languages: {
+        ...articleIndexLocaleUrls,
+        "x-default": `${baseUrl}/${articleIndexFirst}/articles`,
+      },
+    },
+  });
+
+  // === ทำความสะอาด lastmod ให้ไม่มี milliseconds ===
+  const cleanEntries: MetadataRoute.Sitemap = entries.map((e) => ({
+    ...e,
+    lastModified: e.lastModified
+      ? toSitemapLastmod(e.lastModified)
+      : undefined,
+  }));
+
   console.log(
-    `[Sitemap] Generated ${entries.length} URLs for ${liveLocales.size} content-bearing locales`
+    `[Sitemap] Generated ${cleanEntries.length} entity URLs for ${liveLocales.size} content-bearing locales`
   );
 
-  return entries;
+  return cleanEntries;
 }
 

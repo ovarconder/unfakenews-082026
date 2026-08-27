@@ -24,6 +24,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { pingIndexNow } from "./indexnow";
 import { submitUrlsToGoogle } from "./google-indexing";
 import { getArticleIndexTargets } from "./seo-utils";
+import { getActiveLocales } from "./locales";
 import { createAdminClient } from "./supabase-server";
 
 export interface PublishNotificationInput {
@@ -144,6 +145,8 @@ export async function runPublishAutomation(
 
   // 6) Revalidate Next.js cache — สำหรับหน้าใหม่ + หน้าอื่นๆ ในบทความเดียวกัน
   const revalidated: string[] = [];
+
+  // 6a) หน้า article ของทุกภาษาที่บทความนี้มี (variant ที่เผยแพร่จริง)
   const variants = allTargets.map((t) => t.locale);
   for (const v of variants) {
     const p = `/${v}/articles/${slug}`;
@@ -152,10 +155,41 @@ export async function runPublishAutomation(
       revalidated.push(p);
     } catch {}
   }
+
+  // 6b) Revalidate หน้า home + article index ของทุกภาษา active
+  //     (เมื่อ publish บทความใหม่/แก้ => หน้าแรกและ index ต้องอัปเดตทันที)
+  const activeLocales = getActiveLocales();
+  for (const l of activeLocales) {
+    try {
+      revalidatePath(`/${l}`);
+      revalidated.push(`/${l}`);
+    } catch {}
+    try {
+      revalidatePath(`/${l}/articles`);
+      revalidated.push(`/${l}/articles`);
+    } catch {}
+  }
+
+  // 6c) Revalidate sitemap รวม + รายภาษา (ขอเป็น cache-clear ให้ชัด)
+  try {
+    revalidatePath("/sitemap.xml");
+    revalidated.push("/sitemap.xml");
+  } catch {}
+  for (const l of activeLocales) {
+    try {
+      revalidatePath(`/sitemap/${l}.xml`);
+      revalidated.push(`/sitemap/${l}.xml`);
+    } catch {}
+  }
+
   // revalidate ทั้งชุดด้วย tag (ถ้าหน้าอื่นใช้ revalidateTag)
   try {
     revalidateTag("articles");
     revalidated.push("tag:articles");
+  } catch {}
+  try {
+    revalidateTag("sitemap");
+    revalidated.push("tag:sitemap");
   } catch {}
 
   console.log(

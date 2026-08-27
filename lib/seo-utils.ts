@@ -21,6 +21,36 @@ export function getBaseUrl(): string {
 }
 
 // ============================================================
+// lastmod / date formatting — สำหรับ sitemap & hreflang
+// ============================================================
+// Googlebot ต้องการ ISO 8601 แบบไม่ต้องมีเศษส่วนวินาที (milliseconds)
+// เช่น "2026-08-22T17:12:03Z" หรือ "2026-08-22" (feed: "YYYY-MM-DD")
+// ============================================================
+
+/**
+ * แปลง Date / ISO string ให้เป็น sitemap-friendly lastmod
+ * - ตัด milliseconds ออก (2026-08-22T17:12:03.039Z -> 2026-08-22T17:12:03Z)
+ * - ถ้าอยากได้แบบวันที่ล้วน (YYYY-MM-DD) ให้ส่ง withTime = false
+ */
+export function toSitemapLastmod(
+  input: string | Date,
+  withTime = true
+): string {
+  const d = input instanceof Date ? input : new Date(input);
+
+  // กรณีวันที่ไม่ถูกต้อง -> ใช้เวลาปัจจุบัน (ยังคงตัด milli เช่นกัน)
+  if (Number.isNaN(d.getTime())) return toSitemapLastmod(new Date(), withTime);
+
+  if (!withTime) {
+    // YYYY-MM-DD (ปลอดภัยสุด — Google แนะนำสำหรับ sitemap)
+    return d.toISOString().slice(0, 10);
+  }
+
+  // YYYY-MM-DDTHH:mm:ssZ (ไม่มี milliseconds)
+  return d.toISOString().replace(/\.\d{3}Z$/, "Z");
+}
+
+// ============================================================
 // "Published" state resolution
 // ============================================================
 // ตาม guardrail ใน system prompt:

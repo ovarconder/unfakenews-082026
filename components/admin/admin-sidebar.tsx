@@ -261,6 +261,7 @@ export default function AdminSidebar({ user, onLogout }: AdminSidebarProps) {
             </Link>
           );
         })}
+        <div style={{ height: 30, minHeight: 30, maxHeight: 30, display: "block", clear: "both" }}></div>
       </nav>
 
       {/* Resync All SEO — อัปเดตทั้งหมด */}

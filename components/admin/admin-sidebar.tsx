@@ -219,7 +219,7 @@ export default function AdminSidebar({ user, onLogout }: AdminSidebarProps) {
   });
 
   const sidebarContent = (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col h-screen overflow-hidden">
       {/* Logo + Notification Bell */}
       <div className="px-6 py-6 border-b border-white/10">
         <Link href="/admin" className="flex flex-col items-start gap-2">

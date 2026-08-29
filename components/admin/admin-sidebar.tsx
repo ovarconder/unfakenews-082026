@@ -44,99 +44,98 @@ interface AdminSidebarProps {
   onLogout?: () => void;
 }
 
+// ============================================================
+// Nav Items — visibility ควบคุมโดย permission เดียว (source of truth
+// คือ ROLE_PERMISSIONS ใน lib/auth-types) ไม่ต้อง hard-code roles ซ้ำ
+// เพราะ hard-code roles เคยทำให้ permission กับ roles ไม่ตรงกัน
+// ============================================================
+//
+// สรุปว่า role ไหนเห็นเมนูไหน (ตาม ROLE_PERMISSIONS):
+//   writer : แดชบอร์ด, บทความ, แจ้งเตือน          (article:create)
+//   editor : + จัดการไฮไลต์, หน้า, Hero, ผู้ใช้งาน,
+//            สถิติ, การแปล, หมวดหมู่, Entity Facts (article:edit_any / user:list / article:review)
+//   admin  : + Microsites, ตั้งค่า                  (settings:edit / settings:view)
+//
 const navItems = [
   {
     label: "แดชบอร์ด",
     href: "/admin",
     icon: LayoutDashboard,
-    permission: "admin:access" as const,
-    roles: ["writer", "editor", "admin"] as UserRole[],
+    permission: "article:create" as const, // writer/editor/admin
   },
   {
     label: "บทความ",
     href: "/admin/articles",
     icon: FileText,
-    permission: "article:create" as const,
-    roles: ["writer", "editor", "admin"] as UserRole[],
+    permission: "article:create" as const, // writer/editor/admin
   },
   {
     label: "จัดการไฮไลต์",
     href: "/admin/highlights",
     icon: Star,
-    permission: "article:edit_any" as const,
-    roles: ["editor", "admin"] as UserRole[],
+    permission: "article:edit_any" as const, // editor/admin
   },
   {
     label: "หน้า",
     href: "/admin/pages",
     icon: File,
-    permission: "article:edit_any" as const,
-    roles: ["editor", "admin"] as UserRole[],
+    permission: "article:edit_any" as const, // editor/admin
   },
   {
     label: "Hero Slides",
     href: "/admin/hero-slides",
     icon: LayoutDashboard,
-    permission: "article:edit_any" as const,
-    roles: ["editor", "admin"] as UserRole[],
+    permission: "article:edit_any" as const, // editor/admin
   },
   {
     label: "ผู้ใช้งาน",
     href: "/admin/users",
     icon: Users,
-    permission: "user:list" as const,
-    roles: ["editor", "admin"] as UserRole[],
+    permission: "user:list" as const, // editor/admin
   },
   {
     label: "สถิติ",
     href: "/admin/stats",
     icon: BarChart3,
-    permission: "admin:access" as const,
-    roles: ["editor", "admin"] as UserRole[],
+    permission: "user:list" as const, // editor/admin (ทั้งคู่มีสิทธิ์)
   },
   {
     label: "การแปลภาษา",
     href: "/admin/translations",
     icon: Languages,
-    permission: "article:review" as const,
-    roles: ["editor", "admin"] as UserRole[],
+    permission: "article:review" as const, // editor/admin
   },
   {
     label: "หมวดหมู่",
     href: "/admin/categories",
     icon: BookMarked,
-    permission: "article:edit_any" as const,
-    roles: ["editor", "admin"] as UserRole[],
+    permission: "article:edit_any" as const, // editor/admin
   },
   {
     label: "Entity Facts",
     href: "/admin/entity-facts",
     icon: Layers,
-    permission: "article:edit_any" as const,
-    roles: ["editor", "admin"] as UserRole[],
+    permission: "article:edit_any" as const, // editor/admin
   },
   // ★ Notifications
   {
     label: "แจ้งเตือน",
     href: "/admin/notifications",
     icon: Bell,
-    permission: "article:review" as const,
-    roles: ["writer", "editor", "admin"] as UserRole[],
+    permission: "article:create" as const, // writer/editor/admin
   },
   // ★ Microsites management
   {
     label: "Microsites",
     href: "/admin/microsites",
     icon: Layers,
-    permission: "settings:edit" as const,
-    roles: ["admin"] as UserRole[],
+    permission: "settings:edit" as const, // admin
   },
   {
     label: "ตั้งค่า",
     href: "/admin/settings",
     icon: Settings,
-    permission: "settings:view" as const,
-    roles: ["admin"] as UserRole[],
+    permission: "settings:view" as const, // admin
   },
 ];
 
@@ -208,13 +207,13 @@ export default function AdminSidebar({ user, onLogout }: AdminSidebarProps) {
     return pathname.startsWith(href);
   };
 
+  // source of truth = ROLE_PERMISSIONS (ผ่าน hasPermission)
+  // เมนูจะแสดงต่อเมื่อ role ของผู้ใช้มี permission ของเมนูนั้น
   const visibleItems = navItems.filter((item) => {
     try {
-      // Check both permission AND role list
-      if (!item.roles.includes(user.role)) return false;
       return hasPermission(user.role, item.permission);
     } catch {
-      return true;
+      return false;
     }
   });
 

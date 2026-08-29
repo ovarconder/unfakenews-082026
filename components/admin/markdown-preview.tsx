@@ -14,6 +14,65 @@ import { isImageBlockOpen, parseImageBlockOpen } from "@/lib/image-block";
 const isImageLine = (line: string): boolean => /^!\[.*\]\(.*\)$/.test(line);
 const isLinkLine = (line: string): boolean => /^\[.*\]\(.*\)$/.test(line);
 
+/**
+ * Render inline markdown ภายในบรรทัดเดียว: [text](url), **bold**, *italic*,
+ * และ autolink URL ตรง ๆ (https://...) → ลิงก์แสดงโดเมน
+ */
+function renderInlineMd(text: string): React.ReactNode {
+  // 1) Handle [text](url) ก่อน (ไม่แตะ image ![...](...) นอกเหนือ)
+  const parts: React.ReactNode[] = [];
+  const mdLink = /\[([^\]]+)\]\(([^)]+)\)/g;
+  const urlRegex = /(https?:\/\/[^\s<"')]+)/g;
+  const boldRegex = /(\*\*[^*]+\*\*|\*[^*]+\*)/g;
+
+  const parseToNodes = (s: string, keyBase: string): React.ReactNode[] => {
+    const arr: React.ReactNode[] = [];
+    // bold/italic first
+    const boldParts = s.split(boldRegex);
+    boldParts.forEach((bp, bi) => {
+      if (bp.startsWith("**") && bp.endsWith("**") && bp.length > 2) {
+        arr.push(<strong key={`${keyBase}-b${bi}`}>{bp.slice(2, -2)}</strong>);
+      } else if (bp.startsWith("*") && bp.endsWith("*") && bp.length > 1) {
+        arr.push(<em key={`${keyBase}-i${bi}`}>{bp.slice(1, -1)}</em>);
+      } else {
+        // autolink URL
+        const urlParts = bp.split(urlRegex);
+        urlParts.forEach((up, ui) => {
+          if (up.match(urlRegex)) {
+            const host = (() => { try { return new URL(up).hostname.replace("www.", ""); } catch { return up; } })();
+            arr.push(
+              <a key={`${keyBase}-u${bi}-${ui}`} href={up} target="_blank" rel="noopener noreferrer" className="text-amber-300 hover:text-amber-200 underline">
+                {host}
+              </a>
+            );
+          } else if (up) {
+            arr.push(<React.Fragment key={`${keyBase}-t${bi}-${ui}`}>{up}</React.Fragment>);
+          }
+        });
+      }
+    });
+    return arr;
+  };
+
+  let last = 0;
+  let m: RegExpExecArray | null;
+  let k = 0;
+  while ((m = mdLink.exec(text)) !== null) {
+    const before = text.slice(last, m.index);
+    if (before) parts.push(<React.Fragment key={k++}>{parseToNodes(before, `pre-${k}`)}</React.Fragment>);
+    parts.push(
+      <a key={k++} href={m[2]} target="_blank" rel="noopener noreferrer" className="text-amber-300 hover:text-amber-200 underline">
+        {m[1]}
+      </a>
+    );
+    last = m.index + m[0].length;
+  }
+  const rest = text.slice(last);
+  if (rest) parts.push(<React.Fragment key={k++}>{parseToNodes(rest, `rest-${k}`)}</React.Fragment>);
+  if (parts.length === 0) return text;
+  return <>{parts}</>;
+}
+
 export function renderMarkdownPreview(text: string): React.ReactNode[] {
   const lines = text.split("\n");
   const result: React.ReactNode[] = [];
@@ -160,18 +219,15 @@ export function renderMarkdownPreview(text: string): React.ReactNode[] {
       i++;
       continue;
     } else if (isLinkLine(line)) {
-      const match = line.match(/\[(.*)\]\((.*)\)/);
-      if (match) {
-        result.push(
-          <a key={i} href={match[2]} className="text-amber-300 hover:text-amber-200 underline">
-            {match[1]}
-          </a>
-        );
-      }
+      // บรรทัดที่เป็น [text](url) ล้วน → render เป็นลิงก์ (ผ่าน renderInlineMd)
+      result.push(
+        <p key={i} className="text-white/80 leading-relaxed mb-2">{renderInlineMd(line)}</p>
+      );
     } else if (line.trim() === "") {
       result.push(<div key={i} className="h-3" />);
     } else {
-      result.push(<p key={i} className="text-white/80 leading-relaxed mb-2">{line}</p>);
+      // บรรทัดธรรมดา — parse inline markdown ([text](url), **bold**, *italic*, autolink)
+      result.push(<p key={i} className="text-white/80 leading-relaxed mb-2">{renderInlineMd(line)}</p>);
     }
 
     i++;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Fragment } from "react";
 import Link from "next/link";
 import { getAllArticleMasters } from "@/lib/articles-data";
 import { createClient } from "@/lib/supabase-client";
@@ -326,18 +326,68 @@ function renderInlineMarkdown(text: string): React.ReactNode {
 
 /** แยก inline image ออก แล้ว render link + bold/italic ในส่วนที่เหลือ */
 function renderLinksAndText(text: string): React.ReactNode {
-  // First handle links (before bold/italic to avoid conflicts)
+  // 1) Handle Markdown link syntax: [text](url)
+  //    (image syntax ![alt](url) ถูกกรองไปก่อนหน้าแล้วใน renderInlineMarkdown)
+  const mdLinkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let key = 0;
+
+  while ((match = mdLinkRegex.exec(text)) !== null) {
+    // ข้อความก่อน [text](url) — autolink URL ตรง ๆ + bold/italic
+    const before = text.slice(lastIndex, match.index);
+    if (before) {
+      parts.push(
+        <Fragment key={key++}>{renderAutoLinksAndBold(before)}</Fragment>
+      );
+    }
+
+    const linkText = match[1];
+    const linkUrl = match[2];
+    parts.push(
+      <ExternalLink key={key++} href={linkUrl}>
+        {linkText}
+      </ExternalLink>
+    );
+    lastIndex = match.index + match[0].length;
+  }
+
+  // ข้อความที่เหลือหลัง markdown link สุดท้าย
+  const rest = text.slice(lastIndex);
+  if (rest) {
+    parts.push(<Fragment key={key++}>{renderAutoLinksAndBold(rest)}</Fragment>);
+  }
+
+  if (parts.length === 0) return text;
+  return <>{parts}</>;
+}
+
+/**
+ * autolink URL ที่พิมพ์ตรง ๆ (https://...) ให้เป็นลิงก์แสดงโดเมน
+ * แล้ว render bold/italic ในข้อความที่เหลือ
+ */
+function renderAutoLinksAndBold(text: string): React.ReactNode {
   const urlRegex = /(https?:\/\/[^\s<"')]+)/g;
   const linkParts = text.split(urlRegex);
   
   if (linkParts.length > 1) {
-    return linkParts.map((part, i) => {
-      if (part.match(urlRegex)) {
-        const domain = getDomainLabel(part);
-        return <ExternalLink key={i} href={part}>{domain}</ExternalLink>;
-      }
-      return renderBoldItalic(part);
-    });
+    return (
+      <>
+        {linkParts.map((part, i) => {
+          if (part.match(urlRegex)) {
+            const domain = getDomainLabel(part);
+            return (
+              <ExternalLink key={i} href={part}>
+                {domain}
+              </ExternalLink>
+            );
+          }
+          return renderBoldItalic(part);
+        })}
+      </>
+    );
   }
 
   return renderBoldItalic(text);

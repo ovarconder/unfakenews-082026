@@ -219,7 +219,7 @@ export default function AdminSidebar({ user, onLogout }: AdminSidebarProps) {
   });
 
   const sidebarContent = (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-hidden">
       {/* Logo + Notification Bell */}
       <div className="px-6 py-6 border-b border-white/10">
         <Link href="/admin" className="flex flex-col items-start gap-2">
@@ -239,7 +239,7 @@ export default function AdminSidebar({ user, onLogout }: AdminSidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 pt-4 pb-10 space-y-1 overflow-y-auto">
+      <nav className="flex-1 min-h-0 px-3 pt-4 pb-10 space-y-1 overflow-y-auto">
         {visibleItems.map((item) => {
           const Icon = item.icon;
           return (

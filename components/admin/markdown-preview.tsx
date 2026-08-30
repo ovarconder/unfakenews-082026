@@ -172,12 +172,49 @@ export function renderMarkdownPreview(text: string): React.ReactNode[] {
       }
     }
 
-    if (line.startsWith("## ")) {
-      result.push(<h2 key={i} className="text-2xl font-bold text-amber-200 mt-6 mb-3">{line.slice(3)}</h2>);
-    } else if (line.startsWith("### ")) {
+    const hMatch = line.trim().match(/^(#{1,4})\s+(.+)$/);
+    if (hMatch) {
+      const level = hMatch[1].length;
+      const txt = hMatch[2].trim();
+      if (level === 1) {
+        result.push(<h1 key={i} className="text-3xl font-bold text-amber-300 mt-7 mb-3">{renderInlineMd(txt)}</h1>);
+      } else if (level === 2) {
+        result.push(<h2 key={i} className="text-2xl font-bold text-amber-200 mt-6 mb-3">{renderInlineMd(txt)}</h2>);
+      } else if (level === 3) {
+        result.push(<h3 key={i} className="text-xl font-semibold text-white mt-5 mb-2">{renderInlineMd(txt)}</h3>);
+      } else {
+        result.push(<h4 key={i} className="text-lg font-semibold text-white/90 mt-4 mb-2">{renderInlineMd(txt)}</h4>);
+      }
+      i++;
+      continue;
+    } else if (line.trim().startsWith(">")) {
       result.push(<h3 key={i} className="text-xl font-semibold text-white mt-5 mb-2">{line.slice(4)}</h3>);
+      i++;
+      continue;
+    } else if (line.trim().startsWith(">")) {
+      // Blockquote — รวมบรรทัดที่ขึ้นต้นด้วย > ต่อเนื่องกัน
+      const quotes: string[] = [];
+      while (i < lines.length && lines[i].trim().startsWith(">")) {
+        quotes.push(lines[i].trim().replace(/^>\s?/, ""));
+        i++;
+      }
+      result.push(
+        <blockquote
+          key={i}
+          className="border-l-4 border-amber-400/40 bg-white/[0.02] pl-4 py-2 my-3 italic text-white/70"
+        >
+          {quotes.map((q, qi) => (
+            <div key={qi} className="last:mb-0">
+              {renderInlineMd(q) || <br />}
+            </div>
+          ))}
+        </blockquote>
+      );
+      continue;
     } else if (line.startsWith("**") && line.endsWith("**")) {
       result.push(<p key={i} className="font-bold text-white my-2">{line.replace(/\*\*/g, "")}</p>);
+      i++;
+      continue;
     } else if (line.startsWith("- ")) {
       result.push(<li key={i} className="text-white/80 ml-6 list-disc">{line.slice(2)}</li>);
     } else if (line.startsWith("1. ")) {

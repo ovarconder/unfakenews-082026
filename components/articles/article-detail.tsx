@@ -247,6 +247,25 @@ function renderContent(content: string, translatedAlts?: Record<string, string>)
       i++;
       continue;
     }
+    // --- heading level 1 (#) และ level 4 (####) ---
+    if (/^#\s+/.test(line.trim())) {
+      result.push(
+        <h1 key={i} className="text-3xl font-bold text-amber-300 mt-10 mb-4">
+          {line.trim().replace(/^#\s+/, "")}
+        </h1>
+      );
+      i++;
+      continue;
+    }
+    if (/^####\s+/.test(line.trim())) {
+      result.push(
+        <h4 key={i} className="text-lg font-semibold text-white/90 mt-6 mb-2">
+          {line.trim().replace(/^####\s+/, "")}
+        </h4>
+      );
+      i++;
+      continue;
+    }
     // --- bold text on its own line (**text**) ---
     if (/^\*\*[^*]+\*\*$/.test(line.trim())) {
       result.push(

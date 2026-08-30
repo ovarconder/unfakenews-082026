@@ -21,6 +21,7 @@ import {
   X,
   LayoutDashboard,
   Youtube,
+  Quote,
 } from "lucide-react";
 import { GalleryExtension } from "./tiptap-extensions/gallery";
 import { YouTubeExtension } from "./tiptap-extensions/youtube";
@@ -42,7 +43,7 @@ export const WysiwygEditor = forwardRef<WysiwygEditorHandle, WysiwygEditorProps>
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        heading: { levels: [2, 3] },
+        heading: { levels: [1, 2, 3, 4] },
         bulletList: { keepMarks: true },
         orderedList: { keepMarks: true },
       }),
@@ -234,6 +235,9 @@ export const WysiwygEditor = forwardRef<WysiwygEditorHandle, WysiwygEditorProps>
         </ToolBtn>
         <ToolBtn onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive("orderedList")} title="Ordered List">
           <ListOrdered size={16} />
+        </ToolBtn>
+        <ToolBtn onClick={() => editor.chain().focus().toggleBlockquote().run()} active={editor.isActive("blockquote")} title="Blockquote (Quote)">
+          <Quote size={16} />
         </ToolBtn>
         <div className="w-px h-5 bg-white/10 mx-1" />
         <ToolBtn onClick={setLink} active={editor.isActive("link")} title="Insert Link">

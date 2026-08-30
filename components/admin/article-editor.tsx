@@ -462,21 +462,90 @@ export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorPr
         `<div data-type="youtube" data-video-id="${videoId}"></div>`
     );
 
-    // 3) แปลง markdown ที่เหลือ (เหมือนเดิม)
-    html = html
-      .replace(/### (.+)/g, '<h3>$1</h3>')
-      .replace(/## (.+)/g, '<h2>$1</h2>')
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.+?)\*/g, '<em>$1</em>')
-      .replace(/\n\n/g, '</p><p>')
-      .replace(/^- (.+)/gm, '<li>$1</li>')
-      .replace(/(<li>[\s\S]*?<\/li>)/g, '<ul>$1</ul>')
-      .replace(/^\d+\. (.+)/gm, '<li>$1</li>')
-      .replace(/!\[(.*?)\]\((.*?)\)/g, '<img src="$2" alt="$1" class="rounded-xl max-w-full my-4 mx-auto" />')
-      .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" class="text-amber-300 underline">$1</a>')
-      .replace(/\n$/, '');
-    if (!html.startsWith('<p>')) html = '<p>' + html;
-    if (!html.endsWith('</p>')) html = html + '</p>';
+    // 3) แปลง markdown ที่เหลือ — line-by-line parser
+    //    สร้าง HTML ที่ถูกต้องตามโครงสร้าง (block elements ไม่ถูกห่อด้วย <p>)
+    //    เนื่องจาก ProseMirror (TipTap WYSIWYG) ไม่ autofix nesting ที่ invalid
+    //    เช่น <p><h2> → WYSIWYG จะแสดงเร็ว/ไม่ถูกต้อง
+    // ============================================================
+    // inline renderer — bold/italic/link/image ภายในบรรทัด
+    const renderInline = (s: string): string =>
+      s
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="rounded-xl max-w-full my-4 mx-auto" />')
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-amber-300 hover:text-amber-200 underline">$1</a>');
+
+    const lines = html.split("\n");
+    const out: string[] = [];
+    let i = 0;
+
+    while (i < lines.length) {
+      const line = lines[i];
+      const t = line.trim();
+
+      // บรรทัดว่าง → แค่เว้น
+      if (t === "") { i++; continue; }
+
+      // Heading — รองรับ #,##,###,#### (H1–H4)
+      const hMatch = t.match(/^(#{1,4})\s+(.+)$/);
+      if (hMatch) {
+        const level = hMatch[1].length; // 1..4
+        out.push(`<h${level}>${renderInline(hMatch[2].trim())}</h${level}>`);
+        i++;
+        continue;
+      }
+
+      // Blockquote — กลุ่มบรรทัดที่ขึ้นต้นด้วย >
+      if (t.startsWith(">")) {
+        let buf: string[] = [];
+        while (i < lines.length && lines[i].trim().startsWith(">")) {
+          buf.push(lines[i].trim().replace(/^>\s?/, ""));
+          i++;
+        }
+        out.push(`<blockquote>${buf.map((b) => (b ? renderInline(b) : "<br>")).join(" ")}</blockquote>`);
+        continue;
+      }
+
+      // Unordered list — กลุ่มบรรทัดที่ขึ้นต้นด้วย - หรือ *
+      if (/^[-*]\s+/.test(t)) {
+        let items: string[] = [];
+        while (i < lines.length && /^[-*]\s+/.test(lines[i].trim())) {
+          items.push(renderInline(lines[i].trim().replace(/^[-*]\s+/, "")));
+          i++;
+        }
+        out.push(`<ul>${items.map((it) => `<li>${it}</li>`).join("")}</ul>`);
+        continue;
+      }
+
+      // Ordered list — กลุ่มบรรทัดที่ขึ้นต้นด้วย 1. 2. ...
+      if (/^\d+\.\s+/.test(t)) {
+        let items: string[] = [];
+        while (i < lines.length && /^\d+\.\s+/.test(lines[i].trim())) {
+          items.push(renderInline(lines[i].trim().replace(/^\d+\.\s+/, "")));
+          i++;
+        }
+        out.push(`<ol>${items.map((it) => `<li>${it}</li>`).join("")}</ol>`);
+        continue;
+      }
+
+      // กลุ่ม paragraph — บรรทัดธรรมดาที่ต่อเนื่องกัน (ไม่ว่าง/ไม่ block)
+      let para: string[] = [];
+      while (i < lines.length) {
+        const ct = lines[i].trim();
+        if (ct === "") break;
+        if (/^#{1,4}\s+/.test(ct)) break;
+        if (ct.startsWith(">")) break;
+        if (/^[-*]\s+/.test(ct)) break;
+        if (/^\d+\.\s+/.test(ct)) break;
+        para.push(renderInline(lines[i]));
+        i++;
+      }
+      if (para.length > 0) {
+        out.push(`<p>${para.join("<br>")}</p>`);
+      }
+    }
+
+    html = out.join("\n");
     return html;
   };
 
@@ -516,11 +585,28 @@ export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorPr
 
     // 1) แปลง HTML ที่เหลือ (เหมือนเดิม)
     md = md
+      .replace(/<h1[^>]*>(.*?)<\/h1>/gi, '# $1')
       .replace(/<h2[^>]*>(.*?)<\/h2>/gi, '## $1')
       .replace(/<h3[^>]*>(.*?)<\/h3>/gi, '### $1')
+      .replace(/<h4[^>]*>(.*?)<\/h4>/gi, '#### $1')
       .replace(/<strong>(.*?)<\/strong>/gi, '**$1**')
       .replace(/<em>(.*?)<\/em>/gi, '*$1*')
       .replace(/<u>(.*?)<\/u>/gi, '$1')
+      // blockquote — กลุ่มบรรทัดที่อยู่ใน <blockquote>
+      //   (TipTap จะเก็บภายใน <blockquote><p>...</p></blockquote>)
+      .replace(/<blockquote[^>]*>[\s\S]*?<\/blockquote>/gi, (bq) => {
+        const inner = bq
+          .replace(/<blockquote[^>]*>/gi, '')
+          .replace(/<\/blockquote>/gi, '')
+          .replace(/<p[^>]*>/gi, '')
+          .replace(/<\/p>/gi, '\n')
+          .replace(/<br\s*\/?\s*>/gi, '\n');
+        return inner
+          .split("\n")
+          .map((ln) => (ln.trim() ? `> ${ln.trim()}` : `>`))
+          .join("\n");
+      })
+      .replace(/<br\s*\/?\s*>/gi, '\n')
       .replace(/<ul[^>]*>/gi, '')
       .replace(/<\/ul>/gi, '')
       .replace(/<ol[^>]*>/gi, '')

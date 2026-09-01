@@ -5,19 +5,23 @@ const nextConfig = {
     forceSwcTransforms: false,
   },
   async rewrites() {
-    return [
-      // Rewrite /sitemap.xml → internal handler (app/sitemap-xml/route.ts)
-      // Next.js ไม่รองรับ folder ชื่อ "sitemap.xml" (มี dot) เป็น route ได้ถูกต้อง
-      {
-        source: "/sitemap.xml",
-        destination: "/sitemap-xml",
-      },
-      // Rewrite /sitemap/:lang.xml → internal handler (ตัด .xml ออกใน route)
-      {
-        source: "/sitemap/:lang.xml",
-        destination: "/sitemap/:lang",
-      },
-    ];
+    return {
+      // beforeFiles: ทำงานก่อน route handler และ static file ทั้งหมด
+      // จำเป็นต้องใช้เพราะ Next.js App Router จะ match
+      // app/sitemap.xml/route.ts ก่อนถ้าใช้ afterFiles (default)
+      beforeFiles: [
+        {
+          source: "/sitemap.xml",
+          destination: "/sitemap-xml",
+        },
+        {
+          source: "/sitemap/:lang.xml",
+          destination: "/sitemap/:lang",
+        },
+      ],
+      afterFiles: [],
+      fallback: [],
+    };
   },
 };
 export default nextConfig;

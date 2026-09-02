@@ -26,24 +26,23 @@ export default function robots(): MetadataRoute.Robots {
     "Applebot-Extended",
   ].map((agent) => ({
     userAgent: agent,
-    allow: "/",
+    allow: ["/", "/api/sitemap"],
     disallow: ["/admin/", "/api/"],
   }));
 
-  // === ลิสต์ sitemap ทั้งรวม + รายภาษา ===
+  // === ลิสต์ sitemap รวม (ทุกภาษา) ===
   const sitemaps: string[] = [
-    `${baseUrl}/sitemap.xml`, // sitemap รวม (ทุกภาษา)
-    ...activeLocales.map((l) => `${baseUrl}/sitemap/${l}.xml`), // sitemap รายภาษา
+    `${baseUrl}/sitemap.xml`,
   ];
 
   return {
     rules: [
       // AI agents อนุญาตชัดเจน
       ...aiAgents,
-      // crawler ทั่วไป
+      // crawler ทั่วไป — allow /api/sitemap ก่อน disallow /api/
       {
         userAgent: "*",
-        allow: "/",
+        allow: ["/", "/api/sitemap"],
         disallow: ["/admin/", "/api/"],
       },
     ],

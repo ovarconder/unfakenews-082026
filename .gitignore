@@ -28,6 +28,9 @@ yarn-error.log*
 
 # SQL scripts (keep local only — not committed)
 *.sql
+# ...except database migrations, which must be versioned with the code
+!migrations/
+!migrations/*.sql
 
 # typescript
 *.tsbuildinfo

@@ -10,6 +10,7 @@ import type { Locale } from "@/lib/locales";
 import { ALL_LOCALES, setLocaleTiers } from "@/lib/locales";
 
 export interface SiteSettings {
+  /** DB row id — เป็นได้ทั้ง UUID (เว็บอื่น) หรือ TEXT 'default' ขึ้นกับ schema ของแต่ละ DB */
   id: string;
   name: string;
   tagline: string;
@@ -253,8 +254,7 @@ function dbRowToSettings(row: any): SiteSettings {
 
 // Helper: camelCase → snake_case for DB upsert
 function settingsToDbRow(settings: SiteSettings): any {
-  return {
-    id: settings.id,
+  const row: any = {
     name: settings.name,
     tagline: settings.tagline,
     description: settings.description,
@@ -322,6 +322,8 @@ function settingsToDbRow(settings: SiteSettings): any {
     updated_at: new Date().toISOString(),
     updated_by: settings.updatedBy || null,
   };
+
+  return row;
 }
 
 // In-memory cache for hot reload / SSR performance
@@ -332,11 +334,13 @@ export async function getSettings(): Promise<SiteSettings> {
   // Cache causes issues when settings are updated via API in serverless env
   try {
     const supabase = createAdminClient();
+    // อ่านแถวแรกของตาราง โดยไม่ hardcode id
+    // → รองรับทั้ง DB ที่ id เป็น UUID และ DB ที่ id เป็น TEXT 'default'
     const { data, error } = await supabase
       .from("site_settings")
       .select("*")
-      .eq("id", "default")
-      .single();
+      .limit(1)
+      .maybeSingle();
 
     if (error || !data) {
       console.warn("[Settings] DB read failed, using defaults:", error?.message);
@@ -376,12 +380,37 @@ export async function saveSettings(updates: Partial<SiteSettings>): Promise<Site
   try {
     const supabase = createAdminClient();
     const dbRow = settingsToDbRow(updated);
-    const { error } = await supabase
+
+    // ตรวจสอบว่ามีแถวอยู่แล้วหรือไม่ (รองรับทั้ง UUID และ TEXT id)
+    const { data: existing, error: readErr } = await supabase
       .from("site_settings")
-      .upsert(dbRow, { onConflict: "id" });
+      .select("id")
+      .limit(1)
+      .maybeSingle();
+
+    if (readErr) {
+      console.error("[Settings] DB read (pre-save) failed:", readErr.message);
+      throw new Error(`อัปเดตการตั้งค่าไม่สำเร็จ: ${readErr.message}`);
+    }
+
+    let error;
+    if (existing?.id !== undefined && existing?.id !== null) {
+      // มีแถวอยู่แล้ว → UPDATE แถวนั้นตาม id จริง (UUID หรือ TEXT)
+      const { error: updateErr } = await supabase
+        .from("site_settings")
+        .update(dbRow)
+        .eq("id", existing.id);
+      error = updateErr;
+    } else {
+      // ยังไม่มีแถว → INSERT ใหม่ (ไม่ส่ง id เพื่อให้ DB สร้าง UUID เอง)
+      const { error: insertErr } = await supabase
+        .from("site_settings")
+        .insert(dbRow);
+      error = insertErr;
+    }
 
     if (error) {
-      console.error("[Settings] DB upsert failed:", error.message);
+      console.error("[Settings] DB write failed:", error.message);
       // Don't swallow the error — rethrow so the API/UI can surface it
       throw new Error(`อัปเดตการตั้งค่าไม่สำเร็จ: ${error.message}`);
     }

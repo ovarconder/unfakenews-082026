@@ -125,9 +125,59 @@ export async function POST(request: NextRequest) {
       });
 
     if (error) {
-      console.error(`[Upload] Supabase upload error:`, error);
+      console.error(
+        `[Upload] Supabase upload error (bucket: "${BUCKET_NAME}", key: "${key}"):`,
+        error
+      );
+
+      const msg = (error.message || "").toLowerCase();
+
+      // 1) ไม่พบ bucket — แจ้งวิธีสร้างให้ชัดเจน
+      if (msg.includes("bucket not found")) {
+        console.error(
+          `[Upload] ❌ ไม่พบ Storage Bucket ชื่อ "${BUCKET_NAME}" — ` +
+          `กรุณาสร้าง bucket นี้ใน Supabase Dashboard > Storage ` +
+          `(ตั้งชื่อ "${BUCKET_NAME}" และเปิด Public) ` +
+          `หรือรัน SQL: migrations/020_create_images_bucket.sql`
+        );
+        return NextResponse.json(
+          {
+            error:
+              `ไม่พบ Storage Bucket ชื่อ "${BUCKET_NAME}" — ` +
+              `กรุณาสร้าง bucket นี้ใน Supabase Dashboard > Storage ` +
+              `(ตั้งชื่อ "${BUCKET_NAME}" และเปิด Public) ` +
+              `หรือรัน SQL: migrations/020_create_images_bucket.sql`,
+          },
+          { status: 500 }
+        );
+      }
+
+      // 2) ถูก RLS policy บล็อก (มักเกิดเมื่อ SUPABASE_SERVICE_ROLE_KEY ว่าง แล้ว fallback เป็น anon key)
+      if (
+        msg.includes("row-level security") ||
+        msg.includes("violates") ||
+        msg.includes("unauthorized") ||
+        msg.includes("permission denied")
+      ) {
+        console.error(
+          `[Upload] ❌ ถูกปฏิเสธโดย Storage Policy — ` +
+          `ตรวจสอบว่าได้ตั้งค่า SUPABASE_SERVICE_ROLE_KEY แล้ว ` +
+          `(ถ้าว่าง ระบบจะ fallback ไปใช้ anon key ซึ่งไม่มีสิทธิ์เขียน)`
+        );
+        return NextResponse.json(
+          {
+            error:
+              `อัปโหลดถูกปฏิเสธโดย Storage Policy — ` +
+              `กรุณาตรวจสอบว่าได้ตั้งค่า SUPABASE_SERVICE_ROLE_KEY แล้ว ` +
+              `(ถ้าว่าง ระบบจะ fallback ไปใช้ anon key ซึ่งไม่มีสิทธิ์เขียน)`,
+          },
+          { status: 500 }
+        );
+      }
+
+      // 3) Error อื่น ๆ — แนบชื่อ bucket ไว้เพื่อ debug
       return NextResponse.json(
-        { error: `อัปโหลดไปยังที่เก็บรูปไม่สำเร็จ: ${error.message}` },
+        { error: `อัปโหลดไปยังที่เก็บรูปไม่สำเร็จ (bucket "${BUCKET_NAME}"): ${error.message}` },
         { status: 500 }
       );
     }

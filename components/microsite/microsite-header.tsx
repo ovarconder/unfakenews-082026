@@ -126,7 +126,7 @@ export function MicrositeHeader({ locale, microsite, settings }: MicrositeHeader
               alt={siteName}
               className="w-8 h-8"
             />
-            <span className="font-thai text-lg font-bold tracking-wide hidden sm:block text-white hover:text-amber-200 transition-colors">
+            <span className="font-thai text-lg font-bold tracking-wide hidden sm:block text-white hover:text-brand-primary transition-colors">
               {siteName}
             </span>
           </Link>
@@ -139,8 +139,8 @@ export function MicrositeHeader({ locale, microsite, settings }: MicrositeHeader
                 href={link.href}
                 className={`text-sm font-medium transition-colors ${
                   isActive(link.href)
-                    ? "text-amber-300"
-                    : "text-white/70 hover:text-amber-200"
+                    ? "text-brand-primary"
+                    : "text-white/70 hover:text-brand-primary"
                 }`}
               >
                 {(typeof link.key === 'string' && !link.key.startsWith('nav.')) ? link.key : t(link.key as any, locale)}
@@ -164,7 +164,7 @@ export function MicrositeHeader({ locale, microsite, settings }: MicrositeHeader
             <div className="relative" ref={langRef}>
               <button
                 onClick={() => setLangOpen(!langOpen)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-white/20 text-xs font-medium text-white/80 hover:bg-white/10 hover:text-amber-200 transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-white/20 text-xs font-medium text-white/80 hover:bg-white/10 hover:text-brand-primary transition-all"
               >
                 <Globe size={14} />
                 <span>{currentLangName}</span>
@@ -179,7 +179,7 @@ export function MicrositeHeader({ locale, microsite, settings }: MicrositeHeader
                         onClick={() => setLangOpen(false)}
                         className={`flex items-center justify-between px-4 py-2 text-sm transition-colors ${
                           l === locale
-                            ? "text-amber-300 bg-amber-300/10"
+                            ? "text-brand-primary bg-brand-primary/10"
                             : "text-white/70 hover:text-white hover:bg-white/5"
                         }`}
                       >
@@ -206,7 +206,7 @@ export function MicrositeHeader({ locale, microsite, settings }: MicrositeHeader
 
       {/* Mobile Navigation */}
       {mobileOpen && (
-        <div className="md:hidden bg-[#0a1628]/95 backdrop-blur-md border-t border-white/10">
+        <div className="md:hidden bg-brand-bg-secondary/95 backdrop-blur-md border-t border-white/10">
           <div className="px-4 py-4 space-y-3">
             {navLinks.map((link, idx) => (
               <Link
@@ -215,8 +215,8 @@ export function MicrositeHeader({ locale, microsite, settings }: MicrositeHeader
                 onClick={() => setMobileOpen(false)}
                 className={`block py-2 text-sm font-medium transition-colors ${
                   isActive(link.href)
-                    ? "text-amber-300"
-                    : "text-white/70 hover:text-amber-200"
+                    ? "text-brand-primary"
+                    : "text-white/70 hover:text-brand-primary"
                 }`}
               >
                 {(typeof link.key === 'string' && !link.key.startsWith('nav.')) ? link.key : t(link.key as any, locale)}
@@ -248,7 +248,7 @@ export function MicrositeHeader({ locale, microsite, settings }: MicrositeHeader
                     onClick={() => setMobileOpen(false)}
                     className={`px-2 py-1.5 rounded-md text-xs text-center transition-colors ${
                       l === locale
-                        ? "bg-amber-300/20 text-amber-300 border border-amber-300/30"
+                        ? "bg-brand-primary/20 text-brand-primary border border-brand-primary/30"
                         : "text-white/60 hover:text-white border border-white/10 hover:border-white/30"
                     }`}
                   >

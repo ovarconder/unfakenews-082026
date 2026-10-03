@@ -39,6 +39,20 @@
     --color-header: #060e1a;
     --color-success: #10b981;
     --color-error: #ef4444;
+
+    /* RGB channels ของสีหลัก — SettingsProvider อัปเดตให้ เพื่อรองรับ
+       opacity/alpha (เช่น rgba(var(--color-primary-rgb), 0.2)) */
+    --color-primary-rgb: 251 191 36;
+    --color-secondary-rgb: 245 158 11;
+    --color-accent-rgb: 217 119 6;
+    --color-bg-rgb: 6 14 26;
+    --color-bg-secondary-rgb: 10 22 40;
+    --color-card-rgb: 15 31 58;
+    --color-text-rgb: 255 255 255;
+    --color-success-rgb: 16 185 129;
+    --color-error-rgb: 239 68 68;
+    --color-header-rgb: 6 14 26;
+    --color-sidebar-rgb: 10 22 40;
   }
 
   .dark {
@@ -56,6 +70,18 @@
     --color-header: #060e1a;
     --color-success: #10b981;
     --color-error: #ef4444;
+
+    --color-primary-rgb: 251 191 36;
+    --color-secondary-rgb: 245 158 11;
+    --color-accent-rgb: 217 119 6;
+    --color-bg-rgb: 6 14 26;
+    --color-bg-secondary-rgb: 10 22 40;
+    --color-card-rgb: 15 31 58;
+    --color-text-rgb: 255 255 255;
+    --color-success-rgb: 16 185 129;
+    --color-error-rgb: 239 68 68;
+    --color-header-rgb: 6 14 26;
+    --color-sidebar-rgb: 10 22 40;
   }
 }
 @layer base {
@@ -193,5 +219,46 @@
     background: transparent;
     border: 1px solid var(--color-card-border);
     color: var(--color-primary);
+  }
+
+  /* ============================================================
+     Brand color helpers ที่รองรับความโปร่งใส (opacity)
+     ใช้ rgba(var(--color-*-rgb), ALPHA) โดยแก้ alpha ได้ตรงๆ
+     ============================================================ */
+  .text-brand-primary { color: var(--color-primary); }
+  .text-brand-secondary { color: var(--color-secondary); }
+  .text-brand-accent { color: var(--color-accent); }
+  .text-brand-text { color: var(--color-text); }
+  .text-brand-success { color: var(--color-success); }
+  .text-brand-error { color: var(--color-error); }
+  .border-brand-primary { border-color: var(--color-primary); }
+  .border-brand-secondary { border-color: var(--color-secondary); }
+
+  .bg-brand-primary-10 { background-color: rgba(var(--color-primary-rgb), 0.1); }
+  .bg-brand-primary-15 { background-color: rgba(var(--color-primary-rgb), 0.15); }
+  .bg-brand-primary-20 { background-color: rgba(var(--color-primary-rgb), 0.2); }
+  .border-brand-primary-20 { border-color: rgba(var(--color-primary-rgb), 0.2); }
+  .border-brand-primary-30 { border-color: rgba(var(--color-primary-rgb), 0.3); }
+  .border-brand-primary-40 { border-color: rgba(var(--color-primary-rgb), 0.4); }
+
+  /* Brand gradient text (ใช้กับหัวข้อ hero) */
+  .text-brand-gradient {
+    background-image: linear-gradient(
+      to right,
+      var(--color-primary),
+      var(--color-secondary),
+      var(--color-accent)
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Brand gradient button/background */
+  .bg-brand-gradient {
+    background-image: linear-gradient(to right, var(--color-primary), var(--color-secondary));
+  }
+  .bg-brand-gradient-hover:hover {
+    background-image: linear-gradient(to right, var(--color-secondary), var(--color-accent));
   }
 }

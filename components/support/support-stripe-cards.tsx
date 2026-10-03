@@ -57,15 +57,15 @@ export function SupportStripeCards({ siteName }: SupportStripeCardsProps) {
             href={tier.href}
             target="_blank"
             rel="noopener noreferrer"
-            className="group flex flex-col items-center justify-between gap-3 px-5 py-6 rounded-xl bg-white/5 border border-white/10 hover:border-amber-300/40 hover:bg-white/10 transition-all"
+            className="group flex flex-col items-center justify-between gap-3 px-5 py-6 rounded-xl bg-white/5 border border-white/10 hover:border-brand-primary/40 hover:bg-white/10 transition-all"
           >
-            <div className="text-3xl font-bold text-amber-300 font-prompt">
+            <div className="text-3xl font-bold text-brand-primary font-prompt">
               {tier.amount}
             </div>
             <div className="text-sm text-white/70 text-center flex-1">
               {tier.label}
             </div>
-            <div className="flex items-center gap-1 text-xs text-amber-300/80 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="flex items-center gap-1 text-xs text-brand-primary/80 opacity-0 group-hover:opacity-100 transition-opacity">
               <span>Support via Stripe</span>
               <ArrowUpRight size={12} />
             </div>

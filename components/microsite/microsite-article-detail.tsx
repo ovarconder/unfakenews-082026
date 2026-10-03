@@ -79,7 +79,7 @@ function SocialShareButtons({ url, title, description }: { url: string; title: s
       name: "Copy Link",
       href: "#",
       icon: LinkIcon,
-      color: "hover:text-amber-300",
+      color: "hover:text-brand-primary",
       onClick: async (e: React.MouseEvent) => {
         e.preventDefault();
         try {
@@ -297,7 +297,7 @@ export function MicrositeArticleDetail({ micrositeSlug, articleSlug, locale, mic
           <p className="text-white/60">Article not found</p>
           <Link 
             href={micrositePrefix} 
-            className="inline-block mt-4 hover:text-amber-200 transition-colors"
+            className="inline-block mt-4 hover:opacity-80 transition-colors"
             style={{ color: primaryColor }}
           >
             &larr; {locale === "th" ? "กลับไปหน้าแรก" : "Back to home"}
@@ -446,7 +446,8 @@ export function MicrositeArticleDetail({ micrositeSlug, articleSlug, locale, mic
                   )}
                   <Link
                     href={micrositePrefix}
-                    className="block mt-3 text-xs font-medium hover:text-amber-200 transition-colors"
+
+                    className="block mt-3 text-xs font-medium hover:opacity-80 transition-colors"
                     style={{ color: primaryColor }}
                   >
                     {locale === "th" ? "ไปหน้าแรกของ" : "Go to"} {microsite.name} &rarr;
@@ -469,7 +470,6 @@ export function MicrositeArticleDetail({ micrositeSlug, articleSlug, locale, mic
                       {locale === "th" ? "ไซต์หลัก" : "Main Site"}
                     </h3>
                     <Link
-                      href={`/${locale}`}
                       className="flex items-center gap-2 text-sm text-white/60 hover:text-amber-200 transition-colors"
                     >
                       <span className="text-2xl">🏛️</span>

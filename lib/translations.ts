@@ -25,12 +25,21 @@ export type TranslationKey =
   | "hero.subtitle"
   | "hero.cta"
   | "about.title"
+  | "about.eyebrow"
   | "about.description"
   | "about.mission"
   | "about.vision"
   | "about.values"
   | "contact.title"
+  | "contact.eyebrow"
   | "contact.description"
+  | "contact.sendAnother"
+  | "contact.namePlaceholder"
+  | "contact.messagePlaceholder"
+  | "contact.emailLabel"
+  | "contact.addressLabel"
+  | "contact.phoneLabel"
+  | "contact.quote"
   | "contact.name"
   | "contact.email"
   | "contact.message"
@@ -56,6 +65,8 @@ export type TranslationKey =
   | "about.value3Title"
   | "about.value3Desc"
   | "articles.title"
+  | "articles.eyebrow"
+  | "articles.subtitle"
   | "articles.published"
   | "articles.by"
   | "common.loading"
@@ -212,6 +223,14 @@ const translations: Record<TranslationKey, Partial<Record<Locale, string>>> = {
     es: `Sobre ${process.env.NEXT_PUBLIC_SITE_NAME_ES || "Siam Heritage"}`,
     pt: `Sobre ${process.env.NEXT_PUBLIC_SITE_NAME_PT || "Siam Heritage"}`,
   },
+  "about.eyebrow": {
+    en: "About",
+    th: "เกี่ยวกับเรา",
+    zh: "关于",
+    ja: "私たちについて",
+    es: "Acerca de",
+    pt: "Sobre",
+  },
   "about.description": {
     en: "We share stories, insights, and perspectives that inspire and connect.",
     th: "เราแบ่งปันเรื่องราว มุมมอง และแรงบันดาลใจที่เชื่อมโยงผู้คนเข้าด้วยกัน",
@@ -356,6 +375,70 @@ const translations: Record<TranslationKey, Partial<Record<Locale, string>>> = {
     es: "Enviar mensaje",
     pt: "Enviar mensagem",
   },
+  "contact.eyebrow": {
+    en: "Contact",
+    th: "ติดต่อเรา",
+    zh: "联系我们",
+    ja: "お問い合わせ",
+    es: "Contacto",
+    pt: "Contato",
+  },
+  "contact.sendAnother": {
+    en: "Send another message",
+    th: "ส่งข้อความใหม่",
+    zh: "再发送一条消息",
+    ja: "別のメッセージを送信",
+    es: "Enviar otro mensaje",
+    pt: "Enviar outra mensagem",
+  },
+  "contact.namePlaceholder": {
+    en: "Enter your name",
+    th: "กรอกชื่อของคุณ",
+    zh: "请输入您的姓名",
+    ja: "お名前を入力",
+    es: "Ingresa tu nombre",
+    pt: "Digite seu nome",
+  },
+  "contact.messagePlaceholder": {
+    en: "Type your message here...",
+    th: "พิมพ์ข้อความของคุณที่นี่...",
+    zh: "在此输入您的留言...",
+    ja: "ここにメッセージを入力...",
+    es: "Escribe tu mensaje aquí...",
+    pt: "Digite sua mensagem aqui...",
+  },
+  "contact.emailLabel": {
+    en: "Email",
+    th: "อีเมล",
+    zh: "邮箱",
+    ja: "メール",
+    es: "Correo",
+    pt: "E-mail",
+  },
+  "contact.addressLabel": {
+    en: "Address",
+    th: "ที่อยู่",
+    zh: "地址",
+    ja: "住所",
+    es: "Dirección",
+    pt: "Endereço",
+  },
+  "contact.phoneLabel": {
+    en: "Phone",
+    th: "โทรศัพท์",
+    zh: "电话",
+    ja: "電話",
+    es: "Teléfono",
+    pt: "Telefone",
+  },
+  "contact.quote": {
+    en: "We welcome your feedback and suggestions to develop and deliver the best information to you.",
+    th: "เรายินดีรับฟังความคิดเห็นและข้อเสนอแนะของคุณ เพื่อพัฒนาการนำเสนอข้อมูลที่ดีที่สุดให้กับคุณ",
+    zh: "我们欢迎您的反馈和建议，以不断改进并为您提供最优质的信息。",
+    ja: "より良い情報をお届けするため、皆さまのご意見・ご提案をお待ちしています。",
+    es: "Agradecemos tus comentarios y sugerencias para desarrollar y ofrecerte la mejor información.",
+    pt: "Agradecemos seus comentários e sugestões para desenvolver e oferecer as melhores informações a você.",
+  },
   "contact.sent": {
     en: "Your message has been sent successfully!",
     th: "ส่งข้อความสำเร็จ!",
@@ -459,6 +542,22 @@ const translations: Record<TranslationKey, Partial<Record<Locale, string>>> = {
     ja: "すべての記事",
     es: "Todos los artículos",
     pt: "Todos os artigos",
+  },
+  "articles.eyebrow": {
+    en: "Articles",
+    th: "บทความ",
+    zh: "文章",
+    ja: "記事",
+    es: "Artículos",
+    pt: "Artigos",
+  },
+  "articles.subtitle": {
+    en: "Stories, perspectives, and fact-checks — real news you can trust.",
+    th: "เรื่องราว มุมมอง และการตรวจสอบข้อเท็จจริง — ข่าวจริงที่คุณวางใจได้",
+    zh: "故事、观点与事实核查——值得您信赖的真实新闻。",
+    ja: "ストーリー、視点、ファクトチェック——信頼できる本物のニュース。",
+    es: "Historias, perspectivas y verificación de hechos: noticias reales en las que confiar.",
+    pt: "Histórias, perspectivas e verificação de fatos — notícias reais em que você pode confiar.",
   },
   "articles.published": {
     en: "Published",

@@ -16,14 +16,14 @@ export function Footer({ locale }: FooterProps) {
   const copyright = settings?.copyright || `© ${new Date().getFullYear()} Vibe. All rights reserved.`;
   const logoInitial = siteName.charAt(0).toUpperCase();
   return (
-    <footer className="bg-[#0a1628] border-t border-white/10">
+    <footer className="bg-brand-bg-secondary border-t border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Brand */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-full bg-amber-300/20 flex items-center justify-center">
-                <span className="text-amber-300 font-heading font-bold">{logoInitial}</span>
+              <div className="w-8 h-8 rounded-full bg-brand-primary/20 flex items-center justify-center">
+                <span className="text-brand-primary font-heading font-bold">{logoInitial}</span>
               </div>
               <span className="text-white font-heading text-lg font-bold">
                 {siteName}
@@ -43,7 +43,7 @@ export function Footer({ locale }: FooterProps) {
               <li>
                 <Link
                   href={`/${locale}`}
-                  className="text-white/60 hover:text-amber-200 text-sm transition-colors"
+                  className="text-white/60 hover:text-brand-primary text-sm transition-colors"
                 >
                   {t("nav.home", locale)}
                 </Link>
@@ -51,7 +51,7 @@ export function Footer({ locale }: FooterProps) {
               <li>
                 <Link
                   href={`/${locale}/about`}
-                  className="text-white/60 hover:text-amber-200 text-sm transition-colors"
+                  className="text-white/60 hover:text-brand-primary text-sm transition-colors"
                 >
                   {t("nav.about", locale)}
                 </Link>
@@ -59,7 +59,7 @@ export function Footer({ locale }: FooterProps) {
               <li>
                 <Link
                   href={`/${locale}/articles`}
-                  className="text-white/60 hover:text-amber-200 text-sm transition-colors"
+                  className="text-white/60 hover:text-brand-primary text-sm transition-colors"
                 >
                   {t("nav.articles", locale)}
                 </Link>
@@ -67,7 +67,7 @@ export function Footer({ locale }: FooterProps) {
               <li>
                 <Link
                   href={`/${locale}/contact`}
-                  className="text-white/60 hover:text-amber-200 text-sm transition-colors"
+                  className="text-white/60 hover:text-brand-primary text-sm transition-colors"
                 >
                   {t("nav.contact", locale)}
                 </Link>
@@ -75,7 +75,7 @@ export function Footer({ locale }: FooterProps) {
               <li>
                 <Link
                   href={`/${locale}/privacy`}
-                  className="text-white/60 hover:text-amber-200 text-sm transition-colors"
+                  className="text-white/60 hover:text-brand-primary text-sm transition-colors"
                 >
                   {t("footer.privacy", locale)}
                 </Link>
@@ -83,7 +83,7 @@ export function Footer({ locale }: FooterProps) {
               <li>
                 <Link
                   href={`/${locale}/terms`}
-                  className="text-white/60 hover:text-amber-200 text-sm transition-colors"
+                  className="text-white/60 hover:text-brand-primary text-sm transition-colors"
                 >
                   {t("footer.terms", locale)}
                 </Link>
@@ -91,7 +91,7 @@ export function Footer({ locale }: FooterProps) {
               <li>
                 <Link
                   href={`/${locale}/support`}
-                  className="text-white/60 hover:text-amber-200 text-sm transition-colors"
+                  className="text-white/60 hover:text-brand-primary text-sm transition-colors"
                 >
                   {t("footer.support", locale)}
                 </Link>
@@ -111,7 +111,7 @@ export function Footer({ locale }: FooterProps) {
                   href={`/${l}`}
                   className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
                     locale === l
-                      ? "bg-amber-300/20 text-amber-300 border border-amber-300/30"
+                      ? "bg-brand-primary/20 text-brand-primary border border-brand-primary/30"
                       : "text-white/60 hover:text-white border border-white/10 hover:border-white/30"
                   }`}
                 >

@@ -43,6 +43,39 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+
+        // ============================================================
+        // Dynamic brand colors — อ่านจาก CSS variables ที่ SettingsProvider
+        // ตั้งค่าให้ (มาจาก site_settings ใน DB)
+        //
+        // ใช้รูปแบบ rgb(var(--*-rgb) / <alpha-value>) เพื่อรองรับ
+        // opacity modifier ของ Tailwind (เช่น text-brand-primary/70)
+        // → --color-*-rgb เก็บค่าเป็น channel triplet "251 191 36"
+        // ============================================================
+        brand: {
+          // พื้นผิว — รองรับ opacity modifier ผ่าน rgb channel variables
+          // (เช่น bg-brand-bg/90) เพราะ --color-*-rgb เก็บ "r g b"
+          DEFAULT: "rgb(var(--color-bg-rgb) / <alpha-value>)",
+          bg: "rgb(var(--color-bg-rgb) / <alpha-value>)",
+          "bg-secondary": "rgb(var(--color-bg-secondary-rgb) / <alpha-value>)",
+          card: "rgb(var(--color-card-rgb) / <alpha-value>)",
+          header: "rgb(var(--color-header-rgb) / <alpha-value>)",
+          sidebar: "rgb(var(--color-sidebar-rgb) / <alpha-value>)",
+
+          // border เก็บค่าเป็น rgba อยู่แล้ว — ใช้ตรงๆ (ไม่รองรับ /opacity)
+          "card-border": "var(--color-card-border)",
+
+          // text ใช้ hex ตรงๆ (ไม่รองรับ /opacity)
+          text: "var(--color-text)",
+          "text-muted": "var(--color-text-muted)",
+
+          // สีเน้น — รองรับ opacity (เช่น bg-brand-primary/15)
+          primary: "rgb(var(--color-primary-rgb) / <alpha-value>)",
+          secondary: "rgb(var(--color-secondary-rgb) / <alpha-value>)",
+          accent: "rgb(var(--color-accent-rgb) / <alpha-value>)",
+          success: "rgb(var(--color-success-rgb) / <alpha-value>)",
+          error: "rgb(var(--color-error-rgb) / <alpha-value>)",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -62,3 +95,4 @@ const config: Config = {
 };
 
 export default config;
+

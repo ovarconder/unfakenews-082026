@@ -44,11 +44,11 @@ export async function HomePage({ locale }: HomePageProps) {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-10">
               <div className="flex items-center justify-center gap-3 mb-4">
-                <div className="h-px w-8 bg-gradient-to-r from-transparent to-amber-400/40" />
-                <span className="text-amber-300/60 text-xs uppercase tracking-[0.2em] font-medium">
+                <div className="h-px w-8 bg-gradient-to-r from-transparent to-brand-primary/40" />
+                <span className="text-brand-primary/60 text-xs uppercase tracking-[0.2em] font-medium">
                   {t("home.highlight", locale)}
                 </span>
-                <div className="h-px w-8 bg-gradient-to-l from-transparent to-amber-400/40" />
+                <div className="h-px w-8 bg-gradient-to-l from-transparent to-brand-primary/40" />
               </div>
               <h2 className="text-3xl md:text-4xl font-prompt font-bold text-white">
                 {t("home.highlight", locale)}
@@ -73,11 +73,11 @@ export async function HomePage({ locale }: HomePageProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
             <div className="flex items-center justify-center gap-3 mb-4">
-              <div className="h-px w-8 bg-gradient-to-r from-transparent to-amber-400/40" />
-              <span className="text-amber-300/60 text-xs uppercase tracking-[0.2em] font-medium">
+              <div className="h-px w-8 bg-gradient-to-r from-transparent to-brand-primary/40" />
+              <span className="text-brand-primary/60 text-xs uppercase tracking-[0.2em] font-medium">
                 {t("home.latest", locale)}
               </span>
-              <div className="h-px w-8 bg-gradient-to-l from-transparent to-amber-400/40" />
+              <div className="h-px w-8 bg-gradient-to-l from-transparent to-brand-primary/40" />
             </div>
             <h2 className="text-3xl md:text-4xl font-prompt font-bold text-white">
               {t("home.latestArticles", locale)}
@@ -109,7 +109,7 @@ export async function HomePage({ locale }: HomePageProps) {
             <div className="mt-10 text-center">
               <a
                 href={`/${locale}/articles`}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-white/20 text-white/80 hover:bg-white/5 hover:text-amber-200 transition-all text-sm"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-white/20 text-white/80 hover:bg-white/5 hover:text-brand-primary transition-all text-sm"
               >
                 {t("articles.readMore", locale)}
                 <span>&rarr;</span>

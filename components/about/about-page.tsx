@@ -31,11 +31,11 @@ export function AboutPage({ locale }: AboutPageProps) {
         {/* Page Header */}
         <div className="text-center mb-16">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="h-px w-8 bg-gradient-to-r from-transparent to-amber-400/40" />
-            <span className="text-amber-300/60 text-xs uppercase tracking-[0.2em] font-medium">
-              About
+            <div className="h-px w-8 bg-gradient-to-r from-transparent to-brand-primary/40" />
+            <span className="text-brand-primary/60 text-xs uppercase tracking-[0.2em] font-medium">
+              {t("about.eyebrow", locale)}
             </span>
-            <div className="h-px w-8 bg-gradient-to-l from-transparent to-amber-400/40" />
+            <div className="h-px w-8 bg-gradient-to-l from-transparent to-brand-primary/40" />
           </div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-prompt font-bold text-white mb-6">
             {t("about.title", locale)}
@@ -47,16 +47,16 @@ export function AboutPage({ locale }: AboutPageProps) {
 
         {/* Mission & Vision */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
-          <div className="p-8 rounded-xl bg-gradient-to-br from-[#0a1628] to-[#0f1f3a] border border-white/10">
-            <h2 className="text-xl font-prompt font-bold text-amber-300 mb-4">
+          <div className="p-8 rounded-xl bg-gradient-to-br from-brand-bg-secondary to-brand-card border border-white/10">
+            <h2 className="text-xl font-prompt font-bold text-brand-primary mb-4">
               {t("about.mission", locale)}
             </h2>
             <p className="text-white/70 leading-relaxed">
               {t("about.missionDesc", locale)}
             </p>
           </div>
-          <div className="p-8 rounded-xl bg-gradient-to-br from-[#0a1628] to-[#0f1f3a] border border-white/10">
-            <h2 className="text-xl font-prompt font-bold text-amber-300 mb-4">
+          <div className="p-8 rounded-xl bg-gradient-to-br from-brand-bg-secondary to-brand-card border border-white/10">
+            <h2 className="text-xl font-prompt font-bold text-brand-primary mb-4">
               {t("about.vision", locale)}
             </h2>
             <p className="text-white/70 leading-relaxed">
@@ -74,10 +74,10 @@ export function AboutPage({ locale }: AboutPageProps) {
             {values.map((value, idx) => (
               <div
                 key={idx}
-                className="group p-6 rounded-xl bg-[#0a1628]/60 border border-white/5 hover:border-amber-300/20 transition-all duration-300 text-center"
+                className="group p-6 rounded-xl bg-brand-bg-secondary/60 border border-white/5 hover:border-brand-primary/20 transition-all duration-300 text-center"
               >
-                <div className="w-14 h-14 rounded-full bg-amber-300/10 flex items-center justify-center mx-auto mb-4 group-hover:bg-amber-300/20 transition-colors">
-                  <value.icon className="w-7 h-7 text-amber-300" />
+                <div className="w-14 h-14 rounded-full bg-brand-primary/10 flex items-center justify-center mx-auto mb-4 group-hover:bg-brand-primary/20 transition-colors">
+                  <value.icon className="w-7 h-7 text-brand-primary" />
                 </div>
                 <h3 className="text-lg font-prompt font-semibold text-white mb-2">
                   {value.title}
@@ -93,3 +93,4 @@ export function AboutPage({ locale }: AboutPageProps) {
     </div>
   );
 }
+

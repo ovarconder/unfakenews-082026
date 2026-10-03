@@ -13,6 +13,8 @@ interface ContactPageProps {
 export function ContactPage({ locale }: ContactPageProps) {
   const settings = useSettings();
   const contactEmail = settings?.email || "info@unfakenews.asia";
+  const contactPhone = settings?.phone || "";
+  const contactAddress = settings?.address || "";
   const [sent, setSent] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -35,11 +37,11 @@ export function ContactPage({ locale }: ContactPageProps) {
         {/* Page Header */}
         <div className="text-center mb-16">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="h-px w-8 bg-gradient-to-r from-transparent to-amber-400/40" />
-            <span className="text-amber-300/60 text-xs uppercase tracking-[0.2em] font-medium">
-              Contact
+            <div className="h-px w-8 bg-gradient-to-r from-transparent to-brand-primary/40" />
+            <span className="text-brand-primary/60 text-xs uppercase tracking-[0.2em] font-medium">
+              {t("contact.eyebrow", locale)}
             </span>
-            <div className="h-px w-8 bg-gradient-to-l from-transparent to-amber-400/40" />
+            <div className="h-px w-8 bg-gradient-to-l from-transparent to-brand-primary/40" />
           </div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-prompt font-bold text-white mb-6">
             {t("contact.title", locale)}
@@ -64,9 +66,9 @@ export function ContactPage({ locale }: ContactPageProps) {
                 </p>
                 <button
                   onClick={() => setSent(false)}
-                  className="mt-4 text-amber-300 text-sm hover:text-amber-200 transition-colors"
+                  className="mt-4 text-brand-primary text-sm hover:text-brand-primary transition-colors"
                 >
-                  "Send another message"
+                  {t("contact.sendAnother", locale)}
                 </button>
               </div>
             ) : (
@@ -82,8 +84,8 @@ export function ContactPage({ locale }: ContactPageProps) {
                     onChange={(e) =>
                       setFormData({ ...formData, name: e.target.value })
                     }
-                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-amber-300/40 focus:ring-1 focus:ring-amber-300/20 transition-colors"
-                    placeholder="Enter your name"
+                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-brand-primary/40 focus:ring-1 focus:ring-brand-primary/20 transition-colors"
+                    placeholder={t("contact.namePlaceholder", locale)}
                   />
                 </div>
                 <div>
@@ -97,7 +99,7 @@ export function ContactPage({ locale }: ContactPageProps) {
                     onChange={(e) =>
                       setFormData({ ...formData, email: e.target.value })
                     }
-                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-amber-300/40 focus:ring-1 focus:ring-amber-300/20 transition-colors"
+                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-brand-primary/40 focus:ring-1 focus:ring-brand-primary/20 transition-colors"
                     placeholder="email@example.com"
                   />
                 </div>
@@ -112,13 +114,13 @@ export function ContactPage({ locale }: ContactPageProps) {
                     onChange={(e) =>
                       setFormData({ ...formData, message: e.target.value })
                     }
-                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-amber-300/40 focus:ring-1 focus:ring-amber-300/20 transition-colors resize-none"
-                    placeholder="Type your message here..."
+                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-brand-primary/40 focus:ring-1 focus:ring-brand-primary/20 transition-colors resize-none"
+                    placeholder={t("contact.messagePlaceholder", locale)}
                   />
                 </div>
                 <button
                   type="submit"
-                  className="w-full inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-lg bg-gradient-to-r from-amber-400 to-amber-500 text-[#0a1628] font-semibold hover:from-amber-300 hover:to-amber-400 transition-all duration-300 shadow-lg shadow-amber-400/20"
+                  className="w-full inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-lg bg-gradient-to-r from-brand-primary to-brand-secondary text-brand-bg font-semibold bg-brand-gradient-hover transition-all duration-300 shadow-lg shadow-brand-primary/20"
                 >
                   <Send size={16} />
                   {t("contact.send", locale)}
@@ -129,35 +131,54 @@ export function ContactPage({ locale }: ContactPageProps) {
 
           {/* Contact Info */}
           <div className="space-y-6">
-            <div className="p-6 rounded-xl bg-gradient-to-br from-[#0a1628] to-[#0f1f3a] border border-white/10">
+            <div className="p-6 rounded-xl bg-gradient-to-br from-brand-bg-secondary to-brand-card border border-white/10">
               <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-full bg-amber-300/10 flex items-center justify-center">
-                  <Mail className="w-6 h-6 text-amber-300" />
+                <div className="w-12 h-12 rounded-full bg-brand-primary/10 flex items-center justify-center">
+                  <Mail className="w-6 h-6 text-brand-primary" />
                 </div>
                 <div>
-                  <h3 className="text-white font-medium">Email</h3>
+                  <h3 className="text-white font-medium">{t("contact.emailLabel", locale)}</h3>
                   <p className="text-white/50 text-sm">{contactEmail}</p>
                 </div>
               </div>
             </div>
-            <div className="p-6 rounded-xl bg-gradient-to-br from-[#0a1628] to-[#0f1f3a] border border-white/10">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-full bg-amber-300/10 flex items-center justify-center">
-                  <MapPin className="w-6 h-6 text-amber-300" />
-                </div>
-                <div>
-                  <h3 className="text-white font-medium">
-                    "Address"
-                  </h3>
-                  <p className="text-white/50 text-sm">
-                    "Bangkok, Thailand"
-                  </p>
+            {contactAddress && (
+              <div className="p-6 rounded-xl bg-gradient-to-br from-brand-bg-secondary to-brand-card border border-white/10">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 rounded-full bg-brand-primary/10 flex items-center justify-center">
+                    <MapPin className="w-6 h-6 text-brand-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-white font-medium">
+                      {t("contact.addressLabel", locale)}
+                    </h3>
+                    <p className="text-white/50 text-sm">
+                      {contactAddress}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="p-8 rounded-xl bg-gradient-to-br from-amber-400/10 to-amber-600/5 border border-amber-300/10">
+            )}
+            {contactPhone && (
+              <div className="p-6 rounded-xl bg-gradient-to-br from-brand-bg-secondary to-brand-card border border-white/10">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 rounded-full bg-brand-primary/10 flex items-center justify-center">
+                    <Phone className="w-6 h-6 text-brand-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-white font-medium">
+                      {t("contact.phoneLabel", locale)}
+                    </h3>
+                    <p className="text-white/50 text-sm">
+                      {contactPhone}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div className="p-8 rounded-xl bg-gradient-to-br from-brand-primary/10 to-brand-accent/5 border border-brand-primary/10">
               <p className="text-white/60 text-sm leading-relaxed italic">
-                &ldquo;We welcome your feedback and suggestions to develop and deliver the best information about Thai culture to you.&rdquo;
+                &ldquo;{t("contact.quote", locale)}&rdquo;
               </p>
             </div>
           </div>

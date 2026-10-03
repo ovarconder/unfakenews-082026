@@ -58,7 +58,7 @@ export function SupportCard({
       ) : (
         <>
           <div className="flex items-center justify-center gap-2 mb-4">
-            <Coffee size={22} className="text-amber-300" />
+            <Coffee size={22} className="text-brand-primary" />
             <h2 className="text-xl font-prompt font-bold text-white">
               {title || "สนับสนุนผู้ทำเว็บ"}
             </h2>
@@ -99,7 +99,7 @@ export function SupportCard({
               {accountNumber && (
                 <button
                   onClick={copyNumber}
-                  className="w-full flex items-center justify-between px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-sm hover:border-amber-300/40 transition-colors text-left"
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-sm hover:border-brand-primary/40 transition-colors text-left"
                   title="กดเพื่อคัดลอกเลขบัญชี"
                 >
                   <span className="text-white/50">เลขบัญชี</span>

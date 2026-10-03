@@ -16,17 +16,17 @@ export async function ArticlesPage({ locale }: ArticlesPageProps) {
         {/* Page Header */}
         <div className="text-center mb-16">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="h-px w-8 bg-gradient-to-r from-transparent to-amber-400/40" />
-            <span className="text-amber-300/60 text-xs uppercase tracking-[0.2em] font-medium">
-              Articles
+            <div className="h-px w-8 bg-gradient-to-r from-transparent to-brand-primary/40" />
+            <span className="text-brand-primary/60 text-xs uppercase tracking-[0.2em] font-medium">
+              {t("articles.eyebrow", locale)}
             </span>
-            <div className="h-px w-8 bg-gradient-to-l from-transparent to-amber-400/40" />
+            <div className="h-px w-8 bg-gradient-to-l from-transparent to-brand-primary/40" />
           </div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-prompt font-bold text-white mb-6">
             {t("articles.title", locale)}
           </h1>
           <p className="text-white/60 text-lg max-w-2xl mx-auto leading-relaxed">
-            "Collection of articles and stories about Thai culture, heritage, and wisdom."
+            {t("articles.subtitle", locale)}
           </p>
         </div>
 

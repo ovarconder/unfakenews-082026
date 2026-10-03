@@ -137,7 +137,10 @@ export function MicrositeHomeContent({ microsite, settings, locale, articles }: 
                         {article.category}
                       </span>
                     </div>
-                    <h3 className="text-base font-prompt font-semibold text-white group-hover:text-amber-200 transition-colors mb-2 line-clamp-2">
+                    <h3
+                      className="text-base font-prompt font-semibold text-white transition-colors mb-2 line-clamp-2"
+                      style={{ color: undefined }}
+                    >
                       {article.title}
                     </h3>
                     <p className="text-white/50 text-xs leading-relaxed mb-3 line-clamp-2">
@@ -179,7 +182,7 @@ export function MicrositeHomeContent({ microsite, settings, locale, articles }: 
             {locale === "th" ? "เป็นส่วนหนึ่งของ" : "Part of"}{" "}
             <Link
               href={`/${locale}`}
-              className="hover:text-amber-200 transition-colors font-medium"
+              className="hover:opacity-80 transition-colors font-medium"
               style={{ color: primaryColor }}
             >
               {locale === "th" ? "อันเฟคนิวส์" : "UnFake News"}

@@ -54,7 +54,7 @@ export function MicrositeFooter({ locale, microsite, settings }: MicrositeFooter
               <li>
                 <Link
                   href={micrositePrefix}
-                  className="text-white/60 hover:text-amber-200 text-sm transition-colors"
+                  className="text-white/60 hover:text-brand-primary text-sm transition-colors"
                 >
                   {t("nav.home", locale)}
                 </Link>
@@ -62,7 +62,7 @@ export function MicrositeFooter({ locale, microsite, settings }: MicrositeFooter
               <li>
                 <Link
                   href={`${micrositePrefix}/articles`}
-                  className="text-white/60 hover:text-amber-200 text-sm transition-colors"
+                  className="text-white/60 hover:text-brand-primary text-sm transition-colors"
                 >
                   {t("nav.articles", locale)}
                 </Link>
@@ -70,7 +70,7 @@ export function MicrositeFooter({ locale, microsite, settings }: MicrositeFooter
               <li>
                 <Link
                   href={`${micrositePrefix}/about`}
-                  className="text-white/60 hover:text-amber-200 text-sm transition-colors"
+                  className="text-white/60 hover:text-brand-primary text-sm transition-colors"
                 >
                   {t("nav.about", locale)}
                 </Link>
@@ -87,7 +87,7 @@ export function MicrositeFooter({ locale, microsite, settings }: MicrositeFooter
               <li>
                 <Link
                   href={`/${locale}`}
-                  className="flex items-center gap-1.5 text-white/60 hover:text-amber-200 text-sm transition-colors"
+                  className="flex items-center gap-1.5 text-white/60 hover:text-brand-primary text-sm transition-colors"
                 >
                   <ExternalLink size={12} />
                   {locale === "th" ? "อันเฟคนิวส์" : "UnFake News"}

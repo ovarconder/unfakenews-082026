@@ -77,7 +77,7 @@ export default function ExternalLink({
       rel="noopener noreferrer"
       className={`inline-flex items-center gap-1 transition-all ${
         isTrusted
-          ? "text-amber-300 hover:text-amber-200"
+          ? "text-brand-primary hover:text-brand-primary"
           : "text-blue-300 hover:text-blue-200"
       } ${className}`}
       title={`${isTrusted ? "🔗 แหล่งอ้างอิงที่เชื่อถือได้" : "ลิงก์ภายนอก"} - ${getDomainLabel(href)}`}

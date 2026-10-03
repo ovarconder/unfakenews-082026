@@ -134,7 +134,7 @@ export function Header({ locale }: HeaderProps) {
   const isArticleDetail = ARTICLE_DETAIL_REGEX.test(pathname);
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-[#0a1628]/90 backdrop-blur-md border-b border-white/10">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-brand-header/90 backdrop-blur-md border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -157,8 +157,8 @@ export function Header({ locale }: HeaderProps) {
                 href={link.href}
                 className={`text-sm font-medium transition-colors ${
                   isActive(link.href)
-                    ? "text-amber-300"
-                    : "text-white/70 hover:text-amber-200"
+                    ? "text-brand-primary"
+                    : "text-white/70 hover:text-brand-primary"
                 }`}
               >
                 {t(link.key, locale)}
@@ -166,7 +166,7 @@ export function Header({ locale }: HeaderProps) {
             ))}
             <Link
               href={supportLink.href}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-amber-300/30 text-amber-300 text-sm font-medium hover:bg-amber-300/10 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-brand-primary/30 text-brand-primary text-sm font-medium hover:bg-brand-primary/10 transition-colors"
             >
               {supportLink.label}
             </Link>
@@ -175,7 +175,7 @@ export function Header({ locale }: HeaderProps) {
             {isAdmin && (
               <Link
                 href="/admin"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-amber-300/40 text-amber-300 text-sm font-medium hover:bg-amber-300/10 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-brand-primary/40 text-brand-primary text-sm font-medium hover:bg-brand-primary/10 transition-colors"
               >
                 <LayoutDashboard size={14} />
                 {t("common.admin", locale)}
@@ -186,7 +186,7 @@ export function Header({ locale }: HeaderProps) {
             {isLoggedIn ? (
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-white/20 text-white/80 text-sm font-medium hover:bg-white/10 hover:text-amber-200 transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-white/20 text-white/80 text-sm font-medium hover:bg-white/10 hover:text-brand-primary transition-all"
               >
                 <LogOut size={14} />
                 {t("common.logout", locale)}
@@ -194,7 +194,7 @@ export function Header({ locale }: HeaderProps) {
             ) : (
               <Link
                 href="/admin/login"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-white/20 text-white/80 text-sm font-medium hover:bg-white/10 hover:text-amber-200 transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-white/20 text-white/80 text-sm font-medium hover:bg-white/10 hover:text-brand-primary transition-all"
               >
                 <LogIn size={14} />
                 {t("common.login", locale)}
@@ -205,13 +205,13 @@ export function Header({ locale }: HeaderProps) {
             <div className="relative" ref={langRef}>
               <button
                 onClick={() => setLangOpen(!langOpen)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-white/20 text-xs font-medium text-white/80 hover:bg-white/10 hover:text-amber-200 transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-white/20 text-xs font-medium text-white/80 hover:bg-white/10 hover:text-brand-primary transition-all"
               >
                 <Globe size={14} />
                 <span>{currentLangName}</span>
               </button>
               {langOpen && (
-                <div className="absolute right-0 top-full mt-2 w-52 bg-[#0f1f3a] border border-white/10 rounded-xl shadow-2xl backdrop-blur-xl overflow-hidden z-50">
+                <div className="absolute right-0 top-full mt-2 w-52 bg-brand-card border border-white/10 rounded-xl shadow-2xl backdrop-blur-xl overflow-hidden z-50">
                   <div className="py-2 max-h-72 overflow-y-auto">
                     {isArticleDetail && currentSlug ? (
                       // แสดงเฉพาะภาษาที่ slug นี้มี ชัดเจนว่าเป็นของบทความนี้
@@ -223,7 +223,7 @@ export function Header({ locale }: HeaderProps) {
                             onClick={() => setLangOpen(false)}
                             className={`flex items-center justify-between px-4 py-2 text-sm transition-colors ${
                               l === locale
-                                ? "text-amber-300 bg-amber-300/10"
+                                ? "text-brand-primary bg-brand-primary/10"
                                 : "text-white/70 hover:text-white hover:bg-white/5"
                             }`}
                           >
@@ -241,7 +241,7 @@ export function Header({ locale }: HeaderProps) {
                             onClick={() => setLangOpen(false)}
                             className={`flex items-center justify-between px-4 py-2 text-sm transition-colors ${
                               l === locale
-                                ? "text-amber-300 bg-amber-300/10"
+                                ? "text-brand-primary bg-brand-primary/10"
                                 : "text-white/70 hover:text-white hover:bg-white/5"
                             }`}
                           >
@@ -260,7 +260,7 @@ export function Header({ locale }: HeaderProps) {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="md:hidden text-white/80 hover:text-amber-200 transition-colors"
+            className="md:hidden text-white/80 hover:text-brand-primary transition-colors"
             aria-label="Toggle menu"
           >
             {mobileOpen ? <X size={24} /> : <Menu size={24} />}
@@ -270,7 +270,7 @@ export function Header({ locale }: HeaderProps) {
 
       {/* Mobile Navigation */}
       {mobileOpen && (
-        <div className="md:hidden bg-[#0a1628]/95 backdrop-blur-md border-t border-white/10">
+        <div className="md:hidden bg-brand-bg-secondary/95 backdrop-blur-md border-t border-white/10">
           <div className="px-4 py-4 space-y-3">
             {navLinks.map((link) => (
               <Link
@@ -279,8 +279,8 @@ export function Header({ locale }: HeaderProps) {
                 onClick={() => setMobileOpen(false)}
                 className={`block py-2 text-sm font-medium transition-colors ${
                   isActive(link.href)
-                    ? "text-amber-300"
-                    : "text-white/70 hover:text-amber-200"
+                    ? "text-brand-primary"
+                    : "text-white/70 hover:text-brand-primary"
                 }`}
               >
                 {t(link.key, locale)}
@@ -289,7 +289,8 @@ export function Header({ locale }: HeaderProps) {
             <Link
               href={supportLink.href}
               onClick={() => setMobileOpen(false)}
-              className="block py-2 text-sm font-medium text-amber-300 hover:text-amber-200 transition-colors"
+
+              className="block py-2 text-sm font-medium text-brand-primary hover:text-brand-primary transition-colors"
             >
               {supportLink.label}
             </Link>
@@ -299,7 +300,7 @@ export function Header({ locale }: HeaderProps) {
               <Link
                 href="/admin"
                 onClick={() => setMobileOpen(false)}
-                className="block py-2 text-sm font-medium text-amber-300 hover:text-amber-200 transition-colors"
+                className="block py-2 text-sm font-medium text-brand-primary hover:text-brand-primary transition-colors"
               >
                 <span className="inline-flex items-center gap-2">
                   <LayoutDashboard size={16} /> {t("common.admin", locale)}
@@ -311,7 +312,8 @@ export function Header({ locale }: HeaderProps) {
             {isLoggedIn ? (
               <button
                 onClick={handleLogout}
-                className="block w-full text-left py-2 text-sm font-medium text-white/80 hover:text-amber-200 transition-colors"
+
+                className="block w-full text-left py-2 text-sm font-medium text-white/80 hover:text-brand-primary transition-colors"
               >
                 <span className="inline-flex items-center gap-2">
                   <LogOut size={16} /> {t("common.logout", locale)}
@@ -321,7 +323,7 @@ export function Header({ locale }: HeaderProps) {
               <Link
                 href="/admin/login"
                 onClick={() => setMobileOpen(false)}
-                className="block py-2 text-sm font-medium text-white/80 hover:text-amber-200 transition-colors"
+                className="block py-2 text-sm font-medium text-white/80 hover:text-brand-primary transition-colors"
               >
                 <span className="inline-flex items-center gap-2">
                   <LogIn size={16} /> {t("common.login", locale)}
@@ -342,7 +344,7 @@ export function Header({ locale }: HeaderProps) {
                     onClick={() => setMobileOpen(false)}
                     className={`px-2 py-1.5 rounded-md text-xs text-center transition-colors ${
                       l === locale
-                        ? "bg-amber-300/20 text-amber-300 border border-amber-300/30"
+                        ? "bg-brand-primary/20 text-brand-primary border border-brand-primary/30"
                         : "text-white/60 hover:text-white border border-white/10 hover:border-white/30"
                     }`}
                   >

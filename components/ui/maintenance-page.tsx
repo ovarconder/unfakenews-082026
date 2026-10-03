@@ -23,16 +23,16 @@ export function MaintenancePage({ message, locale = "en" }: MaintenancePageProps
     : "We are currently performing scheduled maintenance to improve your experience. Please check back soon. Thank you for your patience! 🙏");
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#0d1b2a] to-[#060e1a]">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-brand-bg to-brand-header">
       <div className="text-center px-6 max-w-lg">
         {/* Icon */}
         <div className="mb-8 flex justify-center">
           <div className="relative">
-            <div className="w-24 h-24 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center animate-pulse">
-              <Wrench size={48} className="text-amber-400" />
+            <div className="w-24 h-24 rounded-full bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center animate-pulse">
+              <Wrench size={48} className="text-brand-primary" />
             </div>
             {/* Spinning ring */}
-            <div className="absolute -top-1 -left-1 w-26 h-26 rounded-full border-2 border-transparent border-t-amber-400/40 border-r-amber-400/20 animate-spin" 
+            <div className="absolute -top-1 -left-1 w-26 h-26 rounded-full border-2 border-transparent border-t-brand-primary/40 border-r-brand-primary/20 animate-spin" 
                  style={{ width: 'calc(100% + 8px)', height: 'calc(100% + 8px)', top: '-4px', left: '-4px' }} />
           </div>
         </div>
@@ -49,7 +49,7 @@ export function MaintenancePage({ message, locale = "en" }: MaintenancePageProps
 
         {/* Progress bar animation */}
         <div className="w-full max-w-xs mx-auto h-1.5 rounded-full bg-white/10 overflow-hidden">
-          <div className="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500 animate-[loading_2s_ease-in-out_infinite]" 
+          <div className="h-full rounded-full bg-gradient-to-r from-brand-primary to-brand-secondary animate-[loading_2s_ease-in-out_infinite]" 
                style={{ width: '30%' }} />
         </div>
 

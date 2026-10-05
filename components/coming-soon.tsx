@@ -24,6 +24,7 @@ export function ComingSoonPage({ locale }: ComingSoonPageProps) {
             const target = e.currentTarget;
             target.style.display = "none";
             const parent = target.parentElement;
+            if (parent) {
               parent.style.background = "linear-gradient(180deg, #0a1628 0%, #1a2a4a 100%)";
             }
           }}
@@ -40,3 +41,4 @@ export function ComingSoonPage({ locale }: ComingSoonPageProps) {
     </div>
   );
 }
+

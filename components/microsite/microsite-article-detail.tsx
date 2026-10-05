@@ -470,6 +470,7 @@ export function MicrositeArticleDetail({ micrositeSlug, articleSlug, locale, mic
                       {locale === "th" ? "ไซต์หลัก" : "Main Site"}
                     </h3>
                     <Link
+                      href={`/${locale}`}
                       className="flex items-center gap-2 text-sm text-white/60 hover:text-amber-200 transition-colors"
                     >
                       <span className="text-2xl">🏛️</span>

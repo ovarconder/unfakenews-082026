@@ -90,6 +90,23 @@ git status        # ← ไม่ redirect ลงไฟล์, ไม่มี m
 
 ---
 
+## 🚫 กฎข้อที่ 4: Microsite — เลิกใช้งานแล้ว (Ignore)
+
+- ฟีเจอร์ **Microsite เลิกใช้งานแล้ว** เจ้าของโปรเจกต์ไม่ใช้
+- **ห้ามแก้ / rebrand / refactor** ไฟล์ต่อไปนี้เว้นแต่เจ้าของสั่งชัด:
+  - `components/microsite/*`
+  - `app/microsite/*`
+  - `app/admin/microsites/*`
+- **ไม่มีไฟล์ไหน import `components/microsite/*`** (ตรวจแล้ว) → แยกตัวได้
+- ⚠️ `app/api/*` ที่มีคำว่า "microsite" (เช่น `api/v1/claims/latest`, `api/article-locales`,
+  `api/admin/microsites`) **คนละเรื่อง** — ห้ามลบ/patch ตามคำว่า microsite
+- งาน rebrand สี (**เปลี่ยน hardcode `amber-*` / hex → `brand-*`**) ให้เน้น **หน้าคนอ่าน (public)** เท่านั้น:
+  - `components/articles/*`, `components/home/*`, `components/contact/*`,
+    `components/support/*`, `components/analytics/*`, `app/[lang]/*`, `app/not-found.tsx`, `app/error.tsx`
+  - **admin (`app/admin/*`, `components/admin/*`) ไม่สำคัญ** — สีอะไรก็ได้ ไม่ต้อง rebrand
+
+---
+
 ## 🧭 สรุป Checklist สำหรับ Agent ทุกครั้ง
 
 - [ ] ตอบเป็น**ภาษาไทย**

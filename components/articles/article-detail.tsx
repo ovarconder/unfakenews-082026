@@ -209,7 +209,7 @@ function renderContent(content: string, translatedAlts?: Record<string, string>)
       result.push(
         <blockquote
           key={i}
-          className="border-l-4 border-amber-400/40 pl-4 py-2 my-4 text-white/70 italic bg-white/[0.02] rounded-r-lg"
+          className="border-l-4 border-brand-primary/40 pl-4 py-2 my-4 text-white/70 italic bg-white/[0.02] rounded-r-lg"
         >
           {renderInlineMarkdown(quoteText)}
         </blockquote>
@@ -231,7 +231,7 @@ function renderContent(content: string, translatedAlts?: Record<string, string>)
 
     if (line.startsWith("## ")) {
       result.push(
-        <h2 key={i} className="text-2xl font-bold text-amber-200 mt-10 mb-4">
+        <h2 key={i} className="text-2xl font-bold text-brand-primary mt-10 mb-4">
           {line.replace("## ", "")}
         </h2>
       );
@@ -250,7 +250,7 @@ function renderContent(content: string, translatedAlts?: Record<string, string>)
     // --- heading level 1 (#) และ level 4 (####) ---
     if (/^#\s+/.test(line.trim())) {
       result.push(
-        <h1 key={i} className="text-3xl font-bold text-amber-300 mt-10 mb-4">
+        <h1 key={i} className="text-3xl font-bold text-brand-primary mt-10 mb-4">
           {line.trim().replace(/^#\s+/, "")}
         </h1>
       );
@@ -465,7 +465,7 @@ function SocialShareButtons({ url, title, description }: { url: string; title: s
       name: "Copy Link",
       href: "#",
       icon: LinkIcon,
-      color: "hover:text-amber-300",
+      color: "hover:text-brand-primary",
       onClick: async (e: React.MouseEvent) => {
         e.preventDefault();
         try {
@@ -652,9 +652,9 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
       return (
         <div className="min-h-screen pt-24 pb-16 flex items-center justify-center">
           <div className="text-center">
-            <h1 className="text-6xl font-bold text-amber-300/60 mb-4">404</h1>
+            <h1 className="text-6xl font-bold text-brand-primary/60 mb-4">404</h1>
             <p className="text-white/60">Article not found</p>
-            <Link href={`/${locale}/articles`} className="text-amber-300 hover:text-amber-200 mt-4 inline-block">
+            <Link href={`/${locale}/articles`} className="text-brand-primary hover:text-brand-primary/80 mt-4 inline-block">
               &larr; {locale === "th" ? "กลับไปหน้าบทความ" : "Back to articles"}
             </Link>
           </div>
@@ -719,7 +719,7 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
       />
 
       {/* Social Share Bar — ใต้ title */}
-      <div className="border-b border-white/10 bg-[#0a1628]/40">
+      <div className="border-b border-white/10 bg-brand-bg-secondary/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
           <span className="text-white/50 text-sm">
             {locale === "th" ? "แชร์บทความนี้" : "Share this article"}
@@ -776,7 +776,7 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
                         <Link
                           key={tag}
                           href={`/${locale}/tags/${encodeURIComponent(tag.toLowerCase())}`}
-                          className="text-xs text-white/40 hover:text-amber-300 transition-colors"
+                          className="text-xs text-white/40 hover:text-brand-primary transition-colors"
                         >
                           #{tag}
                         </Link>
@@ -793,23 +793,23 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
                 {/* QuickFactsBox — REMOVED per request */}
 
                 {/* Category */}
-                <div className="rounded-xl bg-gradient-to-br from-[#0f1f3a] to-[#162545] border border-white/10 p-5">
+                <div className="rounded-xl bg-gradient-to-br from-brand-card to-brand-bg-secondary border border-white/10 p-5">
                   <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2">
-                    <ChevronRight size={14} className="text-amber-300" />
+                    <ChevronRight size={14} className="text-brand-primary" />
                     {locale === "th" ? "หมวดหมู่" : "Category"}
                   </h3>
                   <Link
                     href={`/${locale}/categories/${encodeURIComponent(article.category)}`}
-                    className="block text-sm text-amber-300/80 hover:text-amber-200 transition-colors"
+                    className="block text-sm text-brand-primary/80 hover:text-brand-primary transition-colors"
                   >
                     {article.category}
                   </Link>
                 </div>
 
                 {/* Related Articles in Sidebar */}
-                <div className="rounded-xl bg-gradient-to-br from-[#0f1f3a] to-[#162545] border border-white/10 p-5">
+                <div className="rounded-xl bg-gradient-to-br from-brand-card to-brand-bg-secondary border border-white/10 p-5">
                   <h3 className="text-white font-semibold text-sm mb-4 flex items-center gap-2">
-                    <ChevronRight size={14} className="text-amber-300" />
+                    <ChevronRight size={14} className="text-brand-primary" />
                     {locale === "th" ? "บทความที่เกี่ยวข้อง" : "Related Articles"}
                   </h3>
                   <div className="space-y-3">
@@ -830,7 +830,7 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
                           </div>
                         )}
                         <div className="min-w-0 flex-1">
-                          <p className="text-white text-xs font-medium leading-snug line-clamp-2 group-hover:text-amber-200 transition-colors">
+                          <p className="text-white text-xs font-medium leading-snug line-clamp-2 group-hover:text-brand-primary transition-colors">
                             {rel.title || rel.originalTitle}
                           </p>
                           <p className="text-white/30 text-[10px] mt-1">{rel.category}</p>
@@ -841,7 +841,7 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
                   {relatedArticles.length > 3 && (
                     <Link
                       href={`/${locale}/articles?category=${encodeURIComponent(article.category)}`}
-                      className="block text-center text-xs text-amber-400/70 hover:text-amber-300 mt-3 pt-3 border-t border-white/5 transition-colors"
+                      className="block text-center text-xs text-brand-primary/70 hover:text-brand-primary mt-3 pt-3 border-t border-white/5 transition-colors"
                     >
                       {locale === "th" ? "ดูทั้งหมด" : "View all"}
                     </Link>
@@ -849,7 +849,7 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
                 </div>
 
                 {/* Ad Unit —  sidebar */}
-                <div className="rounded-xl bg-gradient-to-br from-[#0f1f3a] to-[#162545] border border-white/10 p-5">
+                <div className="rounded-xl bg-gradient-to-br from-brand-card to-brand-bg-secondary border border-white/10 p-5">
                   <h3 className="text-white/40 text-xs font-medium mb-3">
                     {locale === "th" ? "โฆษณา" : "Advertisement"}
                   </h3>
@@ -884,7 +884,7 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
                 </h2>
                 <Link
                   href={`/${locale}/articles`}
-                  className="text-sm text-amber-400/70 hover:text-amber-300 transition-colors"
+                  className="text-sm text-brand-primary/70 hover:text-brand-primary transition-colors"
                 >
                   {locale === "th" ? "ดูทั้งหมด" : "View all"} &rarr;
                 </Link>
@@ -894,7 +894,7 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
                   <Link
                     key={rel.slug}
                     href={`/${locale}/articles/${rel.slug}`}
-                    className="group rounded-xl overflow-hidden bg-gradient-to-br from-[#0f1f3a] to-[#162545] border border-white/10 hover:border-amber-300/30 transition-all"
+                    className="group rounded-xl overflow-hidden bg-gradient-to-br from-brand-card to-brand-bg-secondary border border-white/10 hover:border-brand-primary/30 transition-all"
                   >
                     {rel.imageUrl && (
                       <div className="aspect-[16/9] overflow-hidden">
@@ -908,7 +908,7 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
                     )}
                     <div className="p-4">
                       <p className="text-white/40 text-[10px] uppercase tracking-wider mb-2">{rel.category}</p>
-                      <h3 className="text-white font-medium text-sm leading-snug line-clamp-2 group-hover:text-amber-200 transition-colors">
+                      <h3 className="text-white font-medium text-sm leading-snug line-clamp-2 group-hover:text-brand-primary transition-colors">
                         {rel.title || rel.originalTitle}
                       </h3>
                       <p className="text-white/40 text-xs mt-2 line-clamp-2">

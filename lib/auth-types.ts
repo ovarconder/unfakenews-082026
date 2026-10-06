@@ -1,8 +1,10 @@
 // ============================================================
 // Siam Heritage - Authentication & Authorization Types
 // ============================================================
+// ★ role ต้องตรงกับ enum "user_role" ใน DB: ('writer', 'editor', 'admin')
+//   (เดิมมี 'unassigned' แต่ DB จริงไม่มีค่านี้ — ตัดออก)
 
-export type UserRole = "unassigned" | "writer" | "editor" | "admin";
+export type UserRole = "writer" | "editor" | "admin";
 
 export interface User {
   id: string;
@@ -53,7 +55,6 @@ export type Permission =
 
 // Role -> Permissions mapping
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
-  unassigned: [],
   writer: [
     "article:create",
     "article:edit_own",
@@ -93,18 +94,17 @@ export function hasPermission(role: UserRole, permission: Permission): boolean {
   return ROLE_PERMISSIONS[role]?.includes(permission) ?? false;
 }
 
-export const USER_ROLES: UserRole[] = ["unassigned", "writer", "editor", "admin"];
+export const USER_ROLES: UserRole[] = ["writer", "editor", "admin"];
 
 export const ROLE_LABELS: Record<UserRole, string> = {
-  unassigned: "รออนุมัติ",
   writer: "นักเขียน",
   editor: "บรรณาธิการ",
   admin: "ผู้ดูแลระบบ",
 };
 
 export const ROLE_LABELS_EN: Record<UserRole, string> = {
-  unassigned: "Unassigned",
   writer: "Writer",
   editor: "Editor",
   admin: "Admin",
 };
+

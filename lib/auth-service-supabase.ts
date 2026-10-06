@@ -16,11 +16,12 @@ import { hasPermission } from "./auth-types";
 // ============================================================
 
 function getRoleFromProfile(profileRole: string | null): UserRole {
-  const roles: UserRole[] = ["unassigned", "admin", "editor", "writer"];
+  const roles: UserRole[] = ["admin", "editor", "writer"];
   if (profileRole && roles.includes(profileRole as UserRole)) {
     return profileRole as UserRole;
   }
-  return "unassigned";
+  // ไม่มี profile/role ที่ถูกต้อง → fallback เป็น writer (สิทธิ์ต่ำสุด, ปลอดภัย)
+  return "writer";
 }
 
 // ============================================================

@@ -137,7 +137,8 @@ export default function UserListClient({
         return "bg-emerald-300/20 text-emerald-300";
       case "writer":
         return "bg-blue-300/20 text-blue-300";
-      case "unassigned":
+
+      default:
         return "bg-white/10 text-white/40";
     }
   };

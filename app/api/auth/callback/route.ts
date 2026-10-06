@@ -14,31 +14,10 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      // Get user profile
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (user) {
-        // Ensure profile exists
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", user.id)
-          .single();
-
-        if (!profile) {
-          // Create profile for new OAuth user — default role: unassigned (รอ admin assign)
-          await supabase.from("profiles").insert({
-            // @ts-ignore - dynamic OAuth profile data
-            id: user.id,
-            name: user.user_metadata?.full_name || user.user_metadata?.name || user.email,
-            email: user.email,
-            role: "unassigned",
-            avatar_url: user.user_metadata?.avatar_url || null,
-          } as any);
-        }
-      }
+      // ★ ระบบใหม่: ไม่ auto-create profile จาก OAuth อีกต่อไป
+      //   - ยกเลิก Google login สำหรับผู้ใช้ทั่วไป
+      //   - ผู้ใช้จะถูกสร้างที่หลังบ้าน (ด้วย email) เท่านั้น
+      //   - ถ้าไม่มี profile → login ได้แต่เข้า admin ไม่ได้ (role ไม่ถูกต้อง)
 
       // Redirect with user info as hash for client to pick up
       const redirectUrl = new URL(next, request.url);

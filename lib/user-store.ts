@@ -61,7 +61,7 @@ async function fetchAllProfiles(): Promise<ProfileCache[]> {
         id: p.id,
         email: authUser?.email || "",
         name: p.name || "Unknown",
-        role: (p.role as UserRole) || "unassigned",
+        role: (p.role as UserRole) || "writer",
         avatar: p.avatar_url || undefined,
         created_at: p.created_at || new Date().toISOString(),
       };
@@ -105,30 +105,13 @@ export async function authenticateUser(
     const profile = profiles.find((p) => p.id === data.user!.id);
     
     if (!profile) {
-      // Create profile if not exists (auto-create on first login)
-      // Default role: unassigned — รอ admin assign
-      const userRole: UserRole = "unassigned";
-      const { error: insertError } = await supabase
-        .from("profiles")
-        .insert({
-          id: data.user.id,
-          name: data.user.user_metadata?.name || data.user.email?.split("@")[0] || "User",
-          role: userRole,
-        });
-
-      if (insertError) {
-        console.error("[user-store] Error creating profile:", insertError.message);
-      }
-
-      invalidateCache();
-
-      return {
-        id: data.user.id,
-        email: data.user.email || email,
-        name: data.user.user_metadata?.name || data.user.email?.split("@")[0] || "User",
-        role: userRole,
-        createdAt: new Date().toISOString(),
-      };
+      // ★ ระบบใหม่: ไม่ auto-create profile ตอน login
+      //   ผู้ใช้ต้องถูกสร้างที่หลังบ้าน (ด้วย email) และมี profile อยู่แล้ว
+      //   ถ้าไม่มี profile → ถือว่าไม่มีสิทธิ์เข้าใช้งาน
+      console.warn(
+        `[user-store] No profile for user ${data.user.id} — login ถูกปฏิเสธ`
+      );
+      return null;
     }
 
     return {

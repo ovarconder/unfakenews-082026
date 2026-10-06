@@ -6,7 +6,6 @@
 // ============================================================
 
 import { createClient } from "./supabase-server";
-import { createAdminClient } from "./supabase-server";
 import type { UserRole, Permission } from "./auth-types";
 import { hasPermission } from "./auth-types";
 import { authenticateUser, getUserPublicById } from "./user-store";
@@ -34,7 +33,7 @@ export async function getCurrentSession(): Promise<{
 
     const profile = rawProfile as { name?: string; role?: string; avatar_url?: string } | null;
 
-    const role = (profile?.role as UserRole) || "unassigned";
+    const role = (profile?.role as UserRole) || "writer";
     return {
       user: {
         id: session.user.id,
@@ -94,22 +93,18 @@ export async function login(
 
     const profile = rawProfile as { name?: string; role?: string } | null;
 
-    const role = (profile?.role as UserRole) || "unassigned";
-    const name = profile?.name || data.user.user_metadata?.name || data.user.email?.split("@")[0] || "User";
-
-    // ถ้าไม่มี profile ให้สร้างให้
+    // ถ้าไม่มี profile → login ไม่ผ่าน (ระบบใหม่: สร้าง user ที่หลังบ้านด้วย email เท่านั้น)
+    // ★ ไม่ auto-create profile อีกต่อไป (ยกเลิก Google auto-signup)
     if (!profile) {
-      try {
-        const adminClient = createAdminClient();
-        await adminClient.from("profiles").insert({
-          id: data.user.id,
-          name,
-          role: "unassigned",
-        });
-      } catch (e) {
-        console.warn("[auth-service] Could not create profile:", e);
-      }
+      return {
+        success: false,
+        error: "บัญชีนี้ยังไม่ได้รับสิทธิ์เข้าใช้งาน — กรุณาติดต่อผู้ดูแลระบบ",
+      };
     }
+
+    const role = (profile.role as UserRole) || "writer";
+    const name = profile.name || data.user.user_metadata?.name || data.user.email?.split("@")[0] || "User";
+
   return {
     success: true,
       user: {
@@ -152,4 +147,5 @@ export async function requireRole(
   const allowed = roles.includes(user.role);
   return { allowed, user };
 }
+
 

@@ -28,7 +28,7 @@ GitHub repo เดียว (โค้ดชุดเดียว)
 ## 📋 Checklist ภาพรวม
 
 - [ ] 1. สร้าง Supabase Project ใหม่
-- [ ] 2. รัน Migrations ทั้งหมด (**011 → 022**)
+- [ ] 2. รัน Schema (**ไฟล์เดียว: `000_schema_all_in_one.sql`**)
 - [ ] 3. ตรวจว่า Storage bucket `images` ถูกสร้าง
 - [ ] 4. สร้าง Admin คนแรก (ด้วยมือ: email → profile → role)
 - [ ] 5. สร้าง Vercel Project ใหม่ + ตั้ง env vars
@@ -56,10 +56,12 @@ GitHub repo เดียว (โค้ดชุดเดียว)
 
 ---
 
-## ขั้นตอนที่ 2: รัน Migrations ทั้งหมด (012 → 022)
+## ขั้นตอนที่ 2: รัน Schema (ไฟล์เดียว)
 
-> 💡 migrations อยู่ในโฟลเดอร์ `migrations/` (ไม่ใช่ `supabase/migrations/`)
-> ทุกไฟล์ใช้ `CREATE TABLE IF NOT EXISTS` / `ADD COLUMN IF NOT EXISTS` → **รันซ้ำได้ปลอดภัย (idempotent)**
+> 💡 **ใช้ไฟล์เดียว: `migrations/000_schema_all_in_one.sql`**
+> ไฟล์นี้รวบ schema ทั้งหมด (เดิม 011 → 022 + `supabase/migrations/00001-00006`) ไว้ในไฟล์เดียว
+> ทุกคำสั่งใช้ `CREATE TABLE IF NOT EXISTS` / `ADD COLUMN IF NOT EXISTS` / `DROP POLICY IF EXISTS`
+> → **รันซ้ำได้ปลอดภัย (idempotent)** ทั้งบน DB ใหม่และ DB เก่า
 
 ### 2.1 หา Connection String
 
@@ -69,25 +71,27 @@ Supabase Dashboard → **Settings → Database → Connection string → URI**
 postgresql://postgres:<DB_PASSWORD>@db.<PROJECT_REF>.supabase.co:5432/postgres
 ```
 
-### 2.2 รัน migrations เรียงลำดับ
+### 2.2 รัน Schema (เลือกวิธีใดวิธีหนึ่ง)
+
+**วิธี A — psql (ไฟล์เดียว):**
 
 ```bash
 export DATABASE_URL="postgresql://postgres:<DB_PASSWORD>@db.<PROJECT_REF>.supabase.co:5432/postgres"
 
 cd /path/to/unfakenews-082026
-: > /tmp/mig.log
-for f in migrations/0*.sql; do
-  echo "==> $f" | tee -a /tmp/mig.log
-  psql "$DATABASE_URL" -f "$f" >> /tmp/mig.log 2>&1 || echo "❌ FAILED: $f" | tee -a /tmp/mig.log
-done
-echo "===== DONE =====" | tee -a /tmp/mig.log
+psql "$DATABASE_URL" -f migrations/000_schema_all_in_one.sql > /tmp/mig.log 2>&1
+echo "exit=$?"
 tail -30 /tmp/mig.log
 printf '\n===DONE===\n'
 ```
 
-> 📌 ลำดับไฟล์: **`011 → 012 → 013 → ... → 021 → 022`**
-> 📌 `011_profiles.sql` = สร้าง **enum `user_role` + ตาราง `profiles`** ⚠️ **ต้องรันก่อน 012** (012 มี FK อ้าง `profiles`)
-> 📌 `022_categories_visibility.sql` = เพิ่ม `show_on_public` / `show_at_footer` (default `true`)
+**วิธี B — Supabase SQL Editor (ง่ายสุด ถ้ารันไม่ผ่านด้วย psql):**
+1. เปิดไฟล์ `migrations/000_schema_all_in_one.sql` → คัดลอกทั้งหมด
+2. Supabase Dashboard → **SQL Editor** → วาง → **Run**
+
+> 📌 `000_schema_all_in_one.sql` รวมทุกอย่างไว้แล้ว: tables, FK, RLS, storage bucket, seed
+> 📌 ครอบคลุม enum `user_role` (3 ค่า) + ตาราง `profiles`, `microsites`, `site_settings`, `categories`, `articles`, `translations`, `hero_slides`
+> 📌 **ไม่ต้องรันไฟล์ `011`-`022` แยกอีก** (ไฟล์เดิมยังเก็บไว้เป็นประวัติ แต่ไฟล์เดียวนี้ครบกว่า)
 
 ### 2.3 ตรวจว่าตารางครบ
 
@@ -118,7 +122,7 @@ psql "$DATABASE_URL" -c "SELECT column_name, data_type FROM information_schema.c
 
 ## ขั้นตอนที่ 3: ตรวจ Storage Bucket `images`
 
-> ✅ **ไม่ต้องสร้าง bucket เอง** — migration `020_create_images_bucket.sql` สร้าง bucket `images` (public) + RLS policies ให้อัตโนมัติ
+> ✅ **ไม่ต้องสร้าง bucket เอง** — `000_schema_all_in_one.sql` สร้าง bucket `images` (public) + RLS policies ให้อัตโนมัติ (ส่วน [8])
 
 bucket `images` แบ่ง folder ตามการใช้งาน:
 | folder | เก็บอะไร |
@@ -305,8 +309,8 @@ git add -A && git commit -m "..." && git push
 ```
 
 **ถ้ามี migration ใหม่:**
-1. สร้างไฟล์ `migrations/023_xxx.sql` (เรียงลำดับ)
-2. **รันลงทุก DB** ด้วย loop ในขั้นตอนที่ 2.2 (เปลี่ยน path ได้)
+1. สร้างไฟล์ `migrations/023_xxx.sql` (เรียงลำดับ) และอัปเดต `000_schema_all_in_one.sql` ให้รวมการเปลี่ยนแปลงใหม่ด้วย (เพื่อให้ DB ใหม่ได้ครบในไฟล์เดียว)
+2. **รันลงทุก DB** ด้วยคำสั่ง `psql "$DATABASE_URL" -f migrations/023_xxx.sql`
 3. deploy โค้ด (auto)
 
 > ⚠️ **ทุก DB ต้องรัน migration ให้ครบ** ไม่งั้นเว็บที่ไม่ได้รันจะพังเวลามีโค้ดอ้างคอลัมน์ใหม่
@@ -317,24 +321,24 @@ git add -A && git commit -m "..." && git push
 
 | อาการ | สาเหตุ | วิธีแก้ |
 |---|---|---|
-| รัน migration 012 แล้ว error `relation "profiles" does not exist` | ยังไม่รัน 011 หรือรัน 012 ก่อน 011 | รัน `migrations/011_profiles.sql` ก่อน แล้วรัน 012 ซ้ำ |
-| อัปโหลดรูปได้ error "Bucket not found" | ยังไม่รัน migration 020 | รัน `migrations/020_create_images_bucket.sql` |
+| รัน schema แล้วตารางไม่ครบ | รันไม่ครบ/มี error กลางไฟล์ | รัน `000_schema_all_in_one.sql` ซ้ำ (idempotent) แล้วดู error ใน log — ใช้ผลลัพธ์จาก `schema-audit.sql` ช่วยหา column ที่ขาด |
+| อัปโหลดรูปได้ error "Bucket not found" | ไม่ได้รันส่วน [8] ของ schema | รัน `migrations/000_schema_all_in_one.sql` ซ้ำ (ส่วน storage bucket) |
 | อัปโหลดถูกปฏิเสธโดย Storage Policy | `SUPABASE_SERVICE_ROLE_KEY` ว่าง → fallback เป็น anon | ตั้ง `SUPABASE_SERVICE_ROLE_KEY` ใน Vercel แล้ว redeploy |
 | Login ไม่ผ่าน | user ยังไม่ confirm email | Dashboard → Users → ติ๊ก Auto Confirm (หรือปุ่ม Confirm) |
 | Login ผ่านแต่ไม่เห็นเมนู admin | `profiles.role` ไม่ถูกต้อง / ไม่มี profile | รัน SQL ขั้นตอน 4.2 อัปเดต role |
 | Login ได้แต่ขึ้น "ยังไม่ได้รับสิทธิ์เข้าใช้งาน" | ไม่มีแถวในตาราง `profiles` | สร้าง profile ตามขั้นตอน 4.2 |
 | หน้าเว็บโชว์ข้อมูลเว็บอื่น | env ชี้ผิด DB | ตรวจ `NEXT_PUBLIC_SUPABASE_URL` ใน Vercel ให้ตรง project |
-| Site settings save ไม่ได้ | type `site_settings.id` ไม่ตรง / ยังไม่รัน migration 013/021 | รัน migration 013 + 021, ตรวจ type ในขั้นตอน 2.5 |
-| Footer ไม่แสดงหมวดหมู่ | ยังไม่รัน migration 022 | รัน `migrations/022_categories_visibility.sql` |
+| Site settings save ไม่ได้ | type `site_settings.id` ไม่ตรง / คอลัมน์ไม่ครบ | รัน `000_schema_all_in_one.sql` ซ้ำ, ตรวจ type ในขั้นตอน 2.5 |
+| Footer ไม่แสดงหมวดหมู่ | คอลัมน์ `show_at_footer` ยังไม่มี | รัน `000_schema_all_in_one.sql` ซ้ำ (ส่วน [6]) |
 
 ---
 
 ## 📎 ไฟล์ที่เกี่ยวข้อง
 
-- `migrations/0*.sql` — schema ทั้งหมด (รันเรียงลำดับจาก 011)
-- `migrations/011_profiles.sql` — enum `user_role` + ตาราง `profiles` + RLS (**รันก่อน 012**)
-- `migrations/020_create_images_bucket.sql` — Storage bucket `images` + RLS
-- `migrations/022_categories_visibility.sql` — flag `show_on_public` / `show_at_footer`
+- **`migrations/000_schema_all_in_one.sql`** — ⭐ **ไฟล์เดียวรวม schema ทั้งหมด (แนะนำให้รันไฟล์นี้)**
+- `migrations/011`–`022` — migration เดิม (เก็บไว้เป็นประวัติ/อ้างอิง ไม่ต้องรันแยกแล้ว)
+- `supabase/migrations/00001-00006` — schema ต้นฉบับ (ถูก merge เข้า `000_schema_all_in_one.sql` แล้ว)
+- `schema-audit.sql` — ตรวจว่าตาราง/คอลัมน์ครบหรือยัง (รันใน SQL Editor ได้เลย)
 - `docs/CLONE_SETUP_GUIDE.md` — ภาพรวมการ clone project ใหม่
 - `docs/14-database-schema-reference.md` — โครงสร้างตารางทั้งหมด
 - `docs/env-variables-guide.md` — env vars สำหรับ Analytics/AdSense

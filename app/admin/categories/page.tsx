@@ -38,6 +38,8 @@ interface Category {
   descriptionEN?: string;
   imageUrl?: string;
   sortOrder: number;
+  showOnPublic: boolean;
+  showAtFooter: boolean;
   articleCount: number;
 }
 
@@ -49,6 +51,8 @@ interface CategoryForm {
   descriptionEN: string;
   imageUrl: string;
   sortOrder: number;
+  showOnPublic: boolean;
+  showAtFooter: boolean;
 }
 
 // ============================================================
@@ -66,6 +70,8 @@ const defaultForm: CategoryForm = {
   descriptionEN: "",
   imageUrl: "",
   sortOrder: 0,
+  showOnPublic: true,
+  showAtFooter: true,
 };
 
 // ============================================================
@@ -117,7 +123,7 @@ export default function CategoriesPage() {
       .slice(0, 60);
   };
 
-  const handleFormChange = (field: keyof CategoryForm, value: string | number) => {
+  const handleFormChange = (field: keyof CategoryForm, value: string | number | boolean) => {
     setForm((prev) => {
       const updated = { ...prev, [field]: value };
       // Auto-slug when nameTH changes and slug is empty or auto-generated
@@ -138,6 +144,8 @@ export default function CategoriesPage() {
       descriptionEN: cat.descriptionEN || "",
       imageUrl: cat.imageUrl || "",
       sortOrder: cat.sortOrder,
+      showOnPublic: cat.showOnPublic ?? true,
+      showAtFooter: cat.showAtFooter ?? true,
     });
     setErrors([]);
     setSaveStatus("idle");
@@ -336,6 +344,24 @@ export default function CategoriesPage() {
                             <span className="px-2 py-0.5 rounded bg-white/5">{cat.nameEN}</span>
                             <span>{cat.articleCount} บทความ</span>
                             <span>ลำดับ {cat.sortOrder}</span>
+                            <span
+                              className={`flex items-center gap-1 px-2 py-0.5 rounded ${
+                                cat.showOnPublic ? "bg-emerald-500/10 text-emerald-300/80" : "bg-white/5 text-white/30"
+                              }`}
+                              title={cat.showOnPublic ? "แสดงในหน้า public" : "ซ่อนจากหน้า public"}
+                            >
+                              {cat.showOnPublic ? <Eye size={11} /> : <EyeOff size={11} />}
+                              public
+                            </span>
+                            <span
+                              className={`flex items-center gap-1 px-2 py-0.5 rounded ${
+                                cat.showAtFooter ? "bg-emerald-500/10 text-emerald-300/80" : "bg-white/5 text-white/30"
+                              }`}
+                              title={cat.showAtFooter ? "แสดงที่ footer" : "ซ่อนจาก footer"}
+                            >
+                              {cat.showAtFooter ? <Eye size={11} /> : <EyeOff size={11} />}
+                              footer
+                            </span>
                           </div>
                           {cat.descriptionTH && (
                             <p className="text-white/50 text-xs mt-2 line-clamp-1">{cat.descriptionTH}</p>
@@ -515,6 +541,34 @@ export default function CategoriesPage() {
                     min={0}
                     className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-amber-400/30"
                   />
+                </div>
+
+                {/* Visibility options */}
+                <div className="rounded-lg bg-white/[0.03] border border-white/5 p-3 space-y-2">
+                  <label className="flex items-center gap-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.showOnPublic}
+                      onChange={(e) => handleFormChange("showOnPublic", e.target.checked)}
+                      className="w-4 h-4 rounded border-white/20 bg-white/5 text-amber-400 accent-amber-400 cursor-pointer"
+                    />
+                    <span className="text-sm text-white/70 flex items-center gap-1.5">
+                      {form.showOnPublic ? <Eye size={13} className="text-emerald-300" /> : <EyeOff size={13} className="text-white/30" />}
+                      แสดงในหน้า public (home, หน้าหมวดหมู่)
+                    </span>
+                  </label>
+                  <label className="flex items-center gap-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.showAtFooter}
+                      onChange={(e) => handleFormChange("showAtFooter", e.target.checked)}
+                      className="w-4 h-4 rounded border-white/20 bg-white/5 text-amber-400 accent-amber-400 cursor-pointer"
+                    />
+                    <span className="text-sm text-white/70 flex items-center gap-1.5">
+                      {form.showAtFooter ? <Eye size={13} className="text-emerald-300" /> : <EyeOff size={13} className="text-white/30" />}
+                      แสดงที่ footer
+                    </span>
+                  </label>
                 </div>
 
                 {/* Errors */}

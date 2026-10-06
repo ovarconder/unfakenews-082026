@@ -152,6 +152,10 @@ export interface CategoryRow {
   description_en: string | null;
   image_url: string | null;
   sort_order: number;
+  /** แสดงในหน้า public (home, [slug] เป็นต้น) — default true */
+  show_on_public: boolean;
+  /** แสดงที่ footer — default true */
+  show_at_footer: boolean;
   created_at: string;
 }
 
@@ -163,6 +167,8 @@ export interface CategoryInsert {
   description_en?: string | null;
   image_url?: string | null;
   sort_order?: number;
+  show_on_public?: boolean;
+  show_at_footer?: boolean;
 }
 
 export interface CategoryUpdate {
@@ -173,6 +179,8 @@ export interface CategoryUpdate {
   description_en?: string | null;
   image_url?: string | null;
   sort_order?: number;
+  show_on_public?: boolean;
+  show_at_footer?: boolean;
 }
 
 // ============================================================

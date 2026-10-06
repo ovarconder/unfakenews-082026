@@ -163,9 +163,13 @@ export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorPr
   const [tags, setTags] = useState<string[]>(initialData?.tags || []);
   const [tagInput, setTagInput] = useState("");
   const [showAuthor, setShowAuthor] = useState(initialData?.showAuthor !== false);
-  const [categoriesList, setCategoriesList] = useState<{ nameTH: string }[]>([]);
+  const [categoriesList, setCategoriesList] = useState<
+    { nameTH: string; showOnPublic?: boolean; showAtFooter?: boolean }[]
+  >([]);
 
   // Fetch categories from database
+  //  ★ ดึง "ทั้งหมด" (ไม่กรอง show_on_public) เพื่อให้ผู้เขียนเลือกได้ทั้ง
+  //    หมวดหมู่ปกติ และหมวดหมู่ที่ซ่อนจากหน้า public (categories พิเศษ)
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -1037,12 +1041,28 @@ export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorPr
             className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-amber-300/50"
           >
             <option value="">เลือกหมวดหมู่...</option>
-            {categoriesList.map((cat) => (
-              <option key={cat.nameTH} value={cat.nameTH}>
-                {cat.nameTH}
-              </option>
-            ))}
+            {categoriesList.map((cat) => {
+              const hidden = cat.showOnPublic === false;
+              return (
+                <option key={cat.nameTH} value={cat.nameTH}>
+                  {cat.nameTH}
+                  {hidden ? " (ซ่อนจาก public)" : ""}
+                  {cat.showAtFooter === false ? " (ไม่แสดง footer)" : ""}
+                </option>
+              );
+            })}
           </select>
+          {category && (() => {
+            const selected = categoriesList.find((c) => c.nameTH === category);
+            if (selected && selected.showOnPublic === false) {
+              return (
+                <p className="text-amber-300/70 text-xs mt-1">
+                  ⚠️ หมวดหมู่นี้ถูกตั้งค่าให้ไม่แสดงในหน้า public (ซ่อนจาก home / หน้าหมวดหมู่)
+                </p>
+              );
+            }
+            return null;
+          })()}
         </div>
         <div>
           <label className="block text-white/70 text-sm mb-2">ผู้เขียน</label>

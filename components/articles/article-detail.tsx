@@ -792,19 +792,22 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
               <div className="sticky top-24 space-y-6">
                 {/* QuickFactsBox — REMOVED per request */}
 
-                {/* Category */}
-                <div className="rounded-xl bg-gradient-to-br from-brand-card to-brand-bg-secondary border border-white/10 p-5">
-                  <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2">
-                    <ChevronRight size={14} className="text-brand-primary" />
-                    {locale === "th" ? "หมวดหมู่" : "Category"}
-                  </h3>
-                  <Link
-                    href={`/${locale}/categories/${encodeURIComponent(article.category)}`}
-                    className="block text-sm text-brand-primary/80 hover:text-brand-primary transition-colors"
-                  >
-                    {article.category}
-                  </Link>
-                </div>
+                {/* Category — ซ่อนลิงก์ทางเข้าไปหน้าหมวด ถ้าหมวดนี้ถูกตั้ง show_on_public = false
+                    (บทความยังแสดงปกติ แต่ไม่มีทางเข้าไปหน้าหมวด) */}
+                {!article.categoryHidden && (
+                  <div className="rounded-xl bg-gradient-to-br from-brand-card to-brand-bg-secondary border border-white/10 p-5">
+                    <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2">
+                      <ChevronRight size={14} className="text-brand-primary" />
+                      {locale === "th" ? "หมวดหมู่" : "Category"}
+                    </h3>
+                    <Link
+                      href={`/${locale}/categories/${encodeURIComponent(article.category)}`}
+                      className="block text-sm text-brand-primary/80 hover:text-brand-primary transition-colors"
+                    >
+                      {article.category}
+                    </Link>
+                  </div>
+                )}
 
                 {/* Related Articles in Sidebar */}
                 <div className="rounded-xl bg-gradient-to-br from-brand-card to-brand-bg-secondary border border-white/10 p-5">
@@ -838,7 +841,7 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
                       </Link>
                     ))}
                   </div>
-                  {relatedArticles.length > 3 && (
+                  {relatedArticles.length > 3 && !article.categoryHidden && (
                     <Link
                       href={`/${locale}/articles?category=${encodeURIComponent(article.category)}`}
                       className="block text-center text-xs text-brand-primary/70 hover:text-brand-primary mt-3 pt-3 border-t border-white/5 transition-colors"

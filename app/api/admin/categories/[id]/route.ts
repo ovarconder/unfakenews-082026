@@ -56,7 +56,7 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
-    const { slug, nameTH, nameEN, descriptionTH, descriptionEN, imageUrl, sortOrder } = body;
+    const { slug, nameTH, nameEN, descriptionTH, descriptionEN, imageUrl, sortOrder, showOnPublic, showAtFooter } = body;
 
     const supabase = createAdminClient();
 
@@ -68,6 +68,8 @@ export async function PUT(
     if (descriptionEN !== undefined) updateData.description_en = descriptionEN;
     if (imageUrl !== undefined) updateData.image_url = imageUrl;
     if (sortOrder !== undefined) updateData.sort_order = sortOrder;
+    if (showOnPublic !== undefined) updateData.show_on_public = showOnPublic;
+    if (showAtFooter !== undefined) updateData.show_at_footer = showAtFooter;
 
     const { data, error } = await supabase
       .from("categories")
@@ -91,6 +93,8 @@ export async function PUT(
         descriptionEN: data.description_en,
         imageUrl: data.image_url,
         sortOrder: data.sort_order || 0,
+        showOnPublic: data.show_on_public ?? true,
+        showAtFooter: data.show_at_footer ?? true,
       },
     });
   } catch (err: any) {

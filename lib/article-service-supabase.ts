@@ -41,6 +41,8 @@ export interface ArticleFull extends ArticleSummary {
   imageYear?: string;
   /** Google Schema Markup — JSON-LD structured data จาก DB columns */
   googleSchemaMarkup?: Record<string, unknown> | null;
+  /** หมวดหมู่ถูกตั้ง show_on_public = false → ซ่อนทางเข้าไปหน้าหมวดจากหน้า public */
+  categoryHidden?: boolean;
 }
 
 // ============================================================
@@ -272,7 +274,7 @@ export async function getFullArticle(
     .from("articles")
     .select(`
       id, slug, status, original_title, original_excerpt, original_content, tags,
-      categories(name_th, name_en),
+      categories(name_th, name_en, show_on_public),
       author_name, published_at, created_at, image_url, image_alt, featured,
       image_credit, image_photographer, image_source_url, image_year,
       google_schema_markup
@@ -346,6 +348,7 @@ export async function getFullArticle(
     id: art.id,
     slug: art.slug,
     category: categoryName,
+    categoryHidden: art.categories?.show_on_public === false,
     author: art.author_name,
     // Fallback ไป created_at เผื่อ draft ยังไม่มี published_at
     publishedAt: art.published_at || art.created_at,

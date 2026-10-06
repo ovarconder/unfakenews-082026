@@ -80,6 +80,8 @@ export async function GET(request: NextRequest) {
       descriptionEN: cat.description_en,
       imageUrl: cat.image_url,
       sortOrder: cat.sort_order || 0,
+      showOnPublic: cat.show_on_public ?? true,
+      showAtFooter: cat.show_at_footer ?? true,
       articleCount: countMap[cat.id] || 0,
     }));
 
@@ -102,7 +104,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { slug, nameTH, nameEN, descriptionTH, descriptionEN, imageUrl, sortOrder } = body;
+    const { slug, nameTH, nameEN, descriptionTH, descriptionEN, imageUrl, sortOrder, showOnPublic, showAtFooter } = body;
 
     if (!slug || !nameTH) {
       return NextResponse.json(
@@ -123,6 +125,8 @@ export async function POST(request: NextRequest) {
         description_en: descriptionEN || null,
         image_url: imageUrl || null,
         sort_order: sortOrder || 0,
+        show_on_public: showOnPublic ?? true,
+        show_at_footer: showAtFooter ?? true,
       })
       .select()
       .single();
@@ -148,6 +152,8 @@ export async function POST(request: NextRequest) {
         descriptionEN: data.description_en,
         imageUrl: data.image_url,
         sortOrder: data.sort_order || 0,
+        showOnPublic: data.show_on_public ?? true,
+        showAtFooter: data.show_at_footer ?? true,
         articleCount: 0,
       },
     });

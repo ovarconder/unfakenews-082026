@@ -1,4 +1,4 @@
-// ============================================================
+ // ============================================================
 // WikiHeroSection — Hero Section แบบ Wiki-Style
 // ============================================================
 // - รูปภาพเต็มจอ + Title (16:9 aspect ratio บนจอใหญ่)
@@ -101,12 +101,19 @@ export default function WikiHeroSection({
         <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 sm:pb-16 lg:pb-20">
           {/* Category & Tags */}
           <div className="flex items-center gap-2 mb-4 flex-wrap">
-            <Link
-              href={`/${locale}/categories/${encodeURIComponent(article.category)}`}
-              className="px-3 py-1 rounded-full bg-amber-300/15 text-amber-300 text-xs font-medium hover:bg-amber-300/25 transition-colors backdrop-blur-sm"
-            >
-              {article.category}
-            </Link>
+            {/* ถ้าหมวดถูกตั้ง show_on_public = false → แสดงเป็นข้อความ ไม่มีลิงก์ (ไม่มีทางเข้าไปหน้าหมวด) */}
+            {article.categoryHidden ? (
+              <span className="px-3 py-1 rounded-full bg-amber-300/15 text-amber-300 text-xs font-medium backdrop-blur-sm">
+                {article.category}
+              </span>
+            ) : (
+              <Link
+                href={`/${locale}/categories/${encodeURIComponent(article.category)}`}
+                className="px-3 py-1 rounded-full bg-amber-300/15 text-amber-300 text-xs font-medium hover:bg-amber-300/25 transition-colors backdrop-blur-sm"
+              >
+                {article.category}
+              </Link>
+            )}
             <span className="text-white/30 text-xs">·</span>
             <span className="text-white/40 text-xs flex items-center gap-1">
               <BookOpen size={12} />

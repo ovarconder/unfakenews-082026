@@ -1,8 +1,11 @@
 # 🖼️ คู่มือระบบอัปโหลดรูปภาพ
 
 > **เกี่ยวกับ:** การอัปโหลดรูปภาพในระบบ (Cover Image, รูปในเนื้อหาบทความ, Logo, Favicon, OG Image)
-> **Stack:** Supabase Storage (bucket: `article-images`) + Next.js API Route
+> **Stack:** Supabase Storage (bucket: `images`) + Next.js API Route
 > **จำกัดขนาด:** 1MB (client-side + server-side)
+>
+> ⚠️ **หมายเหตุ:** bucket หลักชื่อ **`images`** (เดิมเคยใช้ `article-images` แต่เปลี่ยนแล้ว — ดู `migrations/020_create_images_bucket.sql`)
+> ภายใน bucket แบ่งเป็น **folder ย่อย** ตามประเภทการใช้งาน (ดูหัวข้อ "โครงสร้าง Folder" ด้านล่าง)
 
 ---
 
@@ -17,6 +20,22 @@
 | OG Image | 500KB | JPEG หรือ PNG | 1200×630px |
 
 > 💡 **เคล็ดลับ:** ใช้ WebP format — คุณภาพเท่า JPEG แต่ขนาดเล็กกว่า 25-35%
+
+---
+
+## 📂 โครงสร้าง Folder ใน bucket `images`
+
+bucket `images` เก็บทุกอย่างรวมกัน แบ่งเป็น **folder ย่อย** ตามการใช้งาน:
+
+| folder | เก็บอะไร | ตัวอย่าง path |
+|--------|----------|---------------|
+| `article-images/YYYY/MM/` | รูปบทความ (แยกตามเดือน) | `article-images/2025/07/1717000000-a1b2c3.jpg` |
+| `site-settings/` | logo, favicon, og-image, support QR | `site-settings/1717000000-a1b2c3.png` |
+| `hero-slides/` | banner หน้าแรก | `hero-slides/1717000000-a1b2c3.jpg` |
+| `categories/` | รูปหมวดหมู่ | `categories/1717000000-a1b2c3.png` |
+
+> 📌 ค่า `folder` จะถูก **whitelist** ใน API — ส่งชื่อ folder นอกลิสต์จะได้ error 400 (กัน path traversal)
+> 📌 `article-images` จะถูกแยกย่อยเป็นปี/เดือนอัตโนมัติ ไม่ต้องส่งเอง
 
 ---
 
@@ -73,15 +92,17 @@ import { createAdminClient } from "@/lib/supabase-server";
 **ค่าคงที่:**
 - `ALLOWED_TYPES` — `image/jpeg, image/png, image/gif, image/webp, image/svg+xml`
 - `MAX_FILE_SIZE` — `1 * 1024 * 1024` (1MB)
-- `BUCKET_NAME` — `"article-images"`
+- `BUCKET_NAME` — `"images"`
+- `ALLOWED_FOLDERS` — `article-images`, `site-settings`, `hero-slides`, `categories`
 
-**Request:** `multipart/form-data` พร้อม field `file`
+**Request:** `multipart/form-data` พร้อม field `file` (และ `folder` แบบ optional)
 
 **Response สำเร็จ:**
 ```json
 {
   "success": true,
-  "url": "https://xxx.supabase.co/storage/v1/object/public/article-images/...",
+  "url": "https://xxx.supabase.co/storage/v1/object/public/images/article-images/2025/07/1717000000-a1b2c3.jpg",
+  "key": "article-images/2025/07/1717000000-a1b2c3.jpg",
   "filename": "1717000000-a1b2c3.jpg",
   "size": 123456
 }
@@ -181,6 +202,6 @@ async function uploadImage(file: File): Promise<string> {
 
 ---
 
-> **อัปเดตล่าสุด:** 2025-06-02  
-> **ผู้แก้ไข:** Vibe Engineering  
+> **อัปเดตล่าสุด:** 2026  
 > **ไฟล์ที่เกี่ยวข้อง:** `components/ui/image-uploader.tsx`, `components/admin/article-editor.tsx`, `app/api/upload/route.ts`
+> **Migration ที่เกี่ยวข้อง:** `migrations/020_create_images_bucket.sql` (สร้าง bucket `images` + RLS policies)

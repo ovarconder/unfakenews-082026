@@ -67,36 +67,22 @@ export function HeroBanner({ locale }: HeroBannerProps) {
   const goNext = useCallback(() => setCurrent((prev) => (prev + 1) % slides.length), [slides.length]);
   const goPrev = useCallback(() => setCurrent((prev) => (prev - 1 + slides.length) % slides.length), [slides.length]);
 
-  if (loading || slides.length === 0) {
-    // Fallback to gradient hero while loading / no slides
+  if (loading) {
+    // กำลังโหลดสไลด์ → แสดง spinner (ไม่โชว์ชื่อเว็บ fallback กลางจอ)
     return (
-      <section className="relative min-h-[85vh] flex items-end justify-center overflow-hidden bg-brand-bg">
-        <div className="absolute inset-0 bg-gradient-to-b from-brand-bg-secondary via-brand-bg to-brand-bg z-10" />
-        <div className="relative z-20 text-center px-4 pb-28 pt-16 max-w-4xl mx-auto">
-          <div className="flex items-center justify-center gap-4 mb-6">
-            <div className="h-px w-12 bg-gradient-to-r from-transparent to-brand-primary/50" />
-            <div className="w-2 h-2 rotate-45 bg-brand-primary/60" />
-            <div className="h-px w-12 bg-gradient-to-l from-transparent to-brand-primary/50" />
-          </div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-kanit font-bold text-white mb-6 leading-tight">
-            <span className="font-kanit text-brand-gradient">
-              {t("hero.title", locale)}
-            </span>
-          </h1>
-          <p className="text-lg sm:text-xl md:text-2xl text-white/60 font-light mb-10 max-w-2xl mx-auto leading-relaxed">
-            {t("hero.subtitle", locale)}
-          </p>
-          <Link
-            href={`/${locale}/articles`}
-            className="group inline-flex items-center gap-2 px-8 py-3.5 rounded-lg bg-gradient-to-r from-brand-primary to-brand-secondary text-brand-bg font-semibold bg-brand-gradient-hover transition-all duration-300 shadow-lg shadow-brand-primary/20"
-          >
-            {t("hero.cta", locale)}
-            <span className="group-hover:translate-x-1 transition-transform">&rarr;</span>
-          </Link>
-        </div>
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-brand-bg to-transparent z-10" />
+      <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden bg-brand-bg">
+        <div
+          className="animate-spin w-10 h-10 border-2 border-brand-primary/40 border-t-transparent rounded-full"
+          role="status"
+          aria-label="Loading"
+        />
       </section>
     );
+  }
+
+  if (slides.length === 0) {
+    // ไม่มีสไลด์เลย → ซ่อน banner ทั้งหมด
+    return null;
   }
 
   const slide = slides[current];

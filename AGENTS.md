@@ -21,48 +21,54 @@
 
 ### บริบทของ environment นี้
 
-ใน workspace นี้ การรันคำสั่ง terminal มีข้อจำกัด:
+จากที่ทดสอบจริงใน workspace นี้:
 
-- Agent ส่งคำสั่งไปยัง terminal ได้ แต่ **ไม่สามารถรับ output กลับมาโดยตรงได้**
-- เมื่อรันคำสั่ง terminal ระบบจะ **รอให้มนุษย์กด Enter** ก่อนจึงจะดำเนินการต่อ
-- Agent **อ่านผลลัพธ์จากการรันโดยตรงไม่ได้** — ต้องอาศัยมนุษย์คัดลอกผลลัพธ์มาบอก
+- Agent ส่งคำสั่งไปยัง terminal ได้ แต่ tool `run_terminal_command` **ไม่คืน stdout กลับมา**
+  (จะได้แค่สถานะ "executed")
+- **แต่ remote terminal กับ workspace เป็น filesystem เดียวกัน**
+  → ถ้าคำสั่งเขียน output ลงไฟล์ที่อยู่ใน workspace agent จะอ่านไฟล์นั้นเองได้ด้วย tool `read_file`
+- จึง **ไม่จำเป็นต้องให้มนุษย์คัดลอกผลให้อีกต่อไป** (ทำเฉพาะเมื่อ agent อ่านไฟล์ไม่ได้จริงๆ)
 
-### วิธีทำงานที่ถูกต้อง
+### วิธีทำงานที่ถูกต้อง (แนะนำ — agent อ่านเองได้)
 
-Agent **ต้อง**ปฏิบัติตามแนวทางนี้เมื่อต้องรันคำสั่ง terminal:
-
-1. **เขียน output ลงไฟล์ใน `/tmp` ก่อนเสมอ** แล้วให้มนุษย์คัดลอกเนื้อหามาให้
+1. **เขียน output ลงไฟล์ใน workspace** ที่ถูก gitignore ไว้ เช่นโฟลเดอร์ `agent-reports/`
    ```bash
-   cd /path/to/project && some-command > /tmp/result.txt 2>&1; cat /tmp/result.txt
+   cd /path/to/project && mkdir -p agent-reports && some-command > agent-reports/out.txt 2>&1; echo "exit=$?" >> agent-reports/out.txt
    ```
-2. **ใช้ `tee` พร้อม marker** เพื่อให้อ่านง่าย และมีจุดสิ้นสุดชัดเจน
-   ```bash
-   cd /path/to/project && some-command 2>&1 | tee /tmp/out.txt; printf '\n===DONE===\n'
-   ```
-3. **รวมหลายคำสั่งไว้ในคำสั่งเดียว** เพื่อลดจำนวนรอบการกด Enter
+2. **ตามด้วย tool `read_file`** อ่านไฟล์ `agent-reports/out.txt` เพื่อดูผลลัพธ์
+   - ต้องอ่านเองหลังส่งคำสั่ง — ระบบนี้ **ไม่ส่ง event แจ้งเตือน** ว่า terminal รันเสร็จ
+   - ถ้าอ่านแล้วยังไม่ทันเขียนเสร็จ ให้อ่านซ้ำอีกครั้ง
+3. **รวมหลายคำสั่งไว้ในคำสั่งเดียว** เพื่อลดจำนวนรอบ
    - ใช้ `&&`, `;`, `{}` รวมงานเข้าด้วยกัน
-4. **อย่าเดาผลลัพธ์** — ถ้ายังไม่ได้รับ output ให้**ขอให้มนุษย์คัดลอกมาให้**
-5. **หลีกเลี่ยงคำสั่งแบบ interactive** (เช่น `git rebase -i`, `nano`, `vim`, pager)
-   - ใช้ flag ที่ไม่ต้อง interact เช่น `git --no-pager`, `git commit -m "..."`
+
+> `agent-reports/` และ `*.report.txt` อยู่ใน `.gitignore` แล้ว — ใช้เป็นที่พัก output ได้ โดยไม่ปนกับ commit
+
+### ทางเลือกสำรอง (ถ้า agent อ่านไฟล์ไม่ได้ / คนละ filesystem)
+
+- ใช้ `tee` พร้อม marker แล้วให้มนุษย์คัดลอกผลมาให้
+  ```bash
+  cd /path/to/project && some-command 2>&1 | tee /tmp/out.txt; printf '\n===DONE===\n'
+  ```
+
+### ข้อควรปฏิบัติอื่นๆ
+
+- **หลีกเลี่ยงคำสั่งแบบ interactive** (เช่น `git rebase -i`, `nano`, `vim`, pager)
+  - ใช้ flag ที่ไม่ต้อง interact เช่น `git --no-pager`, `git commit -m "..."`
+- ใช้เครื่องมืออื่นที่อ่านไฟล์ได้ทันที (Read / Glob / Grep) แทนเมื่อเป็นไปได้
+- **อย่าเดาผลลัพธ์** — ถ้าอ่านไฟล์แล้วไม่ได้ผลจริง ให้ขอให้มนุษย์ช่วยตรวจ/คัดลอกมาให้
 
 ### ตัวอย่างที่ถูกต้อง
 
 ```bash
-cd /workspaces/unfakenews-082026 && { git status -s; echo "---"; git log --oneline -3; } 2>&1 | tee /tmp/s.txt; printf '\n===DONE===\n'
+cd /workspaces/unfakenews-082026 && mkdir -p agent-reports && { git status -s; echo "---"; git log --oneline -3; } > agent-reports/out.txt 2>&1; echo "exit=$?" >> agent-reports/out.txt
 ```
+แล้ว agent ตามด้วย `read_file("agent-reports/out.txt")`
 
 ### ตัวอย่างที่ผิด (agent จะอ่านค่าไม่ได้)
 
 ```bash
-git status        # ← ไม่ redirect ลงไฟล์, ไม่มี marker, อ่านไม่ได้
+git status        # ← ไม่ redirect ลงไฟล์ใน workspace, อ่านไม่ได้
 ```
-
-### หมายเหตุสำหรับ Agent
-
-- หลังส่งคำสั่ง terminal ให้ **หยุดรอ** แล้วถาม/บอกมนุษย์ว่า "ช่วยคัดลอกผลจาก terminal มาให้ด้วยครับ"
-- **ห้ามเรียกเครื่องมือ terminal ซ้ำรวดเดียวหลายครั้ง** เพื่อหวังอ่านค่าตัวเอง — จะไม่ได้ผล
-- ใช้เครื่องมืออื่นที่อ่านไฟล์ได้ (Read / Glob / Grep) แทนเมื่อเป็นไปได้
-  เพราะอ่านไฟล์ได้ทันทีโดยไม่ต้องพึ่ง terminal
 
 ---
 
@@ -110,7 +116,7 @@ git status        # ← ไม่ redirect ลงไฟล์, ไม่มี m
 ## 🧭 สรุป Checklist สำหรับ Agent ทุกครั้ง
 
 - [ ] ตอบเป็น**ภาษาไทย**
-- [ ] รันคำสั่ง terminal โดย **redirect output ลง `/tmp` + marker** เสมอ แล้วรอให้มนุษย์คัดลอกผลมา
-- [ ] ไม่เดาผลลัพธ์ terminal — ถ้าไม่ได้ output ให้ขอ
+- [ ] รันคำสั่ง terminal โดย **redirect output ลง `agent-reports/` ใน workspace** แล้ว agent อ่านเองด้วย `read_file` (ไม่ต้องรอมนุษย์คัดลอก)
+- [ ] ไม่เดาผลลัพธ์ terminal — ถ้าอ่านไฟล์แล้วไม่ได้ผลจริง ให้อ่านซ้ำ หรือขอให้มนุษย์ช่วยตรวจ
 - [ ] ก่อนแก้ schema/DB — ปรึกษาเจ้าของโปรเจกต์และตรวจ type จริงก่อน
 - [ ] migration ใหม่ — ตั้งชื่อเรียงลำดับ + ใช้ `IF NOT EXISTS`

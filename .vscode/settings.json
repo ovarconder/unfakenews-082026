@@ -1,0 +1,38 @@
+{
+  // === Copilot Chat terminal auto-approve ===
+  // คำสั่งที่ "อ่านอย่างเดียว / ปลอดภัย" → รันได้เลยไม่ต้องกด Enter
+  "github.copilot.chat.agent.terminal.allowList": {
+    "git status": true,
+    "git status *": true,
+    "git log": true,
+    "git log *": true,
+    "git diff": true,
+    "git diff *": true,
+    "git branch": true,
+    "/^git --no-pager (status|log|diff|show|branch)\\b/": true,
+    "ls": true,
+    "ls *": true,
+    "pwd": true,
+    "cat *": true,
+    "/^cat\\b/": true,
+    "head *": true,
+    "tail *": true,
+    "mkdir": true,
+    "mkdir -p *": true,
+    "npx tsc": true,
+    "npx tsc --noEmit": true,
+    "/^npx tsc\\b/": true,
+    "node --version": true,
+    "npm --version": true
+  },
+
+  // คำสั่งเหล่านี้ "ห้าม" auto-run เด็ดขาด (บังคับ confirm เสมอ)
+  "github.copilot.chat.agent.terminal.denyList": {
+    "git push": true,
+    "git push *": true,
+    "git reset --hard": true,
+    "rm -rf *": true,
+    "rm -r *": true,
+    "sudo *": true
+  }
+}

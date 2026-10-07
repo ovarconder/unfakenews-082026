@@ -45,7 +45,12 @@ export function Header({ locale }: HeaderProps) {
 
   const siteName = settings?.name || process.env.NEXT_PUBLIC_SITE_NAME || "UnFake News";
   // ใช้ logo (field ที่บันทึกใน settings page) เป็นหลัก ก่อน logoFull
-  const logoUrl = settings?.logo || settings?.logoFull || "https://efzwyxlhhvflufyfryyi.supabase.co/storage/v1/object/public/images/site-settings/1785808952452-jl6xc0.png";
+  // ถ้าไม่มีค่าจริงเลย ให้ fallback เป็นโลโก้ในเครื่องของเว็บนี้ (ห้าม hardcode URL เว็บอื่น)
+  const logoUrl =
+    settings?.logo?.trim() ||
+    settings?.logoFull?.trim() ||
+    process.env.NEXT_PUBLIC_SITE_LOGO ||
+    "/images/logo/unfakenews-logo-360.png";
 
   // ตรวจสถานะ login + role จาก sessionStorage (admin ใช้ key นี้)
   useEffect(() => {

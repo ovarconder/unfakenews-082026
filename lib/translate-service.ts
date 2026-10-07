@@ -15,6 +15,7 @@
 
 import type { Locale } from "./locales";
 import { LOCALE_NAMES } from "./locales";
+import { getSettings } from "./site-settings";
 
 // ============================================================
 // Gemini API Configuration
@@ -38,16 +39,37 @@ const GEMINI_PRO_MODEL = "gemini-3.1-pro-preview"; // High-quality, on-demand
 // ใช้ค่า 65536 (outputTokenLimit ของ gemini-3.6-flash) เพื่อกันการ truncate
 const GEMINI_MAX_OUTPUT_TOKENS = 65536;
 
-function getApiKey(): string {
-  const key = process.env.GEMINI_API_KEY;
-  if (!key) {
-    throw new Error(
-      "GEMINI_API_KEY is not set in environment variables.\n" +
-      "Please add it to your .env.local file:\n" +
-      'GEMINI_API_KEY=your-google-ai-studio-api-key'
-    );
+/**
+ * Resolve the Gemini API key.
+ *
+ * Priority:
+ *   1. `site_settings.gemini_api_key` (ค่าที่บันทึกจากหน้า Admin → Settings)
+ *   2. Environment variable `GEMINI_API_KEY`
+ *   3. Environment variable `AUTH_GEMINI_API_KEY` (สำรอง)
+ *
+ * ทำให้ผู้ใช้กรอกคีย์ในหน้า Admin แล้วใช้งานได้เลย โดยไม่ต้องตั้ง ENV
+ */
+async function getApiKey(): Promise<string> {
+  // 1) ลองอ่านจาก settings ที่บันทึกใน DB ก่อน
+  try {
+    const settings = await getSettings();
+    const dbKey = settings.geminiApiKey?.trim();
+    if (dbKey) return dbKey;
+  } catch (err) {
+    // อ่าน settings ไม่ได้ (DB ล่ม ฯลฯ) → ตกไปใช้ ENV ต่อ
+    console.warn("[Gemini] Could not read settings for API key, falling back to ENV:", err);
   }
-  return key;
+
+  // 2) fallback ไป Environment Variable
+  const envKey = process.env.GEMINI_API_KEY || process.env.AUTH_GEMINI_API_KEY;
+  if (envKey && envKey.trim()) return envKey.trim();
+
+  throw new Error(
+    "ยังไม่ได้ตั้งค่า Gemini API Key\n" +
+    "กรุณากรอกคีย์ในหน้า Admin → Settings → API Keys → Gemini API Key\n" +
+    "หรือตั้งค่า Environment Variable:\n" +
+    "GEMINI_API_KEY=your-google-ai-studio-api-key"
+  );
 }
 
 // ============================================================
@@ -314,7 +336,8 @@ async function callGeminiAPI<T>(
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     console.log(`[Gemini] Calling ${modelName}... (attempt ${attempt}/${MAX_ATTEMPTS})`);
 
-    const url = `${GEMINI_BASE_URL}/models/${modelName}:generateContent?key=${getApiKey()}`;
+    const apiKey = await getApiKey();
+    const url = `${GEMINI_BASE_URL}/models/${modelName}:generateContent?key=${apiKey}`;
 
     const response = await fetch(url, {
       method: "POST",

@@ -161,7 +161,7 @@ export async function POST(request: Request) {
     // 4. Structured entity data (glossary, quick facts, entity values)
     // ================================================================
     let structuredResult:
-      | { glossary?: { term: string; context: string }[]; quick_facts?: Record<string, string>; entity_values?: Record<string, string> }
+      | { glossary?: { term: string; context: string }[]; quick_facts?: { label: string; value: string }[] | Record<string, string>; entity_values?: Record<string, string> }
       | undefined;
 
     const translateEntity = shouldTranslate("entity_name") ||
@@ -171,7 +171,7 @@ export async function POST(request: Request) {
     if (translateEntity) {
       const structuredInput: {
         glossary?: { term: string; context: string }[];
-        quick_facts?: Record<string, string>;
+        quick_facts?: { label: string; value: string }[] | Record<string, string>;
         entity_values?: Record<string, string>;
       } = {};
 
@@ -186,11 +186,12 @@ export async function POST(request: Request) {
         }));
       }
       if (shouldTranslate("quick_facts") && originalQuickFacts.length > 0) {
-        const qf: Record<string, string> = {};
-        originalQuickFacts.forEach((f: any) => {
-          qf[f.label || f.key] = f.value;
-        });
-        structuredInput.quick_facts = qf;
+        // ★ ส่งเป็น array ของ { label, value } เพื่อให้ Gemini แปล "ทั้ง label และ value"
+        //   (เดิมส่งเป็น object { label: value } ทำให้ label กลายเป็น JSON key ที่ห้ามแปล → label ค้างเป็นภาษาไทย)
+        structuredInput.quick_facts = originalQuickFacts.map((f: any) => ({
+          label: f.label || f.key || "",
+          value: f.value ?? "",
+        })).filter((f: any) => f.label);
       }
       if (shouldTranslate("entity_name") && originalEntityName) {
         structuredInput.entity_values = structuredInput.entity_values || {};

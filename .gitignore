@@ -44,3 +44,6 @@ app/dev/
 .tmp/
 agent-reports/
 
+# spurious nested copy ที่หลุดเข้ามา (stale duplicate) — ห้าม commit
+Users/
+

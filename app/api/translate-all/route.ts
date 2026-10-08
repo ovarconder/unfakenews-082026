@@ -98,7 +98,7 @@ export async function POST(request: Request) {
         // 4. Translate structured entity data
         const structuredInput: {
           glossary?: { term: string; context: string }[];
-          quick_facts?: Record<string, string>;
+          quick_facts?: { label: string; value: string }[] | Record<string, string>;
           entity_values?: Record<string, string>;
         } = {};
 
@@ -112,9 +112,10 @@ export async function POST(request: Request) {
           }));
         }
         if (originalQuickFacts.length > 0) {
-          const qf: Record<string, string> = {};
-          originalQuickFacts.forEach((f: any) => { qf[f.label || f.key] = f.value; });
-          structuredInput.quick_facts = qf;
+          // ★ ส่งเป็น array ของ { label, value } เพื่อให้ Gemini แปล "ทั้ง label และ value"
+          structuredInput.quick_facts = originalQuickFacts
+            .map((f: any) => ({ label: f.label || f.key || "", value: f.value ?? "" }))
+            .filter((f: any) => f.label);
         }
         if (row.entity_name) {
           structuredInput.entity_values = structuredInput.entity_values || {};
@@ -122,7 +123,7 @@ export async function POST(request: Request) {
         }
 
         let structuredResult:
-          | { glossary?: { term: string; context: string }[]; quick_facts?: Record<string, string>; entity_values?: Record<string, string> }
+          | { glossary?: { term: string; context: string }[]; quick_facts?: { label: string; value: string }[] | Record<string, string>; entity_values?: Record<string, string> }
           | undefined;
 
         if (Object.keys(structuredInput).length > 0) {

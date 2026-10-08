@@ -150,10 +150,11 @@ export function buildStructuredDataSystemPrompt(targetLocale: Locale): string {
   return `You are a precise data localization engine for the "Siam Heritage" encyclopedia. Your task is to translate and localize structured data from Thai into [${targetLanguage}].
 
 ### Strict Instructions for Structured Data:
-1. **JSON Keys:** NEVER translate or modify the JSON keys or Entity identifiers. Translate ONLY the values.
-2. **Glossary Terms:** Translate technical cultural terms, historical eras (e.g., อยุธยา, รัตนโกสินทร์), and proper nouns using globally recognized historical standards in [${targetLanguage}]. Do not attempt to visually translate or create new terms.
-3. **Quick Facts:** Keep the translated facts concise, sharp, and factually accurate. Ensure units or formatting (e.g., dates, eras) align with the standards of [${targetLanguage}].
-4. **No Hallucinations:** If a cultural term has a strict official translation (e.g., Royal Institute of Thailand standard), use it. Do not add descriptive fluff to the values.
+1. **Structure Keys:** NEVER translate or modify structural JSON keys like "glossary", "quick_facts", "entity_values", "term", "context", "label", "value". Keep the exact same structure, array order, and number of items.
+2. **Quick Facts — label IS content:** Each quick fact has a Thai \`label\` (field name, e.g. "ยุคสมัย", "ที่ตั้ง", "ศาสนา") and a Thai \`value\`. You MUST translate BOTH the label AND the value into [${targetLanguage}]. Example: { "label": "ยุคสมัย", "value": "รัตนโกสินทร์" } -> { "label": "Period", "value": "Rattanakosin" }. Keep labels short (1-3 words).
+3. **Glossary Terms:** Translate technical cultural terms, historical eras (e.g., อยุธยา, รัตนโกสินทร์), and proper nouns using globally recognized historical standards in [${targetLanguage}]. Do not attempt to visually translate or create new terms.
+4. **Quick Facts values:** Keep the translated facts concise, sharp, and factually accurate. Ensure units or formatting (e.g., dates, eras) align with the standards of [${targetLanguage}].
+5. **No Hallucinations:** If a cultural term has a strict official translation (e.g., Royal Institute of Thailand standard), use it. Do not add descriptive fluff to the values.
 
 ### Input Data (JSON format):
 {
@@ -161,10 +162,10 @@ export function buildStructuredDataSystemPrompt(targetLocale: Locale): string {
     { "term": "THAI_TERM_1", "context": "CONTEXT_OR_DEFINITION_1" },
     { "term": "THAI_TERM_2", "context": "CONTEXT_OR_DEFINITION_2" }
   ],
-  "quick_facts": {
-    "fact_key_1": "THAI_VALUE_1",
-    "fact_key_2": "THAI_VALUE_2"
-  },
+  "quick_facts": [
+    { "label": "THAI_LABEL_1", "value": "THAI_VALUE_1" },
+    { "label": "THAI_LABEL_2", "value": "THAI_VALUE_2" }
+  ],
   "entity_values": {
     "entity_key_1": "THAI_VALUE_3",
     "entity_key_2": "THAI_VALUE_4"
@@ -172,7 +173,7 @@ export function buildStructuredDataSystemPrompt(targetLocale: Locale): string {
 }
 
 ### Expected Output:
-Return ONLY the translated JSON structure. Keep keys exactly as they are in the input. Translate only the values and term definitions into [${targetLanguage}]. No conversational text or markdown wrappers.`;
+Return ONLY the translated JSON structure. Keep the "glossary"/"quick_facts"/"entity_values" keys and array order exactly as the input, but translate the \`label\`, \`value\`, \`term\`, and \`context\` text values into [${targetLanguage}]. No conversational text or markdown wrappers.`;
 }
 
 // ============================================================
@@ -188,7 +189,7 @@ interface GeminiContentResponse {
 
 interface GeminiStructuredResponse {
   glossary?: Array<{ term: string; context: string }>;
-  quick_facts?: Record<string, string>;
+  quick_facts?: Array<{ label: string; value: string }> | Record<string, string>;
   entity_values?: Record<string, string>;
 }
 
@@ -501,7 +502,7 @@ export async function translateArticleContent(
 
 export interface StructuredDataInput {
   glossary?: Array<{ term: string; context: string }>;
-  quick_facts?: Record<string, string>;
+  quick_facts?: Array<{ label: string; value: string }> | Record<string, string>;
   entity_values?: Record<string, string>;
 }
 
@@ -525,11 +526,23 @@ export async function translateStructuredData(
 
   // 🌟 คำแปล structured data บางครั้ง Gemini คืน field เป็น null/undefined
   //   (เช่น glossary ว่าง หรือ quick_facts ไม่มี) → normalize เป็นค่าที่ปลอดภัย
+  //   quick_facts: รองรับทั้ง array [{label,value}] (รูปแบบใหม่) และ object {label:value} (เก่า)
+  const normalizedQuickFacts: Array<{ label: string; value: string }> | undefined =
+    Array.isArray(result?.quick_facts)
+      ? (result!.quick_facts as any[])
+          .filter((f) => f && typeof f === "object")
+          .map((f) => ({ label: String(f.label ?? ""), value: String(f.value ?? "") }))
+          .filter((f) => f.label && f.value)
+      : result?.quick_facts && typeof result.quick_facts === "object"
+      ? Object.entries(result.quick_facts as Record<string, string>).map(([label, value]) => ({
+          label,
+          value: String(value ?? ""),
+        }))
+      : undefined;
+
   const safeResult: GeminiStructuredResponse = {
     glossary: Array.isArray(result?.glossary) ? result.glossary : undefined,
-    quick_facts: result?.quick_facts && typeof result.quick_facts === "object"
-      ? { ...result.quick_facts }
-      : undefined,
+    quick_facts: normalizedQuickFacts && normalizedQuickFacts.length > 0 ? normalizedQuickFacts : undefined,
     entity_values: result?.entity_values && typeof result.entity_values === "object"
       ? { ...result.entity_values }
       : undefined,

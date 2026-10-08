@@ -42,6 +42,29 @@ interface EditArticleClientProps {
 // ─── helpers ──────────────────────────────────────────────────────
 
 /**
+ * แปลง quick_facts จาก DB ให้เป็น array [{ label, value }] เสมอ
+ * - translations เดิมเก็บเป็น object { label: value } → แปลงเป็น array
+ * - translations ใหม่/ต้นฉบับเก็บเป็น array → ใช้ได้เลย
+ */
+function normalizeToQuickFacts(raw: unknown): QuickFactEntry[] | undefined {
+  if (!raw) return undefined;
+  if (Array.isArray(raw)) {
+    const arr = raw
+      .filter((f: any) => f && typeof f === "object")
+      .map((f: any) => ({ label: String(f.label ?? ""), value: String(f.value ?? "") }))
+      .filter((f) => f.label || f.value);
+    return arr.length > 0 ? arr : undefined;
+  }
+  if (typeof raw === "object") {
+    const arr = Object.entries(raw as Record<string, unknown>)
+      .map(([label, value]) => ({ label, value: String(value ?? "") }))
+      .filter((f) => f.label || f.value);
+    return arr.length > 0 ? arr : undefined;
+  }
+  return undefined;
+}
+
+/**
  * หา translation สำหรับ locale ที่กำหนด
  * Fallback chain: locale → en → ภาษาไทย (original columns in articles)
  */
@@ -88,7 +111,8 @@ function buildLocaleArticle(
     originalContent: source.content || original.originalContent,
     tags: (source.tags && source.tags.length > 0) ? source.tags : original.tags,
     entityName: source.entity_name || original.entityName,
-    quickFacts: Array.isArray(source.quick_facts) ? (source.quick_facts as QuickFactEntry[]) : original.quickFacts,
+
+    quickFacts: normalizeToQuickFacts(source.quick_facts) ?? original.quickFacts,
     glossary: Array.isArray(source.glossary) ? (source.glossary as GlossaryEntry[]) : original.glossary,
     googleSchemaMarkup: source.google_schema_markup || original.googleSchemaMarkup,
     shortExcerpt: (source.short_excerpt as string) || original.shortExcerpt,

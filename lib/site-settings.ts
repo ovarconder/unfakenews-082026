@@ -18,6 +18,12 @@ export interface SiteSettings {
   url: string;
   logo: string;
   logoFull?: string;
+  /** ข้อความชื่อเว็บที่แสดงต่อจากรูปโลโก้ (เฉพาะจอใหญ่) — ว่าง = แสดงแค่รูป */
+  logoText?: string;
+  /** ฟอนต์ (CSS font-family) ของข้อความโลโก้ เช่น "Inter, sans-serif" */
+  logoTextFont?: string;
+  /** สีของข้อความโลโก้ (hex / rgb / css color) */
+  logoTextColor?: string;
   favicon: string;
   primaryColor: string;
   secondaryColor: string;
@@ -96,6 +102,10 @@ const DEFAULT_SETTINGS: SiteSettings = {
   url: process.env.NEXT_PUBLIC_SITE_URL || "https://unfakenews.asia",
   logo: process.env.NEXT_PUBLIC_SITE_LOGO || "/images/logo/unfakenews-logo-360.png",
   logoFull: process.env.NEXT_PUBLIC_SITE_LOGO_FULL || "/images/logo/unfakenews-logo.png",
+  // ข้อความชื่อเว็บข้างโลโก้ — ว่างไว้ = แสดงแค่รูปโลโก้ (ผู้ดูแลกำหนดเองได้ในหน้า Settings)
+  logoText: process.env.NEXT_PUBLIC_SITE_LOGO_TEXT || "",
+  logoTextFont: process.env.NEXT_PUBLIC_SITE_LOGO_TEXT_FONT || "",
+  logoTextColor: process.env.NEXT_PUBLIC_SITE_LOGO_TEXT_COLOR || "",
   favicon: process.env.NEXT_PUBLIC_SITE_FAVICON || "/images/logo/favicon.png",
   primaryColor: process.env.NEXT_PUBLIC_COLOR_PRIMARY || "#fbbf24",
   secondaryColor: process.env.NEXT_PUBLIC_COLOR_SECONDARY || "#f59e0b",
@@ -190,6 +200,9 @@ function dbRowToSettings(row: any): SiteSettings {
     url: row.url || DEFAULT_SETTINGS.url,
     logo: row.logo?.trim() || DEFAULT_SETTINGS.logo,
     logoFull: row.logo_full?.trim() || DEFAULT_SETTINGS.logoFull,
+    logoText: row.logo_text?.trim() ?? DEFAULT_SETTINGS.logoText,
+    logoTextFont: row.logo_text_font?.trim() || DEFAULT_SETTINGS.logoTextFont,
+    logoTextColor: row.logo_text_color?.trim() || DEFAULT_SETTINGS.logoTextColor,
     favicon: row.favicon || DEFAULT_SETTINGS.favicon,
     primaryColor: row.primary_color || DEFAULT_SETTINGS.primaryColor,
     secondaryColor: row.secondary_color || DEFAULT_SETTINGS.secondaryColor,
@@ -261,6 +274,9 @@ function settingsToDbRow(settings: SiteSettings): any {
     url: settings.url,
     logo: settings.logo,
     logo_full: settings.logoFull || null,
+    logo_text: settings.logoText ?? null,
+    logo_text_font: settings.logoTextFont ?? null,
+    logo_text_color: settings.logoTextColor ?? null,
     favicon: settings.favicon,
     primary_color: settings.primaryColor,
     secondary_color: settings.secondaryColor,

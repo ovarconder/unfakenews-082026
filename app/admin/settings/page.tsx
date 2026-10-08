@@ -43,6 +43,9 @@ interface SiteSettings {
   url: string;
   logo: string;
   logoFull?: string;
+  logoText?: string;
+  logoTextFont?: string;
+  logoTextColor?: string;
   favicon: string;
 
   // Colors
@@ -410,6 +413,68 @@ export default function SettingsPage() {
                 previewHeight={80}
                 folder="site-settings"
               />
+            </div>
+
+            {/* ข้อความชื่อเว็บข้างโลโก้ (แสดงเฉพาะจอใหญ่) */}
+            <div className="mt-4 pt-4 border-t border-white/5">
+              <p className="text-white/50 text-xs mb-3 flex items-center gap-1">
+                <Image size={12} />
+                ข้อความชื่อเว็บข้างโลโก้ (แสดงเฉพาะจอใหญ่ / desktop — จอมือถือไม่แสดง)
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="md:col-span-3">
+                  <label className="block text-white/70 text-xs mb-1">ข้อความ (เว้นว่าง = แสดงแค่รูปโลโก้)</label>
+                  <input
+                    type="text"
+                    value={settings.logoText || ""}
+                    onChange={(e) => updateField("logoText", e.target.value)}
+                    placeholder="เช่น UnFake News"
+                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-amber-300/50"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-white/70 text-xs mb-1">ฟอนต์ (CSS font-family)</label>
+                  <input
+                    type="text"
+                    value={settings.logoTextFont || ""}
+                    onChange={(e) => updateField("logoTextFont", e.target.value)}
+                    placeholder="เช่น Inter, sans-serif (เว้นว่าง = ฟอนต์เริ่มต้น)"
+                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-amber-300/50 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-white/70 text-xs mb-1">สีข้อความ</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="color"
+                      value={/^#[0-9a-f]{6}$/i.test(settings.logoTextColor || "") ? settings.logoTextColor! : "#ffffff"}
+                      onChange={(e) => updateField("logoTextColor", e.target.value)}
+                      className="w-10 h-10 rounded cursor-pointer bg-transparent border border-white/10 flex-shrink-0"
+                    />
+                    <input
+                      type="text"
+                      value={settings.logoTextColor || ""}
+                      onChange={(e) => updateField("logoTextColor", e.target.value)}
+                      placeholder="#ffffff (เว้นว่าง = ค่าเริ่มต้น)"
+                      className="flex-1 min-w-0 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm font-mono focus:outline-none focus:border-amber-300/50"
+                    />
+                  </div>
+                </div>
+              </div>
+              {settings.logoText?.trim() && (
+                <div className="mt-3 px-3 py-2 rounded-lg bg-black/30 border border-white/5 flex items-center gap-3">
+                  <img src={settings.logo} alt="preview" className="h-8 w-auto" />
+                  <span
+                    className="text-base font-bold truncate"
+                    style={{
+                      fontFamily: settings.logoTextFont?.trim() || undefined,
+                      color: settings.logoTextColor?.trim() || "#ffffff",
+                    }}
+                  >
+                    {settings.logoText}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 

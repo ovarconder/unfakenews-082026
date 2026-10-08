@@ -52,6 +52,11 @@ export function Header({ locale }: HeaderProps) {
     process.env.NEXT_PUBLIC_SITE_LOGO ||
     "/images/logo/unfakenews-logo-360.png";
 
+  // ★ ข้อความชื่อเว็บข้างโลโก้ (แสดงเฉพาะจอใหญ่) — ผู้ดูแลกำหนดได้ในหน้า Settings
+  const logoText = settings?.logoText?.trim() || "";
+  const logoTextFont = settings?.logoTextFont?.trim() || "";
+  const logoTextColor = settings?.logoTextColor?.trim() || "";
+
   // ตรวจสถานะ login + role จาก sessionStorage (admin ใช้ key นี้)
   useEffect(() => {
     const raw = sessionStorage.getItem(SESSION_KEY);
@@ -145,13 +150,25 @@ export function Header({ locale }: HeaderProps) {
           {/* Logo */}
           <Link
             href={`/${locale}`}
-            className="flex items-center transition-colors"
+            className="flex items-center gap-2 transition-colors min-w-0"
           >
             <img
               src={logoUrl}
               alt={siteName}
-              className="h-8 w-auto"
+              className="h-8 w-auto flex-shrink-0"
             />
+            {/* ข้อความชื่อเว็บ — แสดงเฉพาะจอใหญ่ (mobile ไม่แสดง) */}
+            {logoText && (
+              <span
+                className="hidden md:inline-block text-lg font-bold truncate"
+                style={{
+                  fontFamily: logoTextFont || undefined,
+                  color: logoTextColor || undefined,
+                }}
+              >
+                {logoText}
+              </span>
+            )}
           </Link>
 
           {/* Desktop Navigation */}

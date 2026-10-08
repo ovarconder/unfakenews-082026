@@ -38,13 +38,15 @@ interface ArticleDetailProps {
 // ============================================================
 
 /**
- * แทนที่ alt text ใน markdown ด้วยเวอร์ชันที่แปลแล้วจากแปล
+ * แทนที่ alt text ใน markdown ด้วยเวอร์ชันที่แปลแล้วจาก translations.image_alt_texts
+ * - จับคู่ด้วย URL รูป (key)
+ * - ถ้าไม่พบคำแปลของรูปนั้น → คง alt เดิมไว้ (ไม่ทับด้วยรูปอื่น)
  */
 function applyTranslatedAltTexts(content: string, translatedAlts?: Record<string, string>): string {
   if (!translatedAlts || Object.keys(translatedAlts).length === 0) return content;
-  return content.replace(/!\[(.*?)\]\((.*?)\)/g, (_match, _alt: string, url: string) => {
-    const newAlt = translatedAlts[url] || translatedAlts["hero"] || _alt;
-    return `![${newAlt}](${url})`;
+  return content.replace(/!\[(.*?)\]\((.*?)\)/g, (_match, alt: string, url: string) => {
+    const newAlt = translatedAlts[url];
+    return newAlt ? `![${newAlt}](${url})` : `![${alt}](${url})`;
   });
 }
 
@@ -752,9 +754,10 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
           <div className="flex flex-col lg:flex-row gap-10 lg:gap-12">
             {/* Main Content */}
             <div className="flex-1 min-w-0">
-              {/* ★ render content ตรง ๆ (แปลเสร็จแล้ว ไม่มี JIT/overlay) */}
+              {/* ★ render content ตรง ๆ (แปลเสร็จแล้ว ไม่มี JIT/overlay)
+                  + ส่ง imageAltTexts ที่แปลแล้ว เพื่อแทน alt เดิมในรูปทุกรูป */}
               <div className="max-w-none">
-                {renderContent(article.content)}
+                {renderContent(article.content, article.imageAltTexts)}
               </div>
 
               <div className="mt-12 pt-8 border-t border-white/10">

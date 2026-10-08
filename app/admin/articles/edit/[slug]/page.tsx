@@ -79,6 +79,7 @@ export default async function EditArticlePage({
       article={article}
       articleId={row.id}
       translations={translations || []}
+      contentUpdatedAt={(row as any).content_updated_at || (row as any).updated_at || null}
     />
   );
 }

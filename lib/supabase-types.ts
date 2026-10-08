@@ -81,6 +81,8 @@ export interface ArticleRow {
   social_caption: string | null;
   created_at: string;
   updated_at: string;
+  /** เวลาที่ "เนื้อหาต้นฉบับ" ถูกแก้ไขล่าสุด — ใช้เทียบกับ translations.translated_at เพื่อหา stale */
+  content_updated_at: string | null;
 }
 
 export interface ArticleInsert {

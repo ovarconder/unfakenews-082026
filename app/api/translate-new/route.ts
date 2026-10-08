@@ -30,6 +30,7 @@ import type { Locale } from "@/lib/locales";
 import { createAdminClient } from "@/lib/supabase-server";
 import { isDisabled } from "@/lib/locales";
 import { runPublishAutomation } from "@/lib/publish-automation";
+import { extractImageAltsFromContent } from "@/lib/image-alt-utils";
 
 export type DirtyField =
   | "title"
@@ -141,14 +142,16 @@ export async function POST(request: Request) {
       : undefined;
 
     // ================================================================
-    // 3. Image alt texts
+    // 3. Image alt texts — รูปหน้าปก + รูปทั้งหมดในเนื้อหา (inline/gallery/<img>)
     // ================================================================
     let translatedImageAlts: Record<string, string> | undefined;
     if (shouldTranslate("image_alts")) {
-      const imageAltInput: Record<string, string> = {};
-      if (articleRow.image_url && articleRow.image_alt) {
-        imageAltInput[articleRow.image_url] = articleRow.image_alt;
-      }
+      // ดึง alt ของรูป "ทุกรูป" จากเนื้อหาต้นฉบับ + รูปหน้าปก
+      const imageAltInput = extractImageAltsFromContent(
+        articleRow.original_content,
+        articleRow.image_url,
+        articleRow.image_alt
+      );
       translatedImageAlts = Object.keys(imageAltInput).length > 0
         ? await translateImageAlts(targetLocale, imageAltInput)
         : undefined;

@@ -6,7 +6,7 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { RefreshCw, Globe, AlertCircle, Check } from "lucide-react";
+import { RefreshCw, Globe, AlertCircle } from "lucide-react";
 import ArticleEditor from "@/components/admin/article-editor";
 import { adminFetch } from "@/lib/use-admin-fetch";
 import type { ArticleFormData } from "@/components/admin/article-editor";
@@ -35,6 +35,8 @@ interface EditArticleClientProps {
   article: ArticleMaster;
   articleId: string;
   translations: TranslationRow[];
+  /** เวลาที่เนื้อหาต้นฉบับถูกแก้ไขล่าสุด (ใช้ตรวจว่าคำแปล stale หรือไม่) */
+  contentUpdatedAt?: string | null;
 }
 
 // ─── helpers ──────────────────────────────────────────────────────
@@ -98,6 +100,7 @@ export default function EditArticleClient({
   article,
   articleId,
   translations,
+  contentUpdatedAt,
 }: EditArticleClientProps) {
   const router = useRouter();
 
@@ -105,6 +108,18 @@ export default function EditArticleClient({
   // Locale state — เลือก locale ที่ต้องการแก้ไข
   // ================================================================
   const [selectedLocale, setSelectedLocale] = useState<string>("th");
+
+  // ★ Stale detection — คำแปล locale ใด "ล้าสมัย" (ต้นฉบับถูกแก้หลังแปล)
+  //   เทียบ translations.translated_at กับ article.content_updated_at
+  const staleLocales: Record<string, boolean> = {};
+  if (contentUpdatedAt) {
+    const contentMs = new Date(contentUpdatedAt).getTime();
+    for (const t of translations) {
+      if (t.locale && t.locale !== "th" && t.translated_at) {
+        staleLocales[t.locale] = new Date(t.translated_at).getTime() < contentMs;
+      }
+    }
+  }
 
   // Build locale-aware article — merge ข้อมูลจาก translations ตาม locale ที่เลือก
   const localeArticle = buildLocaleArticle(article, translations, selectedLocale);
@@ -237,7 +252,13 @@ export default function EditArticleClient({
           data?.tier === "2" ? "summary_only" : "complete";
         setLocalStatus((prev) => ({ ...prev, [locale]: resultingStatus }));
 
-        setTranslateSuccess(`✅ แปลภาษา ${LOCALE_NAMES[locale as keyof typeof LOCALE_NAMES]?.native || locale} สำเร็จ`);
+        const nativeName = LOCALE_NAMES[locale as keyof typeof LOCALE_NAMES]?.native || locale;
+        const wasComplete = (localStatus[locale] || localeStatusMap[locale]) === "complete";
+        setTranslateSuccess(
+          wasComplete
+            ? `✅ แปลใหม่ภาษา ${nativeName} สำเร็จ (เขียนทับคำแปลเดิม)`
+            : `✅ แปลภาษา ${nativeName} สำเร็จ`
+        );
         router.refresh();
         setTimeout(() => setTranslateSuccess(null), 5000);
       } else {
@@ -363,6 +384,8 @@ export default function EditArticleClient({
               const status = localStatus[locale] || localeStatusMap[locale];
               const isSelected = locale === selectedLocale;
               const isTranslating = translatingLocale === locale;
+              // ★ stale — ต้นฉบับแก้หลังแปลล่าสุด → ควรกด "แปลใหม่"
+              const isStale = staleLocales[locale] && status === "complete";
               return (
                 <div key={locale} className="flex items-center gap-1">
                   <button
@@ -370,9 +393,16 @@ export default function EditArticleClient({
                       setSelectedLocale(locale);
                       loadTranslationIntoForm(locale);
                     }}
+                    title={
+                      isStale
+                        ? `⚠️ ต้นฉบับภาษาไทยถูกแก้ไขหลังการแปลครั้งล่าสุด — ควรกด "แปลใหม่"`
+                        : undefined
+                    }
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition-all ${
                       isSelected
                         ? "border-amber-400/50 bg-amber-400/10 text-amber-300 font-medium"
+                        : isStale
+                        ? "border-orange-400/40 bg-orange-400/10 text-orange-300"
                         : status === "complete"
                         ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300"
                         : status === "summary_only"
@@ -381,28 +411,33 @@ export default function EditArticleClient({
                     }`}
                   >
                     <span className="w-4 h-4 flex items-center justify-center rounded text-[8px] font-bold bg-black/20">
-                      {status === "complete" ? "✓" : status === "summary_only" ? "○" : "—"}
+                      {isStale ? "!" : status === "complete" ? "✓" : status === "summary_only" ? "○" : "—"}
                     </span>
                     <span>{LOCALE_NAMES[locale as keyof typeof LOCALE_NAMES]?.native || locale}</span>
                     <span className="text-[9px] opacity-60">{locale.toUpperCase()}</span>
                   </button>
-                  {/* ปุ่มแปลอัตโนมัติ — แสดงตลอด แต่ disable ถ้า translate เสร็จแล้ว */}
+                  {/* badge "ต้องแปลใหม่" — แสดงเมื่อคำแปลล้าสมัย */}
+                  {isStale && (
+                    <span className="px-1.5 py-1 rounded text-[9px] font-medium bg-orange-400/15 text-orange-300 border border-orange-400/30 whitespace-nowrap">
+                      ต้องแปลใหม่
+                    </span>
+                  )}
+                  {/* ปุ่มแปลอัตโนมัติ — กดซ้ำได้เสมอ (เพื่อแปลใหม่เมื่อต้นฉบับไทยแก้ไข / มีข้อมูลเพิ่ม) */}
                   <button
                     onClick={() => handleAutoTranslate(locale)}
                     disabled={
                       isTranslating ||
-                      translatingLocale !== null ||
-                      status === "complete"
+                      translatingLocale !== null
                     }
                     title={
                       status === "complete"
-                        ? `แปล ${LOCALE_NAMES[locale as keyof typeof LOCALE_NAMES]?.native || locale} เสร็จแล้ว`
+                        ? `แปลใหม่ ${LOCALE_NAMES[locale as keyof typeof LOCALE_NAMES]?.native || locale} (เขียนทับคำแปลเดิม)`
                         : `แปลอัตโนมัติเป็น ${LOCALE_NAMES[locale as keyof typeof LOCALE_NAMES]?.native || locale}`
                     }
                     className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs border transition-all
                       ${
                         status === "complete"
-                          ? "border-emerald-400/20 bg-emerald-400/5 text-emerald-400/50 cursor-default"
+                          ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300 hover:bg-emerald-400/20"
                           : isSelected
                           ? "border-cyan-400/30 bg-cyan-400/10 text-cyan-300 hover:bg-cyan-400/20"
                           : "border-white/5 bg-white/5 text-white/30 hover:text-white/50 hover:border-white/20"
@@ -412,14 +447,14 @@ export default function EditArticleClient({
                     {isTranslating ? (
                       <RefreshCw size={10} className="animate-spin" />
                     ) : status === "complete" ? (
-                      <Check size={10} />
+                      <RefreshCw size={10} />
                     ) : (
                       <Globe size={10} />
                     )}
                     {isTranslating
                       ? "กำลังแปล..."
                       : status === "complete"
-                      ? "แปลแล้ว"
+                      ? "แปลใหม่"
                       : "แปลอัตโนมัติ"}
                   </button>
                 </div>

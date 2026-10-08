@@ -19,6 +19,7 @@ import type { Locale } from "@/lib/locales";
 import { isDisabled, isTier2 } from "@/lib/locales";
 import { createAdminClient } from "@/lib/supabase-server";
 import { runPublishAutomation } from "@/lib/publish-automation";
+import { extractImageAltsFromContent } from "@/lib/image-alt-utils";
 
 export async function POST(request: Request) {
   try {
@@ -84,11 +85,12 @@ export async function POST(request: Request) {
           ? await translateTags(targetLocale, originalTags)
           : [];
 
-        // 3. Translate image alt texts
-        const imageAltInput: Record<string, string> = {};
-        if (row.image_url && row.image_alt) {
-          imageAltInput[row.image_url] = row.image_alt;
-        }
+        // 3. Translate image alt texts — รูปหน้าปก + รูปทั้งหมดในเนื้อหา
+        const imageAltInput = extractImageAltsFromContent(
+          row.original_content,
+          row.image_url,
+          row.image_alt
+        );
         const translatedImageAlts = Object.keys(imageAltInput).length > 0
           ? await translateImageAlts(targetLocale, imageAltInput)
           : {};

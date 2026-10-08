@@ -43,6 +43,11 @@ export interface ArticleFull extends ArticleSummary {
   googleSchemaMarkup?: Record<string, unknown> | null;
   /** หมวดหมู่ถูกตั้ง show_on_public = false → ซ่อนทางเข้าไปหน้าหมวดจากหน้า public */
   categoryHidden?: boolean;
+  /**
+   * Alt text ของรูปภาพที่ "แปลแล้ว" — key = URL รูป, value = alt ที่แปล
+   * (ใช้แทน alt เดิมใน markdown content ตอน render หน้า public)
+   */
+  imageAltTexts?: Record<string, string>;
 }
 
 // ============================================================
@@ -324,6 +329,15 @@ export async function getFullArticle(
 
   const trans = rawTrans as any;
 
+  // ★ imageAltTexts — alt text ของรูปที่ "แปลแล้ว" (key = URL รูป)
+  //    ใช้ในหน้า public เพื่อแทน alt เดิมใน markdown content
+  //    - locale = th → ไม่มี (ใช้ต้นฉบับ)
+  //    - locale อื่น → อ่านจาก translations.image_alt_texts (ถ้ามี)
+  const translatedImageAlts: Record<string, string> | undefined =
+    locale !== "th" && trans?.image_alt_texts && typeof trans.image_alt_texts === "object"
+      ? (trans.image_alt_texts as Record<string, string>)
+      : undefined;
+
   // ★ availableLocales — ภาษาทั้งหมดที่บทความนี้ "เผยแพร่จริง"
   //    (ไทยต้นฉบับเสมอ + translation_status = 'complete')
   const { data: allTrans } = await supabase
@@ -356,6 +370,7 @@ export async function getFullArticle(
     imageAlt: art.image_alt || undefined,
     featured: art.featured,
     availableLocales,
+    imageAltTexts: translatedImageAlts,
     ...getImageFields(art),
   };
 

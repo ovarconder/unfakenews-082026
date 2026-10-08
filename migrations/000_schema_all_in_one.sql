@@ -365,6 +365,16 @@ ALTER TABLE translations ADD COLUMN IF NOT EXISTS social_caption  TEXT;
 -- ปลด NOT NULL ให้ excerpt (route translate-new upsert โดยไม่เขียน excerpt)
 ALTER TABLE translations ALTER COLUMN excerpt DROP NOT NULL;
 
+-- ---- articles (023) — Translation staleness detection ----
+-- เวลาที่ "เนื้อหาที่ต้องแปล" ถูกแก้ไขล่าสุด (เทียบกับ translations.translated_at เพื่อหา stale)
+ALTER TABLE articles ADD COLUMN IF NOT EXISTS content_updated_at TIMESTAMPTZ DEFAULT NOW();
+UPDATE articles
+SET content_updated_at = COALESCE(updated_at, published_at::timestamptz, created_at, NOW())
+WHERE content_updated_at IS NULL;
+ALTER TABLE articles ALTER COLUMN content_updated_at SET DEFAULT NOW();
+ALTER TABLE articles ALTER COLUMN content_updated_at SET NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_articles_content_updated_at ON articles(content_updated_at DESC);
+
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- [7] ROW LEVEL SECURITY (RLS) + POLICIES

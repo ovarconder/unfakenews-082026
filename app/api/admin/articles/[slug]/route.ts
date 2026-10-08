@@ -118,10 +118,10 @@ export async function PUT(
   const { slug } = await params;
   const supabase = createAdminClient();
 
-  // Check article exists
+  // Check article exists (+ ดึงฟิลด์ที่ต้องแปล ไว้เทียบว่า "เนื้อหาเปลี่ยนจริง" หรือไม่)
   const { data: existing } = await supabase
     .from("articles")
-    .select("id")
+    .select("id, status, original_title, original_excerpt, original_content, short_excerpt, long_excerpt, tags, image_url, image_alt, entity_name, quick_facts, glossary, google_schema_markup")
     .eq("slug", slug)
     .maybeSingle();
 
@@ -217,6 +217,37 @@ export async function PUT(
     if (longExcerpt !== undefined) updateData.long_excerpt = longExcerpt || null;
     if (socialCaption !== undefined) updateData.social_caption = socialCaption || null;
     if (googleSchemaMarkup !== undefined) updateData.google_schema_markup = googleSchemaMarkup || null;
+
+    // ============================================================
+    // ★ Translation staleness — อัปเดต content_updated_at
+    //   เฉพาะเมื่อ "เนื้อหาที่ต้องแปล" เปลี่ยนจริง (เทียบกับค่าเดิมใน DB)
+    //   ฟิลด์ที่เปรียบเทียบ = ฟิลด์ที่มีผลต่อคำแปล:
+    //     original_title, original_excerpt, original_content,
+    //     short_excerpt, long_excerpt, tags, image_url, image_alt,
+    //     entity_name, quick_facts, glossary, google_schema_markup
+    //   → ถ้าเปลี่ยน → content_updated_at = NOW() (ทำให้คำแปลเดิมกลายเป็น stale)
+    //   หมายเหตุ: ฟิลด์ที่ไม่กระทบคำแปล (status, featured, published_at ฯลฯ)
+    //     จะไม่ทำให้ stale
+    // ============================================================
+    const ex = existing as any;
+    const normJson = (v: unknown) => JSON.stringify(v ?? null);
+    const translatableChanged =
+      (updateData.original_title !== undefined && updateData.original_title !== ex.original_title) ||
+      (updateData.original_excerpt !== undefined && (updateData.original_excerpt ?? null) !== ex.original_excerpt) ||
+      (updateData.original_content !== undefined && (updateData.original_content ?? null) !== ex.original_content) ||
+      (updateData.short_excerpt !== undefined && (updateData.short_excerpt ?? null) !== ex.short_excerpt) ||
+      (updateData.long_excerpt !== undefined && (updateData.long_excerpt ?? null) !== ex.long_excerpt) ||
+      (updateData.tags !== undefined && normJson(updateData.tags) !== normJson(ex.tags)) ||
+      (updateData.image_url !== undefined && (updateData.image_url ?? null) !== ex.image_url) ||
+      (updateData.image_alt !== undefined && (updateData.image_alt ?? null) !== ex.image_alt) ||
+      (updateData.entity_name !== undefined && (updateData.entity_name ?? null) !== ex.entity_name) ||
+      (updateData.quick_facts !== undefined && normJson(updateData.quick_facts) !== normJson(ex.quick_facts)) ||
+      (updateData.glossary !== undefined && normJson(updateData.glossary) !== normJson(ex.glossary)) ||
+      (updateData.google_schema_markup !== undefined && normJson(updateData.google_schema_markup) !== normJson(ex.google_schema_markup));
+
+    if (translatableChanged) {
+      updateData.content_updated_at = new Date().toISOString();
+    }
 
     const { data: updated, error } = await supabase
       .from("articles")

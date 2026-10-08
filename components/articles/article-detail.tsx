@@ -18,6 +18,7 @@ import { useSettings } from "@/components/admin/settings-context";
 import WikiHeroSection from "@/components/articles/wiki-hero-section";
 import GlossarySection from "@/components/articles/glossary-section";
 import ExcerptSection from "@/components/articles/excerpt-section";
+import QuickFactsBox from "@/components/articles/quick-facts-box";
 import { getWikiArticle } from "@/lib/wiki-data";
 import type { WikiArticle } from "@/lib/wiki-types";
 import { ImageGallery, type GalleryImage } from "@/components/articles/image-gallery";
@@ -679,6 +680,15 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
     imageUrl: article.imageUrl,
     imageAlt: article.imageAlt,
     tags: article.tags,
+    // ★ Wiki-style metadata จาก DB — ส่งต่อให้ buildWikiMetadata()
+    //   เพื่อให้ Quick Facts / Glossary / Entity ถูก render จริง (ทั้งไทย + ภาษาที่แปลแล้ว)
+    entityName: article.entityName,
+    entityType: article.entityType,
+    wikidataId: article.wikidataId,
+    quickFacts: article.quickFacts,
+    glossary: article.glossary,
+    shortExcerpt: article.shortExcerpt,
+    longExcerpt: article.longExcerpt,
   };
   const wikiData: WikiArticle = getWikiArticle(masterLike as any);
 
@@ -793,7 +803,15 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
             {/* Sidebar */}
             <aside className="w-full lg:w-80 xl:w-96 flex-shrink-0">
               <div className="sticky top-24 space-y-6">
-                {/* QuickFactsBox — REMOVED per request */}
+                {/* QuickFactsBox — แสดง Quick Facts (label: value) ที่แปลตาม locale แล้ว
+                    ทำให้เป็น raw HTML + data attributes ให้ Google / AI อ่านได้ */}
+                {wikiData.quickFacts.length > 0 && (
+                  <QuickFactsBox
+                    facts={wikiData.quickFacts}
+                    locale={locale}
+                    title={locale === "th" ? "ข้อมูลสำคัญ" : "Quick Facts"}
+                  />
+                )}
 
                 {/* Category — ซ่อนลิงก์ทางเข้าไปหน้าหมวด ถ้าหมวดนี้ถูกตั้ง show_on_public = false
                     (บทความยังแสดงปกติ แต่ไม่มีทางเข้าไปหน้าหมวด) */}

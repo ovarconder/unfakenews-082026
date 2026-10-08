@@ -8,7 +8,7 @@
 import { createClient as createServerClient } from "./supabase-server";
 import { createAdminClient } from "./supabase-server";
 import type { Locale } from "./locales";
-import type { TranslationStatus } from "./types";
+import type { TranslationStatus, QuickFactEntry, GlossaryEntry } from "./types";
 
 // ============================================================
 // Article Interfaces (Public)
@@ -48,6 +48,25 @@ export interface ArticleFull extends ArticleSummary {
    * (ใช้แทน alt เดิมใน markdown content ตอน render หน้า public)
    */
   imageAltTexts?: Record<string, string>;
+
+  // ============================================================
+  // Wiki-Style Metadata — โหลดจาก DB เพื่อ render Quick Facts / Glossary /
+  // Entity ลงใน raw HTML + JSON-LD (ให้ Google / AI อ่านได้)
+  // ============================================================
+  /** Entity name (ชื่อเอนทิตีหลัก) — ระดับบทความ ไม่ขึ้นกับ locale */
+  entityName?: string;
+  /** Entity type */
+  entityType?: "person" | "place" | "tradition" | "object" | "event" | "concept" | "other";
+  /** Wikidata Q-ID */
+  wikidataId?: string;
+  /** Quick Facts — ไทยจาก `articles`, ภาษาอื่นจาก `translations` (ถ้ามี) */
+  quickFacts?: QuickFactEntry[];
+  /** Glossary — ไทยจาก `articles`, ภาษาอื่นจาก `translations` (ถ้ามี) */
+  glossary?: GlossaryEntry[];
+  /** short excerpt (จาก translations ถ้ามี) */
+  shortExcerpt?: string;
+  /** long excerpt (จาก translations ถ้ามี) */
+  longExcerpt?: string;
 }
 
 // ============================================================
@@ -214,6 +233,130 @@ function cleanExcerpt(raw: string | null | undefined): string {
 }
 
 // ============================================================
+// Normalize Wiki Metadata จาก DB → types ที่ component ใช้
+// ============================================================
+
+/**
+ * แปลง articles.quick_facts (array ของ { label, value, labelEn })
+ * ให้เป็น QuickFactEntry[] อย่างปลอดภัย (กรองค่าที่ไม่สมบูรณ์ทิ้ง)
+ * รองรับกรณีที่เก็บเป็น object { label: value } ด้วย
+ */
+function normalizeQuickFacts(raw: unknown): QuickFactEntry[] {
+  if (!raw) return [];
+
+  // กรณีเก็บเป็น object { label: value }
+  if (!Array.isArray(raw) && typeof raw === "object") {
+    return Object.entries(raw as Record<string, unknown>)
+      .map(([label, value]) => ({
+        label,
+        value: value == null ? "" : String(value),
+      }))
+      .filter((f) => f.label && f.value);
+  }
+
+  if (!Array.isArray(raw)) return [];
+
+  const result: QuickFactEntry[] = [];
+  for (const item of raw) {
+    if (!item) continue;
+    // array ของ object { label, value, labelEn }
+    if (typeof item === "object") {
+      const obj = item as Record<string, unknown>;
+      const label = (obj.label ?? obj.key ?? "") as string;
+      const value = obj.value == null ? "" : String(obj.value);
+      if (label && value) {
+        result.push({
+          label: String(label),
+          value,
+          labelEn: obj.labelEn ? String(obj.labelEn) : undefined,
+        });
+      }
+      continue;
+    }
+    // array ของ string ("Label: Value") — fallback
+    if (typeof item === "string") {
+      const idx = item.indexOf(":");
+      if (idx > 0) {
+        result.push({
+          label: item.slice(0, idx).trim(),
+          value: item.slice(idx + 1).trim(),
+        });
+      }
+    }
+  }
+  return result;
+}
+
+/**
+ * แปลง translations.quick_facts (object { label: value })
+ * ให้เป็น QuickFactEntry[]
+ */
+function normalizeTranslatedQuickFacts(raw: unknown): QuickFactEntry[] {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return normalizeQuickFacts(raw);
+  if (typeof raw !== "object") return [];
+  return Object.entries(raw as Record<string, unknown>)
+    .map(([label, value]) => ({
+      label,
+      value: value == null ? "" : String(value),
+    }))
+    .filter((f) => f.label && f.value);
+}
+
+/**
+ * แปลง articles.glossary (array ของ { term, definition, ... })
+ * ให้เป็น GlossaryEntry[]
+ */
+function normalizeGlossary(raw: unknown): GlossaryEntry[] {
+  if (!Array.isArray(raw)) return [];
+  const result: GlossaryEntry[] = [];
+  for (const item of raw) {
+    if (!item) continue;
+    if (typeof item === "object") {
+      const obj = item as Record<string, unknown>;
+      const term = (obj.term ?? "") as string;
+      const definition = (obj.definition ?? obj.context ?? "") as string;
+      if (term) {
+        result.push({
+          term: String(term),
+          definition: definition ? String(definition) : "",
+          termEn: obj.termEn ? String(obj.termEn) : undefined,
+          definitionEn: obj.definitionEn ? String(obj.definitionEn) : undefined,
+        });
+      }
+      continue;
+    }
+    if (typeof item === "string" && item.trim()) {
+      result.push({ term: item.trim(), definition: "" });
+    }
+  }
+  return result;
+}
+
+/**
+ * แปลง translations.glossary (array ของ { term, context })
+ * ให้เป็น GlossaryEntry[]
+ */
+function normalizeTranslatedGlossary(raw: unknown): GlossaryEntry[] {
+  if (!Array.isArray(raw)) return [];
+  const result: GlossaryEntry[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const obj = item as Record<string, unknown>;
+    const term = (obj.term ?? "") as string;
+    const definition = (obj.definition ?? obj.context ?? "") as string;
+    if (term) {
+      result.push({
+        term: String(term),
+        definition: definition ? String(definition) : "",
+        termEn: obj.termEn ? String(obj.termEn) : undefined,
+      });
+    }
+  }
+  return result;
+}
+
+// ============================================================
 // Server-side: Get featured articles
 // ============================================================
 
@@ -282,7 +425,9 @@ export async function getFullArticle(
       categories(name_th, name_en, show_on_public),
       author_name, published_at, created_at, image_url, image_alt, featured,
       image_credit, image_photographer, image_source_url, image_year,
-      google_schema_markup
+      google_schema_markup,
+      entity_name, entity_type, wikidata_id, quick_facts, glossary,
+      short_excerpt, long_excerpt
     `)
     .eq("slug", slug)
     .is("microsite_id", null) // ★ เฉพาะของ main site
@@ -358,6 +503,41 @@ export async function getFullArticle(
     }
   }
 
+  // ============================================================
+  // ★ Wiki metadata — เริ่มจากต้นฉบับ (articles table) เสมอ
+  //   Entity (name/type/wikidata) เป็นระดับบทความ ไม่ผันตาม locale
+  // ============================================================
+  const baseEntityName = art.entity_name || undefined;
+  const baseEntityType = (art.entity_type || undefined) as
+    | "person" | "place" | "tradition" | "object" | "event" | "concept" | "other"
+    | undefined;
+  const baseWikidataId = art.wikidata_id || undefined;
+  const baseQuickFacts = normalizeQuickFacts(art.quick_facts);
+  const baseGlossary = normalizeGlossary(art.glossary);
+
+  // ★ Quick Facts / Glossary ที่ "แปลแล้ว" จาก translations (ถ้ามี)
+  //   - translations.quick_facts เก็บเป็น object { label: value } → ต้องแปลงกลับเป็น array
+  //   - translations.glossary เก็บเป็น array ของ { term, context } → แปลงเป็น GlossaryEntry[]
+  const translatedQuickFacts =
+    locale !== "th" ? normalizeTranslatedQuickFacts(trans?.quick_facts) : undefined;
+  const translatedGlossary =
+    locale !== "th" ? normalizeTranslatedGlossary(trans?.glossary) : undefined;
+  const translatedEntityName =
+    locale !== "th" && trans?.entity_name ? (trans.entity_name as string) : undefined;
+
+  // Entity name: ใช้คำแปล (ถ้ามี) ไม่งั้นใช้ต้นฉบับ
+  const effectiveEntityName = translatedEntityName || baseEntityName;
+
+  // Quick facts / glossary: ใช้คำแปล (ถ้ามีและไม่ว่าง) ไม่งั้น fallback ต้นฉบับ
+  const effectiveQuickFacts =
+    translatedQuickFacts && translatedQuickFacts.length > 0
+      ? translatedQuickFacts
+      : baseQuickFacts;
+  const effectiveGlossary =
+    translatedGlossary && translatedGlossary.length > 0
+      ? translatedGlossary
+      : baseGlossary;
+
   const baseArticle = {
     id: art.id,
     slug: art.slug,
@@ -371,6 +551,12 @@ export async function getFullArticle(
     featured: art.featured,
     availableLocales,
     imageAltTexts: translatedImageAlts,
+    // Wiki metadata (entity ระดับบทความ + quick facts/glossary ตาม locale)
+    entityName: effectiveEntityName,
+    entityType: baseEntityType,
+    wikidataId: baseWikidataId,
+    quickFacts: effectiveQuickFacts.length > 0 ? effectiveQuickFacts : undefined,
+    glossary: effectiveGlossary.length > 0 ? effectiveGlossary : undefined,
     ...getImageFields(art),
   };
 
@@ -410,6 +596,8 @@ export async function getFullArticle(
       translationStatus: trans.translation_status as TranslationStatus,
       seoTitle: trans.seo_title || undefined,
       seoDescription: trans.seo_description || undefined,
+      shortExcerpt: trans.short_excerpt || undefined,
+      longExcerpt: trans.long_excerpt || undefined,
       googleSchemaMarkup: googleSchema,
     };
   }
@@ -424,6 +612,8 @@ export async function getFullArticle(
       translationStatus: trans.translation_status as TranslationStatus,
       seoTitle: trans.seo_title || undefined,
       seoDescription: trans.seo_description || undefined,
+      shortExcerpt: trans.short_excerpt || undefined,
+      longExcerpt: trans.long_excerpt || undefined,
       googleSchemaMarkup: googleSchema,
     };
   }

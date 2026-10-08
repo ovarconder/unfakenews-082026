@@ -65,9 +65,10 @@ export function buildWikiMetadata(master: ArticleMaster): WikiMetadata {
 
   // === Entity Facts: ใช้จาก master ก่อน (ที่ admin บันทึกไว้), fallback registry ===
   const registryEntityFacts = getRegisteredEntityFacts(master.slug);
-  const entityFacts: EntityQuickFacts | undefined = master.entityName
+  const hasMasterFacts = Array.isArray(master.quickFacts) && master.quickFacts.length > 0;
+  const entityFacts: EntityQuickFacts | undefined = (master.entityName || hasMasterFacts)
     ? {
-        entityName: master.entityName,
+        entityName: master.entityName || master.originalTitle,
         entityNameEn: master.entityNameEn,
         entityType: master.entityType || "other",
         wikidataId: master.wikidataId,

@@ -197,9 +197,14 @@ export default async function LangLayout({ children, params }: LangLayoutProps) 
   //   → สีถูกต้องตั้งแต่เฟรมแรก (ไม่ต้องรอ client fetch → กัน FOUC)
   const themeStyle = buildThemeStyle(settings);
 
+  // ★ Inject Custom CSS จาก DB (หน้า Admin Settings) ลง <style> ใน <head>
+  //   เพื่อให้ CSS กำหนดเองมีผลตั้งแต่เฟรมแรก
+  const customCss = settings.customCss?.trim();
+
   if (settings.maintenanceMode) {
     return (
       <html lang={locale} suppressHydrationWarning style={themeStyle}>
+        <head>{customCss ? <style dangerouslySetInnerHTML={{ __html: customCss }} /> : null}</head>
         <body className={`${FONT_CLASSES} antialiased bg-[#0d1b2a] text-white`}>
           <link rel="icon" href={settings.favicon} data-dynamic-favicon />
           <SettingsProvider initialSettings={settings}>
@@ -215,6 +220,7 @@ export default async function LangLayout({ children, params }: LangLayoutProps) 
 
   return (
     <html lang={locale} suppressHydrationWarning style={themeStyle}>
+      <head>{customCss ? <style dangerouslySetInnerHTML={{ __html: customCss }} /> : null}</head>
       <body className={`${FONT_CLASSES} antialiased bg-[#0d1b2a] text-white`}>
         <link rel="icon" href={settings.favicon} data-dynamic-favicon />
         <SettingsProvider initialSettings={settings}>

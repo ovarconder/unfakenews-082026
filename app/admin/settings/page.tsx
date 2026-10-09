@@ -30,6 +30,7 @@ import {
   HardDrive,
   Coffee,
   QrCode,
+  Code,
 } from "lucide-react";
 import { ImageUploader } from "@/components/ui/image-uploader";
 import { adminFetch } from "@/lib/use-admin-fetch";
@@ -100,6 +101,8 @@ interface SiteSettings {
   supportDescription?: string;
   supportAccountName?: string;
   supportAccountNumber?: string;
+  // Custom CSS
+  customCss?: string;
 }
 
 export default function SettingsPage() {
@@ -498,6 +501,34 @@ export default function SettingsPage() {
               <ColorField label="สี Success" value={settings.successColor} onChange={(v) => updateField("successColor", v)} />
               <ColorField label="สี Error" value={settings.errorColor} onChange={(v) => updateField("errorColor", v)} />
             </div>
+          </div>
+        </div>
+
+        {/* ===== Custom CSS ===== */}
+        <div className="rounded-xl bg-gradient-to-br from-[#0f1f3a] to-[#162545] border border-white/10 p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 rounded-lg bg-fuchsia-300/10 text-fuchsia-300">
+              <Code size={18} />
+            </div>
+            <div>
+              <h2 className="text-white font-semibold">Custom CSS</h2>
+              <p className="text-white/40 text-xs">ใส่ CSS กำหนดเองเพื่อปรับแต่งหน้าตาเว็บ (มีผลกับหน้าผู้ใช้ทั่วไป)</p>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-white/70 text-xs mb-1">CSS</label>
+            <textarea
+              value={settings.customCss || ""}
+              onChange={(e) => updateField("customCss", e.target.value)}
+              rows={12}
+              spellCheck={false}
+              placeholder={"/* ตัวอย่าง */\n.site-header {\n  backdrop-filter: blur(12px);\n}"}
+              className="w-full px-3 py-2 bg-black/30 border border-white/10 rounded-lg text-white text-xs font-mono leading-relaxed focus:outline-none focus:border-amber-300/50 resize-y"
+            />
+            <p className="text-white/30 text-[11px] mt-1">
+              CSS นี้จะถูก inject ลง &lt;head&gt; ของหน้าเว็บทั้งหมด • เว้นว่าง = ไม่มีผลอะไร
+            </p>
           </div>
         </div>
 

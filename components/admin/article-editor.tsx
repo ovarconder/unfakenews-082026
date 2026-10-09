@@ -49,6 +49,11 @@ interface ArticleEditorProps {
   initialData?: ArticleMaster;
   onSave: (data: ArticleFormData) => Promise<void>;
   onDelete?: () => Promise<void>;
+  /**
+   * locale ที่กำลังแก้ไข (ค่าเริ่มต้น "th")
+   * ใช้แสดงคำอธิบายหมวดหมู่ให้ตรงภาษา — "th" → description_th, อื่น ๆ → description_en
+   */
+  locale?: string;
 }
 
 export interface ArticleFormData {
@@ -138,7 +143,8 @@ async function uploadImage(file: File): Promise<string> {
 // Main Editor Component
 // ============================================================
 
-export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorProps) {
+
+export function ArticleEditor({ initialData, onSave, onDelete, locale = "th" }: ArticleEditorProps) {
   // 1. Declare All State first to avoid TDZ (Temporal Dead Zone) Errors
   const [title, setTitle] = useState(initialData?.originalTitle || "");
   const [slug, setSlug] = useState(initialData?.slug || "");
@@ -164,7 +170,14 @@ export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorPr
   const [tagInput, setTagInput] = useState("");
   const [showAuthor, setShowAuthor] = useState(initialData?.showAuthor !== false);
   const [categoriesList, setCategoriesList] = useState<
-    { nameTH: string; showOnPublic?: boolean; showAtFooter?: boolean }[]
+    {
+      nameTH: string;
+      nameEN?: string;
+      descriptionTH?: string;
+      descriptionEN?: string;
+      showOnPublic?: boolean;
+      showAtFooter?: boolean;
+    }[]
   >([]);
 
   // Fetch categories from database
@@ -773,6 +786,22 @@ export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorPr
   const isImageLine = (line: string): boolean => /^!\[.*\]\(.*\)$/.test(line);
   const isLinkLine = (line: string): boolean => /^\[.*\]\(.*\)$/.test(line);
 
+  // ── helper: เลือกชื่อหมวดหมู่ตาม locale (ไทย → nameTH, อื่น ๆ → nameEN ถ้ามี)
+  const categoryName = (cat: { nameTH: string; nameEN?: string }): string =>
+    locale !== "th" && cat.nameEN ? cat.nameEN : cat.nameTH;
+
+  // ── helper: เลือกคำอธิบายหมวดหมู่ตาม locale (ไทย → descriptionTH, อื่น ๆ → descriptionEN ถ้ามี)
+  const categoryDescription = (cat: {
+    descriptionTH?: string;
+    descriptionEN?: string;
+  }): string | undefined =>
+    locale !== "th"
+      ? cat.descriptionEN || cat.descriptionTH
+      : cat.descriptionTH || cat.descriptionEN;
+
+  // หมวดหมู่ที่เลือกอยู่ (ใช้ทั้งแสดง label และคำอธิบาย)
+  const selectedCategory = categoriesList.find((c) => c.nameTH === category);
+
   function renderPreview(text: string) {
     const lines = text.split("\n");
     const result: React.ReactNode[] = [];
@@ -1043,25 +1072,32 @@ export function ArticleEditor({ initialData, onSave, onDelete }: ArticleEditorPr
             <option value="">เลือกหมวดหมู่...</option>
             {categoriesList.map((cat) => {
               const hidden = cat.showOnPublic === false;
+              const desc = categoryDescription(cat);
               return (
-                <option key={cat.nameTH} value={cat.nameTH}>
-                  {cat.nameTH}
+                <option key={cat.nameTH} value={cat.nameTH} title={desc || undefined}>
+                  {categoryName(cat)}
                   {hidden ? " (ซ่อนจาก public)" : ""}
                   {cat.showAtFooter === false ? " (ไม่แสดง footer)" : ""}
                 </option>
               );
             })}
           </select>
-          {category && (() => {
-            const selected = categoriesList.find((c) => c.nameTH === category);
-            if (selected && selected.showOnPublic === false) {
-              return (
-                <p className="text-amber-300/70 text-xs mt-1">
-                  ⚠️ หมวดหมู่นี้ถูกตั้งค่าให้ไม่แสดงในหน้า public (ซ่อนจาก home / หน้าหมวดหมู่)
-                </p>
-              );
-            }
-            return null;
+          {selectedCategory && (() => {
+            const desc = categoryDescription(selectedCategory);
+            return (
+              <>
+                {selectedCategory.showOnPublic === false && (
+                  <p className="text-amber-300/70 text-xs mt-1">
+                    ⚠️ หมวดหมู่นี้ถูกตั้งค่าให้ไม่แสดงในหน้า public (ซ่อนจาก home / หน้าหมวดหมู่)
+                  </p>
+                )}
+                {desc && (
+                  <p className="text-white/50 text-xs mt-1.5 leading-relaxed">
+                    {desc}
+                  </p>
+                )}
+              </>
+            );
           })()}
         </div>
         <div>

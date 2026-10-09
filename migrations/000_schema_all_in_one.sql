@@ -557,15 +557,18 @@ CREATE POLICY "images_admin_delete"
 -- ════════════════════════════════════════════════════════════════════════════
 
 -- ---- categories (เฉพาะเมื่อยังไม่มีข้อมูล) ----
-INSERT INTO categories (slug, name_th, name_en, description_th, description_en, sort_order)
+-- ★ ระบุ show_on_public / show_at_footer ด้วย เพื่อเว็บใหม่ได้ค่าที่พร้อมใช้ทันที
+--   หมวด "link" = ซ่อนจาก public แต่แสดงที่ footer (ใช้เป็นหมวดลิงก์)
+INSERT INTO categories (slug, name_th, name_en, description_th, description_en, sort_order, show_on_public, show_at_footer)
 SELECT * FROM (VALUES
-  ('heritage',   'มรดกไทย',        'Thai Heritage',   'มรดกและโบราณสถานสำคัญของประเทศไทย',       'Important heritage sites and ancient places of Thailand', 1),
-  ('tradition',  'ประเพณีไทย',      'Thai Traditions', 'ประเพณีและวัฒนธรรมไทยที่สืบทอดกันมา',      'Thai traditions and inherited culture', 2),
-  ('wisdom',     'ภูมิปัญญาไทย',    'Thai Wisdom',     'ภูมิปัญญาท้องถิ่นและองค์ความรู้ดั้งเดิม',    'Local wisdom and traditional knowledge', 3),
-  ('cuisine',    'อาหารไทย',        'Thai Cuisine',    'อาหารไทยและมรดกทางการกิน',                'Thai food and culinary heritage', 4),
-  ('language',   'ภาษาไทย',         'Thai Language',   'ภาษาและวรรณกรรมไทย',                      'Thai language and literature', 5),
-  ('handicraft', 'ศิลปหัตถกรรม',    'Arts & Crafts',   'ศิลปหัตถกรรมและงานฝีมือไทย',              'Thai arts, crafts and handiwork', 6)
-) AS v(slug, name_th, name_en, description_th, description_en, sort_order)
+  ('heritage',   'มรดกไทย',        'Thai Heritage',   'มรดกและโบราณสถานสำคัญของประเทศไทย',       'Important heritage sites and ancient places of Thailand', 1, true, true),
+  ('tradition',  'ประเพณีไทย',      'Thai Traditions', 'ประเพณีและวัฒนธรรมไทยที่สืบทอดกันมา',      'Thai traditions and inherited culture', 2, true, true),
+  ('wisdom',     'ภูมิปัญญาไทย',    'Thai Wisdom',     'ภูมิปัญญาท้องถิ่นและองค์ความรู้ดั้งเดิม',    'Local wisdom and traditional knowledge', 3, true, true),
+  ('cuisine',    'อาหารไทย',        'Thai Cuisine',    'อาหารไทยและมรดกทางการกิน',                'Thai food and culinary heritage', 4, true, true),
+  ('language',   'ภาษาไทย',         'Thai Language',   'ภาษาและวรรณกรรมไทย',                      'Thai language and literature', 5, true, true),
+  ('handicraft', 'ศิลปหัตถกรรม',    'Arts & Crafts',   'ศิลปหัตถกรรมและงานฝีมือไทย',              'Thai arts, crafts and handiwork', 6, true, true),
+  ('link',       'ลิงก์',           'Link',            'ลิงก์และแหล่งข้อมูลอ้างอิงที่น่าสนใจ',      'Useful links and reference resources', 7, false, true)
+) AS v(slug, name_th, name_en, description_th, description_en, sort_order, show_on_public, show_at_footer)
 WHERE NOT EXISTS (SELECT 1 FROM categories LIMIT 1)
 ON CONFLICT (slug) DO NOTHING;
 

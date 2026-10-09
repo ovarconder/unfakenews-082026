@@ -38,8 +38,9 @@ export default function NewArticlePage() {
       </div>
 
       <div className="rounded-xl bg-gradient-to-br from-[#0f1f3a] to-[#162545] border border-white/10 p-6">
-        <ArticleEditor onSave={handleSave} />
+        <ArticleEditor onSave={handleSave} locale="th" />
       </div>
     </div>
   );
 }
+

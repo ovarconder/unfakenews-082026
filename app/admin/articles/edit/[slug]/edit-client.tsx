@@ -613,6 +613,7 @@ export default function EditArticleClient({
           initialData={localeArticle}
           onSave={handleSave}
           onDelete={handleDelete}
+          locale={selectedLocale}
         />
       </div>
     </div>

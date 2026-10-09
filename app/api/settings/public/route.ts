@@ -90,6 +90,9 @@ export async function GET() {
       supportDescription: s.supportDescription,
       supportAccountName: s.supportAccountName,
       supportAccountNumber: s.supportAccountNumber,
+
+      // Custom CSS (ใช้ inject ใน public pages — เป็น public โดยตั้งใจ)
+      customCss: s.customCss,
     };
 
     return NextResponse.json({ settings });

@@ -90,6 +90,8 @@ export interface SiteSettings {
   supportDescription?: string;
   supportAccountName?: string;
   supportAccountNumber?: string;
+  /** Custom CSS — CSS กำหนดเองที่ inject เข้า public pages (จากหน้า Admin Settings) */
+  customCss?: string;
   updatedAt: string;
   updatedBy?: string;
 }
@@ -169,6 +171,8 @@ const DEFAULT_SETTINGS: SiteSettings = {
     "ถ้าชอบใจเว็บของเรา ช่วยค่ากาแฟและค่าแปลข้อมูล เพื่อให้เราทำเว็บต่อไปได้ ยิ่งกว่าแค่ค่าเซิร์ฟเวอร์",
   supportAccountName: "",
   supportAccountNumber: "",
+  // Custom CSS — CSS กำหนดเอง (เว้นว่าง = ไม่ inject)
+  customCss: "",
   updatedAt: new Date().toISOString(),
 };
 
@@ -260,6 +264,7 @@ function dbRowToSettings(row: any): SiteSettings {
     supportDescription: row.support_description || DEFAULT_SETTINGS.supportDescription,
     supportAccountName: row.support_account_name || DEFAULT_SETTINGS.supportAccountName,
     supportAccountNumber: row.support_account_number || DEFAULT_SETTINGS.supportAccountNumber,
+    customCss: row.custom_css || DEFAULT_SETTINGS.customCss,
     updatedAt: row.updated_at || new Date().toISOString(),
     updatedBy: row.updated_by || DEFAULT_SETTINGS.updatedBy,
   };
@@ -335,6 +340,8 @@ function settingsToDbRow(settings: SiteSettings): any {
     support_description: settings.supportDescription || null,
     support_account_name: settings.supportAccountName || null,
     support_account_number: settings.supportAccountNumber || null,
+    // Custom CSS
+    custom_css: settings.customCss || null,
     updated_at: new Date().toISOString(),
     updated_by: settings.updatedBy || null,
   };

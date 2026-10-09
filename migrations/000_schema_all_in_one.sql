@@ -14,7 +14,7 @@
 --   [3] Microsites (012) + FK
 --   [4] site_settings (013, 015, 017, 019, 021, 024)
 --   [5] Triggers (auto-create profile)
---   [6] ALTER เพิ่มคอลัมน์ (014, 016, 018, 022)
+--   [6] ALTER เพิ่มคอลัมน์ (014, 016, 018, 022, 023, 026)
 --   [7] RLS Policies (ทุกตาราง)
 --   [8] Storage bucket "images" (020)
 --   [9] Seed data (categories, hero_slides)
@@ -366,6 +366,9 @@ ALTER TABLE translations ADD COLUMN IF NOT EXISTS entity_name     TEXT;
 ALTER TABLE translations ADD COLUMN IF NOT EXISTS quick_facts     JSONB DEFAULT '{}'::jsonb;
 ALTER TABLE translations ADD COLUMN IF NOT EXISTS glossary        JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE translations ADD COLUMN IF NOT EXISTS social_caption  TEXT;
+-- google_schema_markup (JSON-LD ที่แปลแล้ว) — 026
+-- ★ จำเป็นสำหรับปุ่ม "แปลอัตโนมัติ" (translate-new เขียนคอลัมน์นี้) — ถ้าขาดจะได้ PGRST204
+ALTER TABLE translations ADD COLUMN IF NOT EXISTS google_schema_markup JSONB DEFAULT NULL;
 -- ปลด NOT NULL ให้ excerpt (route translate-new upsert โดยไม่เขียน excerpt)
 ALTER TABLE translations ALTER COLUMN excerpt DROP NOT NULL;
 

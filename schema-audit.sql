@@ -170,10 +170,12 @@ SELECT 'site_settings' AS "table", c.column_name AS "column ที่ขาด"
 FROM (
   VALUES
     ('id'),('name'),('tagline'),('description'),('url'),('logo'),('logo_full'),
+    ('logo_text'),('logo_text_font'),('logo_text_color'),('custom_css'),
     ('favicon'),('primary_color'),('secondary_color'),('accent_color'),
     ('background_color'),('background_color_secondary'),('card_color'),
     ('card_border_color'),('text_color'),('text_color_muted'),('sidebar_color'),
-    ('header_color'),('success_color'),('error_color'),('copyright'),('locale'),
+    ('header_color'),('header_text_color'),('footer_color'),('footer_text_color'),
+    ('success_color'),('error_color'),('copyright'),('locale'),
     ('timezone'),('meta_title'),('meta_description'),('og_title'),('og_description'),
     ('og_image'),('twitter_handle'),('google_analytics_id'),('adsense_id'),
     ('adsense_slot_homepage'),('adsense_slot_sidebar'),('facebook_url'),('twitter_url'),

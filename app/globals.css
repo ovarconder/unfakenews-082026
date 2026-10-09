@@ -37,6 +37,9 @@
     --color-text-muted: rgba(255,255,255,0.5);
     --color-sidebar: #0a1628;
     --color-header: #060e1a;
+    --color-header-text: #ffffff;
+    --color-footer: #0a1628;
+    --color-footer-text: #ffffff;
     --color-success: #10b981;
     --color-error: #ef4444;
 
@@ -52,7 +55,10 @@
     --color-success-rgb: 16 185 129;
     --color-error-rgb: 239 68 68;
     --color-header-rgb: 6 14 26;
+    --color-header-text-rgb: 255 255 255;
     --color-sidebar-rgb: 10 22 40;
+    --color-footer-rgb: 10 22 40;
+    --color-footer-text-rgb: 255 255 255;
   }
 
   .dark {
@@ -81,7 +87,10 @@
     --color-success-rgb: 16 185 129;
     --color-error-rgb: 239 68 68;
     --color-header-rgb: 6 14 26;
+    --color-header-text-rgb: 255 255 255;
     --color-sidebar-rgb: 10 22 40;
+    --color-footer-rgb: 10 22 40;
+    --color-footer-text-rgb: 255 255 255;
   }
 }
 @layer base {
@@ -208,6 +217,9 @@
   .border-brand-card { border-color: var(--color-card-border); }
   .bg-sidebar { background-color: var(--color-sidebar); }
   .bg-header { background-color: var(--color-header); }
+  .text-header { color: var(--color-header-text); }
+  .bg-footer { background-color: var(--color-footer); }
+  .text-footer { color: var(--color-footer-text); }
   .bg-success { background-color: var(--color-success); }
   .bg-error { background-color: var(--color-error); }
 

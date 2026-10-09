@@ -57,6 +57,15 @@ export function Header({ locale }: HeaderProps) {
   const logoTextFont = settings?.logoTextFont?.trim() || "";
   const logoTextColor = settings?.logoTextColor?.trim() || "";
 
+  // ★ สีข้อความ/เมนูใน Header — ผู้ดูแลกำหนดได้ในหน้า Settings
+  //    ตั้งเป็น CSS variable inline บน <header> แล้วให้ข้อความ/ไอคอนอ่านค่าผ่าน
+  //    utility `headerTextClass` (มี fallback เป็นขาวเดิม เผื่อยังไม่ตั้งค่า)
+  const headerTextColor = settings?.headerTextColor?.trim() || undefined;
+  const headerStyle = headerTextColor
+    ? ({ ["--header-text" as string]: headerTextColor } as React.CSSProperties)
+    : undefined;
+  const headerTextClass = "text-[color:var(--header-text,#ffffff)]";
+
   // ตรวจสถานะ login + role จาก sessionStorage (admin ใช้ key นี้)
   useEffect(() => {
     const raw = sessionStorage.getItem(SESSION_KEY);
@@ -144,7 +153,10 @@ export function Header({ locale }: HeaderProps) {
   const isArticleDetail = ARTICLE_DETAIL_REGEX.test(pathname);
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-brand-header/90 backdrop-blur-md border-b border-white/10">
+    <header
+      className="fixed top-0 left-0 right-0 z-50 bg-brand-header/90 backdrop-blur-md border-b border-white/10"
+      style={headerStyle}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -180,7 +192,7 @@ export function Header({ locale }: HeaderProps) {
                 className={`text-sm font-medium transition-colors ${
                   isActive(link.href)
                     ? "text-brand-primary"
-                    : "text-white/70 hover:text-brand-primary"
+                    : `${headerTextClass} hover:text-brand-primary`
                 }`}
               >
                 {t(link.key, locale)}
@@ -208,7 +220,7 @@ export function Header({ locale }: HeaderProps) {
             {isLoggedIn ? (
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-white/20 text-white/80 text-sm font-medium hover:bg-white/10 hover:text-brand-primary transition-all"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-white/20 ${headerTextClass} text-sm font-medium hover:bg-white/10 hover:text-brand-primary transition-all`}
               >
                 <LogOut size={14} />
                 {t("common.logout", locale)}
@@ -216,7 +228,7 @@ export function Header({ locale }: HeaderProps) {
             ) : (
               <Link
                 href="/admin/login"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-white/20 text-white/80 text-sm font-medium hover:bg-white/10 hover:text-brand-primary transition-all"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-white/20 ${headerTextClass} text-sm font-medium hover:bg-white/10 hover:text-brand-primary transition-all`}
               >
                 <LogIn size={14} />
                 {t("common.login", locale)}
@@ -227,7 +239,7 @@ export function Header({ locale }: HeaderProps) {
             <div className="relative" ref={langRef}>
               <button
                 onClick={() => setLangOpen(!langOpen)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-white/20 text-xs font-medium text-white/80 hover:bg-white/10 hover:text-brand-primary transition-all"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-white/20 text-xs font-medium ${headerTextClass} hover:bg-white/10 hover:text-brand-primary transition-all`}
               >
                 <Globe size={14} />
                 <span>{currentLangName}</span>
@@ -282,7 +294,7 @@ export function Header({ locale }: HeaderProps) {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="md:hidden text-white/80 hover:text-brand-primary transition-colors"
+            className={`md:hidden ${headerTextClass} hover:text-brand-primary transition-colors`}
             aria-label="Toggle menu"
           >
             {mobileOpen ? <X size={24} /> : <Menu size={24} />}
@@ -302,7 +314,7 @@ export function Header({ locale }: HeaderProps) {
                 className={`block py-2 text-sm font-medium transition-colors ${
                   isActive(link.href)
                     ? "text-brand-primary"
-                    : "text-white/70 hover:text-brand-primary"
+                    : `${headerTextClass} hover:text-brand-primary`
                 }`}
               >
                 {t(link.key, locale)}
@@ -335,7 +347,7 @@ export function Header({ locale }: HeaderProps) {
               <button
                 onClick={handleLogout}
 
-                className="block w-full text-left py-2 text-sm font-medium text-white/80 hover:text-brand-primary transition-colors"
+                className={`block w-full text-left py-2 text-sm font-medium ${headerTextClass} hover:text-brand-primary transition-colors`}
               >
                 <span className="inline-flex items-center gap-2">
                   <LogOut size={16} /> {t("common.logout", locale)}
@@ -345,7 +357,7 @@ export function Header({ locale }: HeaderProps) {
               <Link
                 href="/admin/login"
                 onClick={() => setMobileOpen(false)}
-                className="block py-2 text-sm font-medium text-white/80 hover:text-brand-primary transition-colors"
+                className={`block py-2 text-sm font-medium ${headerTextClass} hover:text-brand-primary transition-colors`}
               >
                 <span className="inline-flex items-center gap-2">
                   <LogIn size={16} /> {t("common.login", locale)}
@@ -367,7 +379,7 @@ export function Header({ locale }: HeaderProps) {
                     className={`px-2 py-1.5 rounded-md text-xs text-center transition-colors ${
                       l === locale
                         ? "bg-brand-primary/20 text-brand-primary border border-brand-primary/30"
-                        : "text-white/60 hover:text-white border border-white/10 hover:border-white/30"
+                        : `${headerTextClass} opacity-60 hover:opacity-100 border border-white/10 hover:border-white/30`
                     }`}
                   >
                     {LOCALE_NAMES[l]?.native || l}

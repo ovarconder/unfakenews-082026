@@ -36,6 +36,9 @@ export interface SiteSettings {
   textColorMuted: string;
   sidebarColor: string;
   headerColor: string;
+  headerTextColor: string;
+  footerColor: string;
+  footerTextColor: string;
   successColor: string;
   errorColor: string;
   copyright: string;
@@ -120,6 +123,9 @@ const DEFAULT_SETTINGS: SiteSettings = {
   textColorMuted: process.env.NEXT_PUBLIC_COLOR_TEXT_MUTED || "rgba(255,255,255,0.5)",
   sidebarColor: process.env.NEXT_PUBLIC_COLOR_SIDEBAR || "#0a1628",
   headerColor: process.env.NEXT_PUBLIC_COLOR_HEADER || "#060e1a",
+  headerTextColor: process.env.NEXT_PUBLIC_COLOR_HEADER_TEXT || "#ffffff",
+  footerColor: process.env.NEXT_PUBLIC_COLOR_FOOTER || "#0a1628",
+  footerTextColor: process.env.NEXT_PUBLIC_COLOR_FOOTER_TEXT || "#ffffff",
   successColor: process.env.NEXT_PUBLIC_COLOR_SUCCESS || "#10b981",
   errorColor: process.env.NEXT_PUBLIC_COLOR_ERROR || "#ef4444",
   copyright: process.env.NEXT_PUBLIC_COPYRIGHT || `© ${new Date().getFullYear()} ${process.env.NEXT_PUBLIC_SITE_NAME || "UnFakeNews"}. All rights reserved.`,
@@ -219,6 +225,9 @@ function dbRowToSettings(row: any): SiteSettings {
     textColorMuted: row.text_color_muted || DEFAULT_SETTINGS.textColorMuted,
     sidebarColor: row.sidebar_color || DEFAULT_SETTINGS.sidebarColor,
     headerColor: row.header_color || DEFAULT_SETTINGS.headerColor,
+    headerTextColor: row.header_text_color || DEFAULT_SETTINGS.headerTextColor,
+    footerColor: row.footer_color || DEFAULT_SETTINGS.footerColor,
+    footerTextColor: row.footer_text_color || DEFAULT_SETTINGS.footerTextColor,
     successColor: row.success_color || DEFAULT_SETTINGS.successColor,
     errorColor: row.error_color || DEFAULT_SETTINGS.errorColor,
     copyright: row.copyright || DEFAULT_SETTINGS.copyright,
@@ -294,6 +303,9 @@ function settingsToDbRow(settings: SiteSettings): any {
     text_color_muted: settings.textColorMuted,
     sidebar_color: settings.sidebarColor,
     header_color: settings.headerColor,
+    header_text_color: settings.headerTextColor,
+    footer_color: settings.footerColor,
+    footer_text_color: settings.footerTextColor,
     success_color: settings.successColor,
     error_color: settings.errorColor,
     copyright: settings.copyright,

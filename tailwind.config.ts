@@ -60,7 +60,10 @@ const config: Config = {
           "bg-secondary": "rgb(var(--color-bg-secondary-rgb) / <alpha-value>)",
           card: "rgb(var(--color-card-rgb) / <alpha-value>)",
           header: "rgb(var(--color-header-rgb) / <alpha-value>)",
+          "header-text": "rgb(var(--color-header-text-rgb) / <alpha-value>)",
           sidebar: "rgb(var(--color-sidebar-rgb) / <alpha-value>)",
+          footer: "rgb(var(--color-footer-rgb) / <alpha-value>)",
+          "footer-text": "rgb(var(--color-footer-text-rgb) / <alpha-value>)",
 
           // border เก็บค่าเป็น rgba อยู่แล้ว — ใช้ตรงๆ (ไม่รองรับ /opacity)
           "card-border": "var(--color-card-border)",

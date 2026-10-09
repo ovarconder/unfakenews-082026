@@ -43,6 +43,9 @@ export async function GET() {
       textColorMuted: s.textColorMuted,
       sidebarColor: s.sidebarColor,
       headerColor: s.headerColor,
+      headerTextColor: s.headerTextColor,
+      footerColor: s.footerColor,
+      footerTextColor: s.footerTextColor,
       successColor: s.successColor,
       errorColor: s.errorColor,
 

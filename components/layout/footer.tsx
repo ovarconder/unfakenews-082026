@@ -42,7 +42,7 @@ export function Footer({ locale }: FooterProps) {
   }, [locale]);
 
   return (
-    <footer className="bg-brand-bg-secondary border-t border-white/10">
+    <footer className="bg-footer text-footer border-t border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand */}

@@ -22,6 +22,9 @@ const DEFAULT_COLORS: Record<string, string> = {
   "--color-text-muted": "rgba(255,255,255,0.5)",
   "--color-sidebar": "#0a1628",
   "--color-header": "#060e1a",
+  "--color-header-text": "#ffffff",
+  "--color-footer": "#0a1628",
+  "--color-footer-text": "#ffffff",
   "--color-success": "#10b981",
   "--color-error": "#ef4444",
 };
@@ -37,7 +40,10 @@ const DEFAULT_RGB: Record<string, string> = {
   "--color-success-rgb": "16 185 129",
   "--color-error-rgb": "239 68 68",
   "--color-header-rgb": "6 14 26",
+  "--color-header-text-rgb": "255 255 255",
   "--color-sidebar-rgb": "10 22 40",
+  "--color-footer-rgb": "10 22 40",
+  "--color-footer-text-rgb": "255 255 255",
 };
 
 /**
@@ -83,6 +89,9 @@ function applySettingsAsCSS(settings: SiteSettings | null) {
         "--color-text-muted": settings.textColorMuted,
         "--color-sidebar": settings.sidebarColor,
         "--color-header": settings.headerColor,
+        "--color-header-text": settings.headerTextColor,
+        "--color-footer": settings.footerColor,
+        "--color-footer-text": settings.footerTextColor,
         "--color-success": settings.successColor,
         "--color-error": settings.errorColor,
       }
@@ -105,7 +114,10 @@ function applySettingsAsCSS(settings: SiteSettings | null) {
         "--color-success-rgb": toRgbChannels(settings.successColor) || undefined,
         "--color-error-rgb": toRgbChannels(settings.errorColor) || undefined,
         "--color-header-rgb": toRgbChannels(settings.headerColor) || undefined,
+        "--color-header-text-rgb": toRgbChannels(settings.headerTextColor) || undefined,
         "--color-sidebar-rgb": toRgbChannels(settings.sidebarColor) || undefined,
+        "--color-footer-rgb": toRgbChannels(settings.footerColor) || undefined,
+        "--color-footer-text-rgb": toRgbChannels(settings.footerTextColor) || undefined,
       }
     : DEFAULT_RGB;
 

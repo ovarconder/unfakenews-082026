@@ -104,6 +104,9 @@ function buildThemeStyle(s: SiteSettings): React.CSSProperties {
     "--color-text-muted": s.textColorMuted,
     "--color-sidebar": s.sidebarColor,
     "--color-header": s.headerColor,
+    "--color-header-text": s.headerTextColor,
+    "--color-footer": s.footerColor,
+    "--color-footer-text": s.footerTextColor,
     "--color-success": s.successColor,
     "--color-error": s.errorColor,
   };
@@ -119,7 +122,10 @@ function buildThemeStyle(s: SiteSettings): React.CSSProperties {
     ["--color-success-rgb", s.successColor],
     ["--color-error-rgb", s.errorColor],
     ["--color-header-rgb", s.headerColor],
+    ["--color-header-text-rgb", s.headerTextColor],
     ["--color-sidebar-rgb", s.sidebarColor],
+    ["--color-footer-rgb", s.footerColor],
+    ["--color-footer-text-rgb", s.footerTextColor],
   ];
   for (const [key, val] of rgbPairs) {
     const ch = toRgbChannels(val);

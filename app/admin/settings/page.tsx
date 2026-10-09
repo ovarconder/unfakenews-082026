@@ -61,6 +61,9 @@ interface SiteSettings {
   textColorMuted: string;
   sidebarColor: string;
   headerColor: string;
+  headerTextColor: string;
+  footerColor: string;
+  footerTextColor: string;
   successColor: string;
   errorColor: string;
 
@@ -497,9 +500,29 @@ export default function SettingsPage() {
               <ColorField label="สีพื้นหลัง Card" value={settings.cardColor} onChange={(v) => updateField("cardColor", v)} />
               <ColorField label="สีเส้นขอบ Card" value={settings.cardBorderColor} onChange={(v) => updateField("cardBorderColor", v)} />
               <ColorField label="สีพื้นหลัง Sidebar" value={settings.sidebarColor} onChange={(v) => updateField("sidebarColor", v)} />
-              <ColorField label="สีพื้นหลัง Header" value={settings.headerColor} onChange={(v) => updateField("headerColor", v)} />
               <ColorField label="สี Success" value={settings.successColor} onChange={(v) => updateField("successColor", v)} />
               <ColorField label="สี Error" value={settings.errorColor} onChange={(v) => updateField("errorColor", v)} />
+            </div>
+
+            {/* ===== Header ===== */}
+            <div className="mt-4 pt-4 border-t border-white/5">
+              <p className="text-white/50 text-xs mb-3">สี Header (แถบเมนูด้านบน)</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <ColorField label="สีพื้นหลัง Header" value={settings.headerColor} onChange={(v) => updateField("headerColor", v)} />
+                <ColorField label="สีข้อความ Header" value={settings.headerTextColor} onChange={(v) => updateField("headerTextColor", v)} />
+              </div>
+              <p className="text-white/30 text-[11px] mt-2">
+                สีข้อความใช้กับเมนู/ไอคอน/ปุ่มในแถบ Header ส่วนลิงก์ที่ active และปุ่มไฮไลต์ยังคงใช้สีหลัก (Primary)
+              </p>
+            </div>
+
+            {/* ===== Footer ===== */}
+            <div className="mt-4 pt-4 border-t border-white/5">
+              <p className="text-white/50 text-xs mb-3">สี Footer (แถบท้ายเว็บ)</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <ColorField label="สีพื้นหลัง Footer" value={settings.footerColor} onChange={(v) => updateField("footerColor", v)} />
+                <ColorField label="สีข้อความ Footer" value={settings.footerTextColor} onChange={(v) => updateField("footerTextColor", v)} />
+              </div>
             </div>
           </div>
         </div>

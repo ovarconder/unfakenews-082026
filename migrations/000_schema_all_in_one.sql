@@ -12,7 +12,7 @@
 --   [1] Extensions & Enums
 --   [2] Tables หลัก (profiles, categories, articles, translations, hero_slides)
 --   [3] Microsites (012) + FK
---   [4] site_settings (013, 015, 017, 019, 021, 024, 025)
+--   [4] site_settings (013, 015, 017, 019, 021, 024, 025, 027, 028)
 --   [5] Triggers (auto-create profile)
 --   [6] ALTER เพิ่มคอลัมน์ (014, 016, 018, 022, 023, 026)
 --   [7] RLS Policies (ทุกตาราง)
@@ -187,7 +187,7 @@ CREATE INDEX IF NOT EXISTS idx_profile_microsites_microsite_id ON profile_micros
 
 
 -- ════════════════════════════════════════════════════════════════════════════
--- [4] SITE_SETTINGS (013 + 015 + 017 + 019 + 021 + 024 + 025)
+-- [4] SITE_SETTINGS (013 + 015 + 017 + 019 + 021 + 024 + 025 + 027 + 028)
 --     ★ ใช้ CREATE TABLE IF NOT EXISTS แล้วตามด้วย ALTER ทุกคอลัมน์
 --       ครอบคลุมทั้ง DB ใหม่ และ DB เก่าที่ตารางมีอยู่แล้ว
 -- ════════════════════════════════════════════════════════════════════════════
@@ -223,6 +223,11 @@ ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS text_color                TEX
 ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS text_color_muted          TEXT DEFAULT 'rgba(255,255,255,0.5)';
 ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS sidebar_color             TEXT DEFAULT '#0a1628';
 ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS header_color              TEXT DEFAULT '#060e1a';
+-- Header text color (028) — สีข้อความ/เมนูใน Header
+ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS header_text_color         TEXT DEFAULT '#ffffff';
+-- Footer colors (027) — สีพื้นหลัง + สีข้อความของ Footer
+ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS footer_color              TEXT DEFAULT '#0a1628';
+ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS footer_text_color         TEXT DEFAULT '#ffffff';
 ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS success_color             TEXT DEFAULT '#10b981';
 ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS error_color               TEXT DEFAULT '#ef4444';
 

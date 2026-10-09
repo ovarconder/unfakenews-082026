@@ -200,7 +200,10 @@ export default function AdminSidebar({ user, onLogout }: AdminSidebarProps) {
   }, []);
 
   const siteName = settings?.name || process.env.NEXT_PUBLIC_SITE_NAME || "UnFake News";
-  const logoUrl = settings?.logo || settings?.logoFull || "/images/logo/unfakenews-logo-360.png";
+  // ใช้โลโก้จาก settings ที่บันทึกไว้ (URL ของ Supabase Storage) — ไม่ hardcode path local
+  const logoUrl = settings?.logo || settings?.logoFull || "";
+  // ข้อความชื่อเว็บข้างโลโก้ (แสดงเฉพาะจอใหญ่ / desktop) — ดึงจาก settings ที่บันทึกไว้
+  const logoText = settings?.logoText?.trim() || "";
 
   const isActive = (href: string) => {
     if (href === "/admin") return pathname === "/admin";
@@ -223,11 +226,24 @@ export default function AdminSidebar({ user, onLogout }: AdminSidebarProps) {
       <div className="px-6 py-6 border-b border-white/10">
         <Link href="/admin" className="flex flex-col items-start gap-2">
           <div className="flex items-center gap-3">
-            <img
-              src={logoUrl}
-              alt={siteName}
-              className="h-8 w-auto"
-            />
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt={siteName}
+                className="h-8 w-auto"
+              />
+            ) : null}
+            {logoText ? (
+              <span
+                className="text-white text-sm font-bold truncate"
+                style={{
+                  fontFamily: settings?.logoTextFont?.trim() || undefined,
+                  color: settings?.logoTextColor?.trim() || undefined,
+                }}
+              >
+                {logoText}
+              </span>
+            ) : null}
           </div>
           <p className="text-white/60 text-[10px] tracking-wider pl-0">Admin Panel</p>
         </Link>

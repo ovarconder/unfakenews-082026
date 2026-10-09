@@ -15,7 +15,8 @@ const SESSION_KEY = "siam_admin_session";
 export default function AdminLoginClient() {
   const settings = useSettings();
   const siteName = settings?.name || process.env.NEXT_PUBLIC_SITE_NAME || "UnFake News";
-  const logoUrl = settings?.logo || settings?.logoFull || "/images/logo/unfakenews-logo-360.png";
+  // ใช้โลโก้จาก settings ที่บันทึกไว้ (Supabase Storage URL) โดยตรง — ไม่ hardcode path local
+  const logoUrl = settings?.logo || settings?.logoFull || process.env.NEXT_PUBLIC_SITE_LOGO || "";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -104,11 +105,15 @@ export default function AdminLoginClient() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <img
-            src={logoUrl}
-            alt={siteName}
-            className="h-16 mx-auto mb-3"
-          />
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt={siteName}
+              className="h-16 mx-auto mb-3"
+            />
+          ) : (
+            <p className="text-white text-2xl font-bold mb-3">{siteName}</p>
+          )}
           <p className="text-white/50 text-sm">Admin Panel</p>
         </div>
 

@@ -27,4 +27,3 @@ ALTER TABLE articles ADD COLUMN IF NOT EXISTS social_caption TEXT;
 -- Indexes for future queries
 CREATE INDEX IF NOT EXISTS idx_articles_entity_type ON articles(entity_type);
 CREATE INDEX IF NOT EXISTS idx_articles_wikidata_id ON articles(wikidata_id);
-

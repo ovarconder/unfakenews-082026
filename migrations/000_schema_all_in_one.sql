@@ -1,4 +1,4 @@
-+-- ============================================================================
+-- ============================================================================
 -- UnFakeNews — ALL-IN-ONE SCHEMA
 -- ============================================================================
 -- ไฟล์เดียวรวบ schema ทั้งหมดของโปรเจกต์ (สำหรับตั้ง DB ใหม่)
@@ -12,7 +12,7 @@
 --   [1] Extensions & Enums
 --   [2] Tables หลัก (profiles, categories, articles, translations, hero_slides)
 --   [3] Microsites (012) + FK
---   [4] site_settings (013, 015, 017, 019, 021, 024)
+--   [4] site_settings (013, 015, 017, 019, 021, 024, 025)
 --   [5] Triggers (auto-create profile)
 --   [6] ALTER เพิ่มคอลัมน์ (014, 016, 018, 022, 023, 026)
 --   [7] RLS Policies (ทุกตาราง)
@@ -187,7 +187,7 @@ CREATE INDEX IF NOT EXISTS idx_profile_microsites_microsite_id ON profile_micros
 
 
 -- ════════════════════════════════════════════════════════════════════════════
--- [4] SITE_SETTINGS (013 + 015 + 017 + 019 + 021 + 024)
+-- [4] SITE_SETTINGS (013 + 015 + 017 + 019 + 021 + 024 + 025)
 --     ★ ใช้ CREATE TABLE IF NOT EXISTS แล้วตามด้วย ALTER ทุกคอลัมน์
 --       ครอบคลุมทั้ง DB ใหม่ และ DB เก่าที่ตารางมีอยู่แล้ว
 -- ════════════════════════════════════════════════════════════════════════════
@@ -207,6 +207,9 @@ ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS logo_text       TEXT DEFAULT 
 ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS logo_text_font  TEXT DEFAULT '';
 ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS logo_text_color TEXT DEFAULT '';
 ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS favicon     TEXT DEFAULT '';
+
+-- ---- Custom CSS (025) — CSS กำหนดเองจากหน้า Admin Settings ----
+ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS custom_css TEXT DEFAULT '';
 
 -- ---- Colors ----
 ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS primary_color             TEXT DEFAULT '#fbbf24';

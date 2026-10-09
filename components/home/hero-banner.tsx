@@ -10,8 +10,34 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { t } from "@/lib/translations";
-import type { Locale } from "@/lib/locales";
+import { ALL_LOCALES, type Locale } from "@/lib/locales";
 import { ChevronLeft, ChevronRight, Circle } from "lucide-react";
+
+// ============================================================
+// Locale-aware CTA link
+// ============================================================
+// cta_link ที่เก็บใน DB อาจถูกบันทึกมาเป็น locale ใดก็ได้ (เช่น /th/articles/...)
+// จึงต้อง normalize ให้ตรงกับ locale ที่กำลังดูอยู่เสมอ
+// - internal link ที่ขึ้นต้นด้วย /{locale}/ → สลับ locale ให้ตรง
+// - internal link ที่ไม่มี locale นำหน้า → เติม locale ปัจจุบัน
+// - external link (http...) , anchor (#), mailto: → คงเดิม
+export function localizeHref(href: string, locale: Locale): string {
+  if (!href) return href;
+  if (/^https?:\/\//i.test(href) || href.startsWith("#") || href.startsWith("mailto:")) {
+    return href;
+  }
+  const prefix = `/${locale}`;
+  if (href === prefix || href.startsWith(`${prefix}/`)) return href;
+
+  const match = href.match(/^\/([a-z]{2})(\/|$)/);
+  if (match && (ALL_LOCALES as readonly string[]).includes(match[1])) {
+    // แทนที่ locale เดิมด้วย locale ปัจจุบัน (คง trailing "/" ถ้ามี)
+    return `${prefix}${href.slice(match[0].length - 1)}`;
+  }
+
+  if (href.startsWith("/")) return `${prefix}${href}`;
+  return href;
+}
 
 interface HeroSlide {
   id: string;
@@ -123,7 +149,7 @@ export function HeroBanner({ locale }: HeroBannerProps) {
 
         {ctaText && slide.cta_link && (
           <Link
-            href={slide.cta_link}
+            href={localizeHref(slide.cta_link, locale)}
             className="group inline-flex items-center gap-2 px-8 py-3.5 rounded-lg bg-gradient-to-r from-brand-primary to-brand-secondary text-brand-bg font-semibold bg-brand-gradient-hover transition-all duration-300 shadow-lg shadow-brand-primary/20"
           >
             {ctaText}

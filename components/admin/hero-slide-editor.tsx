@@ -122,7 +122,8 @@ export function HeroSlideEditor({ initialData }: HeroSlideEditorProps) {
       title_th: article.originalTitle,
       title_en: "", // ต้องกรอกเอง
       image_url: article.imageUrl || formData.image_url,
-      cta_link: `/th/articles/${article.slug}`,
+      // เก็บเป็น path แบบไม่ระบุ locale → หน้าเว็บจะเติม locale ให้เองตอนแสดงผล
+      cta_link: `/articles/${article.slug}`,
       cta_text_th: "อ่านต่อ",
       cta_text_en: "Read more",
     });
@@ -418,7 +419,7 @@ export function HeroSlideEditor({ initialData }: HeroSlideEditorProps) {
             type="text"
             value={formData.cta_link}
             onChange={(e) => setFormData({ ...formData, cta_link: e.target.value })}
-            placeholder="/th/articles/article-slug หรือ https://..."
+            placeholder="/articles/article-slug (ไม่ต้องใส่ locale) หรือ https://..."
             className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-amber-300/50 text-sm font-mono"
           />
           <p className="text-white/30 text-[10px] mt-1">

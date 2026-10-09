@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
         image_alt_en: image_alt_en || null,
         cta_text_th: cta_text_th || null,
         cta_text_en: cta_text_en || null,
-        cta_link: cta_link || (article_slug ? `/th/articles/${article_slug}` : null),
+        cta_link: cta_link || (article_slug ? `/articles/${article_slug}` : null),
         sort_order: nextOrder,
         is_active: true,
       })

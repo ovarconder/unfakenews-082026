@@ -15,8 +15,8 @@ const SESSION_KEY = "siam_admin_session";
 export default function AdminLoginClient() {
   const settings = useSettings();
   const siteName = settings?.name || process.env.NEXT_PUBLIC_SITE_NAME || "UnFake News";
-  // ใช้โลโก้จาก settings ที่บันทึกไว้ (Supabase Storage URL) โดยตรง — ไม่ hardcode path local
-  const logoUrl = settings?.logo || settings?.logoFull || process.env.NEXT_PUBLIC_SITE_LOGO || "";
+  // ใช้โลโก้จาก site_settings.logo ที่บันทึกไว้ (URL ของ Supabase Storage) โดยตรง
+  const logoUrl = settings?.logo || "";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);

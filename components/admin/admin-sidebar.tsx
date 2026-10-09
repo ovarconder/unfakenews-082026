@@ -200,8 +200,8 @@ export default function AdminSidebar({ user, onLogout }: AdminSidebarProps) {
   }, []);
 
   const siteName = settings?.name || process.env.NEXT_PUBLIC_SITE_NAME || "UnFake News";
-  // ใช้โลโก้จาก settings ที่บันทึกไว้ (URL ของ Supabase Storage) — ไม่ hardcode path local
-  const logoUrl = settings?.logo || settings?.logoFull || "";
+  // ใช้โลโก้จาก site_settings.logo ที่บันทึกไว้ (URL ของ Supabase Storage) โดยตรง
+  const logoUrl = settings?.logo || "";
   // ข้อความชื่อเว็บข้างโลโก้ (แสดงเฉพาะจอใหญ่ / desktop) — ดึงจาก settings ที่บันทึกไว้
   const logoText = settings?.logoText?.trim() || "";
 

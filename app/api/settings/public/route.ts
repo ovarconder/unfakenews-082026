@@ -29,6 +29,9 @@ export async function GET() {
       url: s.url,
       logo: s.logo,
       logoFull: s.logoFull,
+      logoText: s.logoText,
+      logoTextFont: s.logoTextFont,
+      logoTextColor: s.logoTextColor,
       favicon: s.favicon,
 
       // Colors

@@ -676,7 +676,7 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
           .from("articles")
           .select(`
             id, slug, original_title, original_excerpt, tags,
-            categories!inner(name_th, name_en),
+            categories!inner(name_th, name_en, show_on_public),
             author_name, published_at, image_url, image_alt, featured
           `)
           .eq("status", "published")
@@ -691,11 +691,23 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
           return;
         }
 
+        // ★ กรองบทความที่อยู่ในหมวด show_on_public = false ออก
+        //   เพื่อไม่ให้ card ของหมวดที่ซ่อนไว้หลุดเข้ามาใน related
+        const visibleArticles = (articles as any[]).filter(
+          (a) => a.categories?.show_on_public !== false
+        );
+
+        if (visibleArticles.length === 0) {
+          setRelatedArticles([]);
+          setRelatedLoading(false);
+          return;
+        }
+
         // ★ Fallback 2 ชั้น สำหรับ locale ≠ th:
         //   ดึง translation ทุกภาษาที่เป็นไปได้ (ภาษาปัจจุบัน + en + th) พร้อมกัน
         //   แล้วเลือกตามลำดับความสำคัญ: ภาษาปัจจุบัน > en > th (ต้นฉบับ)
         //   เพื่อให้ related articles แสดงภาษาเดียวกับหน้าที่อ่านเสมอ
-        const articleIds = (articles as any[]).map((a) => a.id);
+        const articleIds = (visibleArticles as any[]).map((a) => a.id);
 
         // ชุดภาษาที่จะดึง (dedupe ถ้า locale เป็น th/en ซ้ำกับที่รวมไว้)
         const localesToFetch = Array.from(new Set([locale, "en", "th"]));
@@ -730,7 +742,7 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
         }
 
         // Map to a simple structure for display
-        const mapped = articles.slice(0, 4).map((a: any) => {
+        const mapped = visibleArticles.slice(0, 4).map((a: any) => {
           const categoryName = locale === "th"
             ? a.categories?.name_th || ""
             : a.categories?.name_en || "";

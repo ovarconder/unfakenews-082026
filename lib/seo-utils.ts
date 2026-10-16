@@ -69,6 +69,7 @@ export async function getPublishedArticleRows(): Promise<any[]> {
       id, slug, original_title, original_excerpt, category_id,
       author_name, published_at, image_url, image_alt, featured,
       status, google_schema_markup, updated_at,
+      categories(show_on_public),
       translations(article_id, locale, title, excerpt, content, is_full_translated,
                    translated_at, translation_status)
     `)
@@ -81,7 +82,12 @@ export async function getPublishedArticleRows(): Promise<any[]> {
   }
 
   // กรองเฉพาะที่เผยแพร่จริง
-  return (data || []).filter((a: any) => a.status === "published");
+  // + กรองตามการตั้งค่าหมวดหมู่: ถ้าหมวดถูกตั้ง show_on_public = false → ไม่ expose
+  //   (ทั้ง sitemap, hreflang, IndexNow และ API ที่ใช้ helper นี้)
+  return (data || []).filter(
+    (a: any) =>
+      a.status === "published" && a.categories?.show_on_public !== false
+  );
 }
 
 /**
@@ -103,6 +109,12 @@ export interface PublishedVariant {
 export function getPublishedVariants(article: any): PublishedVariant[] {
   const baseUrl = getBaseUrl();
   const variants: PublishedVariant[] = [];
+
+  // ★ การตั้งค่าหมวดหมู่: ถ้าหมวดถูกตั้ง show_on_public = false → ไม่ expose variant ใด ๆ
+  //   (กันบทความ/ลิงก์ของหมวดที่ซ่อนไว้หลุดออกไปใน sitemap / hreflang / IndexNow)
+  if (article.categories?.show_on_public === false) {
+    return variants;
+  }
 
   // === Thai (ต้นฉบับ) — เผยแพร่ถ้าบทความ status = published ===
   if (article.status === "published") {

@@ -38,9 +38,13 @@ export async function getPublicCategories(
     .order("sort_order", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: true });
 
-  if (scope === "public") {
+  // ★ กรองตามการตั้งค่า: หมวดที่ตั้ง show_on_public = false ถือว่า "ซ่อนจาก public"
+  //   → ไม่แสดงในทุก scope ยกเว้น "all" (admin)
+  if (scope !== "all") {
     query = query.eq("show_on_public", true);
-  } else if (scope === "footer") {
+  }
+
+  if (scope === "footer") {
     query = query.eq("show_at_footer", true);
   }
 

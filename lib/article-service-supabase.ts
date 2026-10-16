@@ -29,6 +29,8 @@ export interface ArticleSummary {
   translationStatus: TranslationStatus;
   /** ภาษาที่บทความนี้ "เผยแพร่จริง" (ต้นฉบับ TH + translation_status=complete) */
   availableLocales?: string[];
+  /** หมวดหมู่ถูกตั้ง show_on_public = false → ไม่ควรแสดงทางเข้า/บทความในหน้า public */
+  categoryHidden?: boolean;
 }
 
 export interface ArticleFull extends ArticleSummary {
@@ -81,7 +83,7 @@ export async function getTranslatedSummaries(locale: Locale): Promise<ArticleSum
     .from("articles")
     .select(`
       id, slug, original_title, original_excerpt, short_excerpt, long_excerpt, original_content, tags,
-      categories(name_th, name_en),
+      categories(name_th, name_en, show_on_public),
       author_name, published_at, image_url, image_alt, featured
     `)
     .eq("status", "published")
@@ -151,11 +153,14 @@ export async function getTranslatedSummaries(locale: Locale): Promise<ArticleSum
         tags: (article as any).tags || [],
         translationStatus: status,
         availableLocales,
+        categoryHidden: article.categories?.show_on_public === false,
       };
     })
   );
 
-  return summaries;
+  // ★ กรองบทความที่อยู่ในหมวด show_on_public = false ออกจากหน้า public
+  //    (เช่น home / articles) เพื่อไม่ให้ชื่อหมวดที่ซ่อนไว้หลุดออกไป
+  return summaries.filter((a) => !a.categoryHidden);
 }
 
 /**

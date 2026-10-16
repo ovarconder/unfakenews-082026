@@ -45,6 +45,10 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 
   const baseUrl = settings?.url || process.env.NEXT_PUBLIC_SITE_URL || getBaseUrl();
 
+  // ★ การตั้งค่าหมวดหมู่: ถ้าหมวดถูกตั้ง show_on_public = false → ไม่ให้ index หน้า detail
+  //   (ยังเข้าดูได้ด้วย URL ตรง แต่ไม่โผล่ในผลค้นหา / ไม่หลุด hreflang ของหมวดที่ซ่อน)
+  const categoryHidden = article.categoryHidden === true;
+
   // ============================================================
   // ★ hreflang — สร้างจาก variant ภาษาที่ "เผยแพร่จริง" เท่านั้น
   //    (ไม่ใช่ทุก active locale — กันลิงก์ 404 ไป ภาษาที่ยังแปลไม่เสร็จ)
@@ -57,6 +61,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
       .from("articles")
       .select(`
         id, slug, status, published_at, original_title, updated_at,
+        categories(show_on_public),
         translations(article_id, locale, title, translated_at, translation_status),
         original_excerpt
       `)
@@ -118,7 +123,8 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
     },
     // ปกติให้ Google index เฉพาะบทความที่เผยแพร่
     // ถ้าเป็นโหมด preview (draft) ให้ noindex เพื่อไม่ให้หลุดสู่ผลค้นหา
-    robots: isPreview
+    // ถ้าหมวดถูกตั้ง show_on_public = false → noindex ด้วย (ไม่ให้หมวดที่ซ่อนหลุด index)
+    robots: isPreview || categoryHidden
       ? { index: false, follow: false }
       : { index: true, follow: true },
   };
@@ -142,6 +148,7 @@ export default async function LangArticlePage({ params, searchParams }: Props) {
           .from("articles")
           .select(`
             id, slug, status, published_at, original_title, updated_at,
+            categories(show_on_public),
             translations(article_id, locale, title, translated_at, translation_status),
             original_excerpt
           `)

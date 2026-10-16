@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
       .from("articles")
       .select(`
         id, slug, status, original_title, updated_at, published_at,
+        categories(show_on_public),
         translations(article_id, locale, title, translated_at, translation_status)
       `)
       .eq("slug", slug)

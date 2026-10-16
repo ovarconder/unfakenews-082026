@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
         id, slug, original_title, original_excerpt, original_content,
         category_id, author_name, published_at, status, updated_at,
         google_schema_markup, featured,
+        categories(show_on_public),
         translations(article_id, locale, title, excerpt, content,
                      is_full_translated, translated_at, translation_status)
       `)
@@ -51,7 +52,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const rows: any[] = articles || [];
+    // ★ กรองตามการตั้งค่าหมวดหมู่ — หมวดที่ตั้ง show_on_public = false ไม่ควรหลุดใน API
+    const rows: any[] = (articles || []).filter(
+      (a: any) => a.categories?.show_on_public !== false
+    );
 
     // 2) สำรวจ published variants เท่านั้น
     const claims: any[] = [];
@@ -147,3 +151,4 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+

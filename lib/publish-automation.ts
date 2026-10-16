@@ -109,6 +109,7 @@ export async function runPublishAutomation(
     .from("articles")
     .select(`
       id, slug, status, published_at, original_title, updated_at,
+      categories(show_on_public),
       translations(article_id, locale, title, is_full_translated,
                    translated_at, translation_status)
     `)

@@ -121,6 +121,38 @@
     font-family: var(--font-prompt), "Prompt", sans-serif;
   }
 
+  /* ★ Prompt utility override — บังคับให้ `font-prompt` ชนะ selector
+     `[lang="th"] h1..h6` (specificity 0,1,1) เสมอ
+     เพราะ Tailwind utility `.font-prompt` (0,1,0) เดิม "แพ้" → heading ที่สั่ง
+     font-prompt บนหน้าไทยจึงไม่เป็น Prompt ในบางกรณี
+     (utility ถูก emit หลัง base แต่ specificity ต่ำกว่า → base ชนะ) */
+  [lang="th"] h1.font-prompt,
+  [lang="th"] h2.font-prompt,
+  [lang="th"] h3.font-prompt,
+  [lang="th"] h4.font-prompt,
+  [lang="th"] h5.font-prompt,
+  [lang="th"] h6.font-prompt,
+  h1.font-prompt,
+  h2.font-prompt,
+  h3.font-prompt,
+  h4.font-prompt,
+  h5.font-prompt,
+  h6.font-prompt,
+  [lang="th"] .font-prompt h1,
+  [lang="th"] .font-prompt h2,
+  [lang="th"] .font-prompt h3,
+  [lang="th"] .font-prompt h4,
+  [lang="th"] .font-prompt h5,
+  [lang="th"] .font-prompt h6,
+  .font-prompt h1,
+  .font-prompt h2,
+  .font-prompt h3,
+  .font-prompt h4,
+  .font-prompt h5,
+  .font-prompt h6 {
+    font-family: var(--font-prompt), "Prompt", sans-serif;
+  }
+
   /* Kanit (Hero) — override global heading rules with higher specificity,
      so `font-kanit` utility truly applies on both th and en, and to
      headings nested inside a `.font-kanit` container. */
@@ -273,4 +305,43 @@
   .bg-brand-gradient-hover:hover {
     background-image: linear-gradient(to right, var(--color-secondary), var(--color-accent));
   }
+}
+
+/* ============================================================
+   ★ Font utility hard-overrides — อยู่ "นอก" @layer เพื่อให้มีลำดับท้ายสุด
+   และใช้ !important บังคับให้ class ชนะทุก selector ใน base เสมอ
+
+   ปัญหาเดิม: Tailwind utility `.font-prompt` / `.font-kanit` มี
+   specificity (0,1,0) จึงแพ้ selector `[lang="th"] h1..h6` (0,1,1)
+   ทำให้ heading ที่สั่ง font-prompt บนหน้าไทยไม่ออกเป็น Prompt
+   ============================================================ */
+.font-prompt,
+h1.font-prompt, h2.font-prompt, h3.font-prompt,
+h4.font-prompt, h5.font-prompt, h6.font-prompt,
+[lang="th"] h1.font-prompt, [lang="th"] h2.font-prompt, [lang="th"] h3.font-prompt,
+[lang="th"] h4.font-prompt, [lang="th"] h5.font-prompt, [lang="th"] h6.font-prompt,
+.font-prompt h1, .font-prompt h2, .font-prompt h3,
+.font-prompt h4, .font-prompt h5, .font-prompt h6 {
+  font-family: var(--font-prompt), "Prompt", sans-serif !important;
+}
+
+.font-kanit,
+h1.font-kanit, h2.font-kanit, h3.font-kanit,
+h4.font-kanit, h5.font-kanit, h6.font-kanit,
+[lang="th"] h1.font-kanit, [lang="th"] h2.font-kanit, [lang="th"] h3.font-kanit,
+[lang="th"] h4.font-kanit, [lang="th"] h5.font-kanit, [lang="th"] h6.font-kanit,
+.font-kanit h1, .font-kanit h2, .font-kanit h3,
+.font-kanit h4, .font-kanit h5, .font-kanit h6 {
+  font-family: var(--font-kanit), "Kanit", sans-serif !important;
+}
+
+/* span/strong/em/link ที่ซ้อนใน heading ที่สั่ง font-prompt
+   ให้ inherit family เดียวกัน — กัน `[lang="th"] *` override */
+[lang="th"] h1.font-prompt :is(span, strong, em, b, a, small),
+[lang="th"] h2.font-prompt :is(span, strong, em, b, a, small),
+[lang="th"] h3.font-prompt :is(span, strong, em, b, a, small),
+h1.font-prompt :is(span, strong, em, b, a, small),
+h2.font-prompt :is(span, strong, em, b, a, small),
+h3.font-prompt :is(span, strong, em, b, a, small) {
+  font-family: var(--font-prompt), "Prompt", sans-serif !important;
 }

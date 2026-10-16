@@ -4,9 +4,9 @@
 
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { RefreshCw, Globe, AlertCircle } from "lucide-react";
+import { RefreshCw, Globe, AlertCircle, Download, Upload, CheckCircle2, XCircle } from "lucide-react";
 import ArticleEditor from "@/components/admin/article-editor";
 import { adminFetch } from "@/lib/use-admin-fetch";
 import type { ArticleFormData } from "@/components/admin/article-editor";
@@ -353,6 +353,84 @@ export default function EditArticleClient({
     }
   };
 
+  // ================================================================
+  // Export / Import JSON
+  // ================================================================
+  const [exportLoading, setExportLoading] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
+  const [transferMsg, setTransferMsg] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+  const importFileRef = useRef<HTMLInputElement>(null);
+
+  /** Export: เรียก GET /api/admin/articles/[slug]/transfer แล้ว download ไฟล์ */
+  const handleExport = async () => {
+    setExportLoading(true);
+    setTransferMsg(null);
+    try {
+      const res = await adminFetch(`/api/admin/articles/${article.slug}/transfer`);
+      if (!res.ok) {
+        const err = await res.json();
+        setTransferMsg({ type: "error", text: err.error || "Export ล้มเหลว" });
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `article-${article.slug}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setTransferMsg({ type: "success", text: `Export "${article.slug}" สำเร็จ — ไฟล์ถูก download แล้ว` });
+    } catch (err: unknown) {
+      setTransferMsg({ type: "error", text: err instanceof Error ? err.message : "Export ล้มเหลว" });
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+  /** Import: อ่านไฟล์ JSON แล้ว POST ขึ้น API */
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // reset input ให้เลือกไฟล์เดิมซ้ำได้
+    e.target.value = "";
+
+    setImportLoading(true);
+    setTransferMsg(null);
+    try {
+      const text = await file.text();
+      const payload = JSON.parse(text);
+
+      // ใช้ slug จากไฟล์ JSON เป็น target (สามารถ import ไปยัง slug เดิม)
+      const targetSlug = payload?.article?.slug || article.slug;
+
+      const res = await adminFetch(`/api/admin/articles/${targetSlug}/transfer`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        setTransferMsg({ type: "error", text: result.error || "Import ล้มเหลว" });
+        return;
+      }
+      setTransferMsg({
+        type: "success",
+        text: `Import สำเร็จ — slug: ${result.slug} · คำแปล: ${result.translations_imported} ภาษา · สถานะ: draft (ยังไม่ publish)`,
+      });
+      router.refresh();
+    } catch (err: unknown) {
+      setTransferMsg({
+        type: "error",
+        text: err instanceof Error ? err.message : "อ่านไฟล์ไม่ได้ หรือ JSON ผิดรูปแบบ",
+      });
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
   // Load existing translation into manual form
   const loadTranslationIntoForm = useCallback((locale: string) => {
     const existing = localeTranslations[locale];
@@ -371,12 +449,74 @@ export default function EditArticleClient({
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-base sm:text-2xl font-bold text-white">แก้ไขบทความ</h1>
-        <p className="text-white/50 text-sm mt-1">
-          แก้ไขบทความ: {article.originalTitle}
-          <span className="text-white/30 ml-2 font-mono">/{article.slug}</span>
-        </p>
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div>
+          <h1 className="text-base sm:text-2xl font-bold text-white">แก้ไขบทความ</h1>
+          <p className="text-white/50 text-sm mt-1">
+            แก้ไขบทความ: {article.originalTitle}
+            <span className="text-white/30 ml-2 font-mono">/{article.slug}</span>
+          </p>
+        </div>
+
+        {/* ── Export / Import ── */}
+        <div className="flex flex-col gap-2 sm:items-end shrink-0">
+          <div className="flex items-center gap-2">
+            {/* Export */}
+            <button
+              onClick={handleExport}
+              disabled={exportLoading || importLoading}
+              title="Export บทความ + คำแปลทั้งหมดเป็น JSON (สำหรับ copy ไปเว็บลูก)"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border border-sky-400/30 bg-sky-400/10 text-sky-300 hover:bg-sky-400/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {exportLoading ? (
+                <RefreshCw size={12} className="animate-spin" />
+              ) : (
+                <Download size={12} />
+              )}
+              {exportLoading ? "กำลัง Export..." : "Export JSON"}
+            </button>
+
+            {/* Import */}
+            <button
+              onClick={() => importFileRef.current?.click()}
+              disabled={exportLoading || importLoading}
+              title="Import บทความจากไฟล์ JSON (จากเว็บอื่นที่ใช้ schema เดียวกัน) — import แล้วจะเป็น draft"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border border-violet-400/30 bg-violet-400/10 text-violet-300 hover:bg-violet-400/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {importLoading ? (
+                <RefreshCw size={12} className="animate-spin" />
+              ) : (
+                <Upload size={12} />
+              )}
+              {importLoading ? "กำลัง Import..." : "Import JSON"}
+            </button>
+            <input
+              ref={importFileRef}
+              type="file"
+              accept=".json,application/json"
+              className="hidden"
+              onChange={handleImportFile}
+            />
+          </div>
+
+          {/* Transfer message */}
+          {transferMsg && (
+            <div
+              className={`flex items-start gap-1.5 px-3 py-2 rounded-lg text-xs max-w-sm ${
+                transferMsg.type === "success"
+                  ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-300"
+                  : "bg-red-500/10 border border-red-500/30 text-red-300"
+              }`}
+            >
+              {transferMsg.type === "success" ? (
+                <CheckCircle2 size={12} className="mt-0.5 shrink-0" />
+              ) : (
+                <XCircle size={12} className="mt-0.5 shrink-0" />
+              )}
+              <span>{transferMsg.text}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ================================================================

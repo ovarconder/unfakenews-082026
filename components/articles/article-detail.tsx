@@ -64,6 +64,88 @@ function parseImgAttrs(tag: string): { src: string; alt: string } {
   return { src: attr("src"), alt: attr("alt") };
 }
 
+/**
+ * ตรวจว่าบรรทัดขึ้นต้นด้วย bullet marker หรือไม่ (- , * , + )
+ * คืนค่า marker ที่ตัดออก ถ้าใช่ (รองรับทั้ง "- ", "* ", "+ ")
+ */
+function matchBullet(line: string): { isBullet: boolean; content: string } {
+  const m = line.match(/^\s*([-*+])\s+(.*)$/);
+  if (m) return { isBullet: true, content: m[2] };
+  return { isBullet: false, content: line };
+}
+
+/**
+ * ตรวจว่าเนื้อหาใน bullet เป็น heading markdown (#, ##, ###, ####) หรือ **bold** ล้วน
+ * คืนค่า { level, text } ถ้าใช่ — level 1-4 สำหรับ heading, level 0 สำหรับ **bold**
+ */
+function parseBulletHeading(
+  content: string
+): { level: number; text: string } | null {
+  const h = content.match(/^(#{1,4})\s+(.+)$/);
+  if (h) return { level: h[1].length, text: h[2].trim() };
+  const b = content.match(/^\*\*(.+?)\*\*$/);
+  if (b) return { level: 0, text: b[1].trim() };
+  return null;
+}
+
+// ============================================================
+// Bullet list — รวม consecutive bullets เป็น <ul> ที่ valid
+// แต่ละ <li> ประกอบด้วย heading (h3/h4/... หรือ **bold**) + ย่อหน้าเนื้อหา
+// ============================================================
+
+interface BulletGroupItem {
+  heading: { level: number; text: string } | null;
+  paragraphs: string[];
+}
+
+function renderBulletList(items: BulletGroupItem[], keyBase: string): React.ReactNode {
+  return (
+    <ul key={keyBase} className="list-disc pl-6 my-4 space-y-3 text-white/80">
+      {items.map((item, idx) => {
+        const h = item.heading;
+        let headingNode: React.ReactNode = null;
+        if (h) {
+          if (h.level === 0) {
+            headingNode = (
+              <p className="text-white font-semibold mt-1 mb-1">
+                {renderInlineMarkdown(h.text)}
+              </p>
+            );
+          } else if (h.level <= 2) {
+            headingNode = (
+              <h3 className="text-xl font-semibold text-white mt-1 mb-2">
+                {renderInlineMarkdown(h.text)}
+              </h3>
+            );
+          } else if (h.level === 3) {
+            headingNode = (
+              <h4 className="text-lg font-semibold text-white mt-1 mb-2">
+                {renderInlineMarkdown(h.text)}
+              </h4>
+            );
+          } else {
+            headingNode = (
+              <h5 className="text-base font-semibold text-white/90 mt-1 mb-1">
+                {renderInlineMarkdown(h.text)}
+              </h5>
+            );
+          }
+        }
+        return (
+          <li key={idx} className="leading-relaxed">
+            {headingNode}
+            {item.paragraphs.map((p, pi) => (
+              <p key={pi} className="leading-relaxed mb-2 last:mb-0">
+                {renderInlineMarkdown(p)}
+              </p>
+            ))}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 function renderContent(content: string, translatedAlts?: Record<string, string>) {
   // Apply translated alt texts before rendering
   const processedContent = applyTranslatedAltTexts(content, translatedAlts);
@@ -279,13 +361,53 @@ function renderContent(content: string, translatedAlts?: Record<string, string>)
       i++;
       continue;
     }
-    if (line.startsWith("- ")) {
-      result.push(
-        <li key={i} className="text-white/80 ml-4 mb-1">
-          {renderInlineMarkdown(line.replace("- ", ""))}
-        </li>
-      );
-      i++;
+    // ============================================================
+    // ★ Bullet list — รองรับ bullet ที่ข้างในเป็น heading (**bold** / ### h3 / #### h4)
+    //   แล้วตามด้วยย่อหน้าเนื้อหา (รวมหลายบรรทัดจนสุด bullet)
+    //
+    //   ตัวอย่าง:
+    //     - ### หัวข้อย่อย
+    //     เนื้อหาย่อหน้าแรก
+    //     เนื้อหาย่อหน้าสอง
+    //
+    //     - **หัวข้อตัวหนา**
+    //     เนื้อหา...
+    //
+    //   → <ul><li><h3>หัวข้อย่อย</h3><p>เนื้อหาย่อหน้าแรก</p><p>เนื้อหาย่อหน้าสอง</p></li>...</ul>
+    // ============================================================
+    if (matchBullet(line).isBullet) {
+      const items: BulletGroupItem[] = [];
+      let current: BulletGroupItem | null = null;
+      let cursor = i;
+
+      while (cursor < lines.length) {
+        const cur = lines[cursor];
+        const bullet = matchBullet(cur);
+
+        if (bullet.isBullet) {
+          // เริ่ม bullet ใหม่
+          if (current) items.push(current);
+          const heading = parseBulletHeading(bullet.content);
+          current = { heading, paragraphs: [] };
+          if (!heading) {
+            // bullet ธรรมดา (ไม่มี heading) → ถือว่า content เป็นย่อหน้าแรก
+            current.paragraphs.push(bullet.content);
+          }
+          cursor++;
+          continue;
+        }
+
+        // บรรทัดว่าง → จบบล็อก bullet (ถ้าเจอบรรทัดว่างให้หยุด)
+        if (cur.trim() === "") break;
+
+        // บรรทัดที่เป็น content ต่อเนื่องของ bullet ปัจจุบัน
+        current?.paragraphs.push(matchBullet(cur).content);
+        cursor++;
+      }
+
+      if (current) items.push(current);
+      result.push(renderBulletList(items, `ul-${i}`));
+      i = cursor;
       continue;
     }
     if (line.trim() === "") {

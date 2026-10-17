@@ -227,8 +227,12 @@ export async function POST(
 
   const supabase = createAdminClient();
 
-  // ── 1. Resolve category_id from slug ──
+  // ── 1. Resolve category_id — fallback chain (category_id เป็น NOT NULL) ──
+  //   1) match slug ตรงๆ จาก payload
+  //   2) ถ้าไม่เจอ → หา category แรกที่มีใน DB ปลายทาง
+  //   3) ถ้าไม่มีเลย → สร้าง "general" ใหม่
   let categoryId: string | null = null;
+
   if (payload.article.category_slug) {
     const { data: cat } = await supabase
       .from("categories")
@@ -236,6 +240,34 @@ export async function POST(
       .eq("slug", payload.article.category_slug)
       .maybeSingle();
     categoryId = cat?.id ?? null;
+  }
+
+  if (!categoryId) {
+    // fallback: หา category แรกที่มีอยู่ใน DB ปลายทาง
+    const { data: firstCat } = await supabase
+      .from("categories")
+      .select("id")
+      .order("sort_order", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    categoryId = firstCat?.id ?? null;
+  }
+
+  if (!categoryId) {
+    // last resort: สร้าง "general" ขึ้นมาใหม่
+    const { data: created } = await supabase
+      .from("categories")
+      .insert({ slug: "general", name_th: "ทั่วไป", name_en: "General", sort_order: 0 })
+      .select("id")
+      .single();
+    categoryId = created?.id ?? null;
+  }
+
+  if (!categoryId) {
+    return NextResponse.json(
+      { error: "ไม่สามารถ resolve category ได้ — กรุณาสร้าง category ใน DB ปลายทางก่อน" },
+      { status: 422 }
+    );
   }
 
   // ── 2. Upsert article (match by slug ของ URL param) ──
@@ -248,6 +280,7 @@ export async function POST(
     original_title: payload.article.original_title,
     original_excerpt: payload.article.original_excerpt,
     original_content: payload.article.original_content,
+    category_id: categoryId,
     author_name: payload.article.author_name,
     published_at: payload.article.published_at,
     image_url: payload.article.image_url,
@@ -271,7 +304,6 @@ export async function POST(
     google_schema_markup: payload.article.google_schema_markup,
     content_updated_at: new Date().toISOString(),
   };
-  if (categoryId) articleUpsert.category_id = categoryId;
 
   const { data: upserted, error: upsertErr } = await supabase
     .from("articles")

@@ -7,30 +7,8 @@
 // ============================================================
 
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentSession } from "@/lib/auth-service";
+import { requirePermission } from "@/lib/auth-service";
 import { createAdminClient } from "@/lib/supabase-server";
-
-// ─── Auth helper ──────────────────────────────────────────────
-
-async function getRequestUser(request: NextRequest) {
-  const cookieSession = await getCurrentSession();
-  if (cookieSession.user) return cookieSession.user;
-
-  const sessionHeader = request.headers.get("x-session-data");
-  if (sessionHeader) {
-    try {
-      const decoded = decodeURIComponent(atob(sessionHeader));
-      const userData = JSON.parse(decoded);
-      if (userData?.id) return userData as { id: string; email: string; name: string; role: string };
-    } catch {}
-  }
-  return null;
-}
-
-function requireEditor(user: { role: string } | null): boolean {
-  if (!user) return false;
-  return ["admin", "editor"].includes(user.role);
-}
 
 // ─── Export shape ──────────────────────────────────────────────
 
@@ -96,8 +74,8 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
-  const user = await getRequestUser(request);
-  if (!requireEditor(user)) {
+  const { allowed } = await requirePermission("article:edit_any");
+  if (!allowed) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -203,8 +181,8 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
-  const user = await getRequestUser(request);
-  if (!requireEditor(user)) {
+  const { allowed, user } = await requirePermission("article:create");
+  if (!allowed || !user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -227,9 +205,9 @@ export async function POST(
 
   const supabase = createAdminClient();
 
-  // ── 0. ดึง author_id ของ user ที่ import (articles.author_id เป็น NOT NULL) ──
-  //   ใช้ id ของ user ที่ login อยู่ — ต้องมี profile ใน DB ปลายทางก่อน
-  const importerProfileId = user!.id;
+  // ── 0. author_id ของ user ที่ import (articles.author_id เป็น NOT NULL) ──
+  //   requirePermission ส่ง user ที่ verified แล้วกลับมา (session.user.id = auth.users UUID)
+  const importerProfileId = user.id;
 
   // ── 1. Resolve category_id — fallback chain (category_id เป็น NOT NULL) ──
   //   1) match slug ตรงๆ จาก payload

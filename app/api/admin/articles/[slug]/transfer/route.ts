@@ -21,7 +21,7 @@ async function getRequestUser(request: NextRequest) {
     try {
       const decoded = decodeURIComponent(atob(sessionHeader));
       const userData = JSON.parse(decoded);
-      if (userData?.id) return userData;
+      if (userData?.id) return userData as { id: string; email: string; name: string; role: string };
     } catch {}
   }
   return null;
@@ -227,6 +227,10 @@ export async function POST(
 
   const supabase = createAdminClient();
 
+  // ── 0. ดึง author_id ของ user ที่ import (articles.author_id เป็น NOT NULL) ──
+  //   ใช้ id ของ user ที่ login อยู่ — ต้องมี profile ใน DB ปลายทางก่อน
+  const importerProfileId = user!.id;
+
   // ── 1. Resolve category_id — fallback chain (category_id เป็น NOT NULL) ──
   //   1) match slug ตรงๆ จาก payload
   //   2) ถ้าไม่เจอ → หา category แรกที่มีใน DB ปลายทาง
@@ -278,10 +282,12 @@ export async function POST(
   const articleUpsert: Record<string, unknown> = {
     slug: targetSlug,
     original_title: payload.article.original_title,
-    original_excerpt: payload.article.original_excerpt,
-    original_content: payload.article.original_content,
+    // NOT NULL — fallback เป็น string ว่างถ้า null (ป้องกัน NOT NULL constraint)
+    original_excerpt: payload.article.original_excerpt ?? "",
+    original_content: payload.article.original_content ?? "",
     category_id: categoryId,
-    author_name: payload.article.author_name,
+    author_id: importerProfileId,
+    author_name: payload.article.author_name || "",
     published_at: payload.article.published_at,
     image_url: payload.article.image_url,
     image_alt: payload.article.image_alt,

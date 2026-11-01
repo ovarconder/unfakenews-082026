@@ -28,7 +28,7 @@ import {
 } from "@/lib/translate-service";
 import type { Locale } from "@/lib/locales";
 import { createAdminClient } from "@/lib/supabase-server";
-import { isDisabled } from "@/lib/locales";
+import { isDisabled, sourceLocaleOf } from "@/lib/locales";
 import { runPublishAutomation } from "@/lib/publish-automation";
 import { extractImageAltsFromContent } from "@/lib/image-alt-utils";
 
@@ -47,7 +47,7 @@ export type DirtyField =
   | "google_schema_markup";
 
 // ================================================================
-// fetchArticleMasterBySlug — ดึง article ภาษาไทยจาก Supabase
+// fetchArticleMasterBySlug — ดึง article ต้นฉบับจาก Supabase
 // article.id = UUID string ใช้เป็น foreign key ใน translations table
 // ================================================================
 async function fetchArticleMasterBySlug(slug: string) {
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { slug, locale, dirtyFields } = body;
 
-    if (!slug || !locale || locale === "th") {
+    if (!slug || !locale) {
       return NextResponse.json({ error: "Invalid params" }, { status: 400 });
     }
 
@@ -85,10 +85,15 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
-    // ✅ ดึง article ภาษาไทยจาก Supabase (ใช้ UUID id)
+    // ✅ ดึง article ต้นฉบับจาก Supabase (ใช้ UUID id)
     const articleRow = await fetchArticleMasterBySlug(slug);
     if (!articleRow) {
       return NextResponse.json({ error: "Article not found" }, { status: 404 });
+    }
+
+    const sourceLocale = sourceLocaleOf(articleRow);
+    if (targetLocale === sourceLocale) {
+      return NextResponse.json({ error: "Target locale is the article's source locale" }, { status: 400 });
     }
 
     const articleId: string = articleRow.id; // UUID
@@ -105,7 +110,7 @@ export async function POST(request: Request) {
     const supabase = createAdminClient();
 
     // ================================================================
-    // 1. Content (title + excerpts + content) — แปลจาก original (ภาษาไทย)
+    // 1. Content (title + excerpts + content) — แปลจาก original (ภาษาต้นฉบับ)
     // ================================================================
     let contentResult: {
       title: string;
@@ -129,16 +134,17 @@ export async function POST(request: Request) {
         longExcerpt: articleRow.long_excerpt || articleRow.original_excerpt || "",
         content: articleRow.original_content,
         includeFullContent: translateContent,
+        sourceLocale,
         isTier2Lazy: false,
       });
     }
 
     // ================================================================
-    // 2. Tags — แปลจาก original Thai tags
+    // 2. Tags — แปลจาก tags ต้นฉบับ
     // ================================================================
     const originalTags: string[] = articleRow.tags || [];
     const translatedTags = shouldTranslate("tags") && originalTags.length > 0
-      ? await translateTags(targetLocale, originalTags)
+      ? await translateTags(targetLocale, originalTags, sourceLocale)
       : undefined;
 
     // ================================================================
@@ -153,7 +159,7 @@ export async function POST(request: Request) {
         articleRow.image_alt
       );
       translatedImageAlts = Object.keys(imageAltInput).length > 0
-        ? await translateImageAlts(targetLocale, imageAltInput)
+        ? await translateImageAlts(targetLocale, imageAltInput, sourceLocale)
         : undefined;
     }
 
@@ -199,7 +205,7 @@ export async function POST(request: Request) {
       }
 
       if (Object.keys(structuredInput).length > 0) {
-        structuredResult = await translateStructuredData(targetLocale, structuredInput);
+        structuredResult = await translateStructuredData(targetLocale, structuredInput, sourceLocale);
       }
     }
 
@@ -241,7 +247,7 @@ export async function POST(request: Request) {
     if (shouldTranslate("google_schema_markup")) {
       // guard: ถ้าไม่มีค่า หรือไม่ใช่ object → ข้าม
       if (originalSchema && typeof originalSchema === "object" && !Array.isArray(originalSchema)) {
-        translatedSchema = await translateGoogleSchemaMarkup(targetLocale, originalSchema);
+        translatedSchema = await translateGoogleSchemaMarkup(targetLocale, originalSchema, sourceLocale);
         // ถ้า null (เกิด error) → เก็บเป็น undefined (ไม่เขียนทับ)
         if (translatedSchema !== null && Object.keys(translatedSchema).length === 0) {
           translatedSchema = undefined; // ป้องกันเขียน object ว่าง

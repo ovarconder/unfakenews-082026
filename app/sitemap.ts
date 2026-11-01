@@ -9,7 +9,7 @@
 // ============================================================
 
 import type { MetadataRoute } from "next";
-import { getActiveLocales, type Locale } from "@/lib/locales";
+import { getActiveLocales, sourceLocaleOf, type Locale } from "@/lib/locales";
 import {
   getBaseUrl,
   getPublishedArticleRows,
@@ -46,19 +46,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
       for (const v of activeVariants) liveLocales.add(v.locale);
 
-      // canonical = ภาษาไทย (ต้นฉบับ) หรือ variant แรก
+      // canonical = ภาษาต้นฉบับ หรือ variant แรก
+      const sourceLocale = sourceLocaleOf(article);
       const canonical =
-        activeVariants.find((v) => v.locale === "th") || activeVariants[0];
+        activeVariants.find((v) => v.locale === sourceLocale) || activeVariants[0];
 
       // สร้าง alternates.languages สำหรับ hreflang
       const languages: Record<string, string> = {};
       for (const v of activeVariants) {
         languages[v.locale] = v.url;
       }
-      // x-default → ภาษาไทย
-      const defaultLocale = activeVariants.find((v) => v.locale === "th")
-        ? "th"
-        : activeVariants[0]?.locale;
+      // x-default → ภาษาต้นฉบับ
+      const defaultLocale = canonical?.locale;
       if (defaultLocale) {
         languages["x-default"] = `${baseUrl}/${defaultLocale}/articles/${article.slug}`;
       }

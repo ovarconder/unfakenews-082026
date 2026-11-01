@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentSession } from "@/lib/auth-service";
 import { createAdminClient } from "@/lib/supabase-server";
 import { runPublishAutomation } from "@/lib/publish-automation";
+import { sourceLocaleOf } from "@/lib/locales";
 
 // ============================================================
 // Helper: parse user from request
@@ -71,6 +72,7 @@ export async function GET(
   const article = {
     id: row.id,
     slug: row.slug,
+    sourceLocale: sourceLocaleOf(row),
     originalTitle: row.original_title,
     originalExcerpt: row.original_excerpt,
     originalContent: row.original_content,
@@ -281,10 +283,10 @@ export async function PUT(
       try {
         seoResult = await runPublishAutomation({
           slug: updated.slug,
-          locale: "th",
+          locale: sourceLocaleOf(updated),
           previousStatus: existing.status,
         });
-        console.log(`[Article PUT] SEO automation for "${updated.slug}" [th]:`, seoResult);
+        console.log(`[Article PUT] SEO automation for "${updated.slug}" [${sourceLocaleOf(updated)}]:`, seoResult);
       } catch (seoErr: any) {
         // automation ล้มเหลวไม่ควร block ตัวหลัก
         console.error(`[Article PUT] SEO automation failed for "${updated.slug}":`, seoErr);
@@ -297,6 +299,7 @@ export async function PUT(
       article: {
         id: updated.id,
         slug: updated.slug,
+        sourceLocale: sourceLocaleOf(updated),
         originalTitle: updated.original_title,
         originalExcerpt: updated.original_excerpt,
         originalContent: updated.original_content,

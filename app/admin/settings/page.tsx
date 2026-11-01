@@ -87,6 +87,7 @@ interface SiteSettings {
   enableSocialShare: boolean;
   maintenanceMode: boolean;
   localeTiers: Record<string, "0" | "1" | "2">;
+  defaultSourceLocale: string;
   // OAuth Keys for login
   googleOAuthClientId?: string;
   googleOAuthClientSecret?: string;
@@ -919,6 +920,21 @@ export default function SettingsPage() {
                 <span className="text-white/30">ปิด (Off)</span> = ไม่แสดงภาษาให้ผู้ใช้เลือกเลย
               </p>
             </div>
+          </div>
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+            <label className="text-white/70 text-sm shrink-0">ภาษาต้นฉบับเริ่มต้นของโพสต์ใหม่</label>
+            <select
+              value={settings.defaultSourceLocale || "th"}
+              onChange={(e) => updateField("defaultSourceLocale", e.target.value)}
+              className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-blue-300/50"
+            >
+              {ALL_LOCALES.map((l) => (
+                <option key={l} value={l} className="bg-[#0f1f3a]">
+                  {LOCALE_NAMES[l].native} ({l})
+                </option>
+              ))}
+            </select>
+            <span className="text-white/30 text-xs">เลือกเปลี่ยนรายบทความได้ตอนสร้างโพสต์</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
             {ALL_LOCALES.map((locale) => {

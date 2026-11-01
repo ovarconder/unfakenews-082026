@@ -89,6 +89,25 @@ export const LOCALE_NAMES: Record<Locale, { native: string; english: string }> =
   ms: { native: "Bahasa Melayu", english: "Malay" },
 };
 
+// ============================================================
+// Source locale — ภาษาต้นฉบับของบทความ (articles.source_locale)
+// ============================================================
+// ต้นฉบับเก็บใน `articles` (original_*), ภาษาอื่นเก็บใน `translations`
+// แถวที่ยังไม่มีคอลัมน์ (ก่อน migration 029) ถือเป็นภาษาไทย
+
+export const DEFAULT_SOURCE_LOCALE: Locale = "th";
+
+export function normalizeSourceLocale(value?: string | null): Locale {
+  return value && ALL_LOCALES.includes(value as Locale)
+    ? (value as Locale)
+    : DEFAULT_SOURCE_LOCALE;
+}
+
+/** ภาษาต้นฉบับของแถว articles (raw DB row) */
+export function sourceLocaleOf(article?: { source_locale?: string | null } | null): Locale {
+  return normalizeSourceLocale(article?.source_locale);
+}
+
 export function getLocale(lang?: string): Locale {
   if (lang && ALL_LOCALES.includes(lang as Locale)) return lang as Locale;
   return "en";

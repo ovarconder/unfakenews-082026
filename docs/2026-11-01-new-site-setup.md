@@ -1,4 +1,6 @@
-# 🚀 คู่มือ Migration ไปเว็บใหม่ (1 เว็บ : 1 DB) — Supabase + Vercel + Custom Domain
+# 🚀 คู่มือตั้งเว็บใหม่ในเครือข่าย (1 เว็บ : 1 DB) — Supabase + Vercel + Custom Domain
+
+> อัปเดตล่าสุด: 2026-11-01 — เพิ่มขั้นตั้ง "ภาษาต้นฉบับเริ่มต้น" สำหรับเว็บภาษาอังกฤษ + migration 029
 
 > **สรุปการตัดสินใจ:** ใช้ **โค้ดชุดเดียวกัน หลาย Vercel project แต่แยก Supabase project (DB) ต่อเว็บ**
 > เหตุผล: ถ้าใช้ DB เดียวแล้วแยกด้วย prefix จะต้องแก้โค้ด `.from("...")` ทุกจุด (เสี่ยงพังมาก)
@@ -228,6 +230,7 @@ Vercel → Project → **Settings → Environment Variables**
 | `NEXT_PUBLIC_SITE_LOGO` | `/images/logo/logo-light.png` |
 | `NEXT_PUBLIC_SITE_FAVICON` | `/favicon.ico` |
 | `NEXT_PUBLIC_OG_IMAGE` | `/og-default.jpg` |
+| `NEXT_PUBLIC_DEFAULT_SOURCE_LOCALE` | `en` สำหรับเว็บเครือข่ายภาษาอังกฤษ (fallback เมื่อยังไม่ได้ตั้งใน Admin → Settings) |
 
 **Optional (Services):**
 
@@ -291,6 +294,7 @@ Checklist ทดสอบด้วยตนเอง:
 - สี (color primary / background)
 - Social / Contact
 - Analytics (GA) / AdSense
+- **ภาษาต้นฉบับเริ่มต้นของโพสต์ใหม่** (การ์ด "ภาษา") — เว็บเครือข่ายภาษาอังกฤษ (unmask.asia, factbase.asia, contextasia.org, debunk.asia) ตั้งเป็น `English`
 
 > ✅ ค่าที่ตั้งใน Admin จะ save ลง DB ของเว็บนั้น (ตาราง `site_settings`)
 > ✅ env var เป็นแค่ **default fallback** — ถ้าตั้งใน Admin จะทับค่า env
@@ -309,8 +313,8 @@ git add -A && git commit -m "..." && git push
 ```
 
 **ถ้ามี migration ใหม่:**
-1. สร้างไฟล์ `migrations/023_xxx.sql` (เรียงลำดับ) และอัปเดต `000_schema_all_in_one.sql` ให้รวมการเปลี่ยนแปลงใหม่ด้วย (เพื่อให้ DB ใหม่ได้ครบในไฟล์เดียว)
-2. **รันลงทุก DB** ด้วยคำสั่ง `psql "$DATABASE_URL" -f migrations/023_xxx.sql`
+1. สร้างไฟล์ `migrations/0NN_xxx.sql` (เลขถัดจากไฟล์ล่าสุด — ตอนนี้ล่าสุดคือ `029`) และอัปเดต `000_schema_all_in_one.sql` ให้รวมการเปลี่ยนแปลงใหม่ด้วย (เพื่อให้ DB ใหม่ได้ครบในไฟล์เดียว)
+2. **รันลงทุก DB** ด้วยคำสั่ง `psql "$DATABASE_URL" -f migrations/0NN_xxx.sql`
 3. deploy โค้ด (auto)
 
 > ⚠️ **ทุก DB ต้องรัน migration ให้ครบ** ไม่งั้นเว็บที่ไม่ได้รันจะพังเวลามีโค้ดอ้างคอลัมน์ใหม่
@@ -336,14 +340,8 @@ git add -A && git commit -m "..." && git push
 ## 📎 ไฟล์ที่เกี่ยวข้อง
 
 - **`migrations/000_schema_all_in_one.sql`** — ⭐ **ไฟล์เดียวรวม schema ทั้งหมด (แนะนำให้รันไฟล์นี้)**
-- `migrations/011`–`022` — migration เดิม (เก็บไว้เป็นประวัติ/อ้างอิง ไม่ต้องรันแยกแล้ว)
+- `migrations/011`–`029` — migration รายครั้ง (DB ใหม่ไม่ต้องรันแยก — ใช้ `000_schema_all_in_one.sql`; DB เดิมรันเฉพาะไฟล์ใหม่)
 - `supabase/migrations/00001-00006` — schema ต้นฉบับ (ถูก merge เข้า `000_schema_all_in_one.sql` แล้ว)
 - `schema-audit.sql` — ตรวจว่าตาราง/คอลัมน์ครบหรือยัง (รันใน SQL Editor ได้เลย)
-- `docs/CLONE_SETUP_GUIDE.md` — ภาพรวมการ clone project ใหม่
-- `docs/14-database-schema-reference.md` — โครงสร้างตารางทั้งหมด
-- `docs/env-variables-guide.md` — env vars สำหรับ Analytics/AdSense
+- `docs/2026-11-01-database-schema.md` — โครงสร้างตารางทั้งหมด
 - `AGENTS.md` — ข้อกำหนดโปรเจกต์ (สำคัญ)
-
----
-
-_อัปเดตล่าสุด: 2026 — หนึ่งเว็บ หนึ่ง DB (แยก Supabase project ต่อเว็บ)_

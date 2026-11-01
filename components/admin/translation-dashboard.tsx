@@ -171,8 +171,9 @@ export default function TranslationDashboard({ articles, categories }: Translati
   const buildArticleStatus = useCallback(async (master: ArticleMaster): Promise<ArticleWithTranslations> => {
     const translations: TranslationInfo[] = [];
     
+    const sourceLocale = master.sourceLocale || "th";
     for (const locale of ALL_LOCALES) {
-      if (locale === "th") {
+      if (locale === sourceLocale) {
         translations.push({ locale, tier: 1, status: "complete" });
         continue;
       }
@@ -196,7 +197,7 @@ export default function TranslationDashboard({ articles, categories }: Translati
     }
 
     const completeCount = translations.filter(t => t.status === "complete").length;
-    const totalNonThai = translations.filter(t => t.locale !== "th").length;
+    const totalNonThai = translations.filter(t => t.locale !== sourceLocale).length;
     const overallStatus: "complete" | "partial" | "pending" =
       completeCount === totalNonThai ? "complete"
       : completeCount > 0 ? "partial"
@@ -413,7 +414,7 @@ export default function TranslationDashboard({ articles, categories }: Translati
     let articleDone = 0;
 
     for (const article of needsTranslate) {
-      const localesToTranslate = ALL_LOCALES.filter(l => l !== "th");
+      const localesToTranslate = ALL_LOCALES.filter(l => l !== (article.master.sourceLocale || "th"));
       const results: TranslationBatchLog["results"] = [];
 
       for (const l of localesToTranslate) {

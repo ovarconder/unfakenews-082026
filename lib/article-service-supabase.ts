@@ -7,7 +7,7 @@
 
 import { createClient as createServerClient } from "./supabase-server";
 import { createAdminClient } from "./supabase-server";
-import type { Locale } from "./locales";
+import { sourceLocaleOf, type Locale } from "./locales";
 import type { TranslationStatus, QuickFactEntry, GlossaryEntry } from "./types";
 
 // ============================================================
@@ -82,7 +82,7 @@ export async function getTranslatedSummaries(locale: Locale): Promise<ArticleSum
   const { data: articles } = await supabase
     .from("articles")
     .select(`
-      id, slug, original_title, original_excerpt, short_excerpt, long_excerpt, original_content, tags,
+      id, slug, source_locale, original_title, original_excerpt, short_excerpt, long_excerpt, original_content, tags,
       categories(name_th, name_en, show_on_public),
       author_name, published_at, image_url, image_alt, featured
     `)
@@ -90,52 +90,51 @@ export async function getTranslatedSummaries(locale: Locale): Promise<ArticleSum
     .is("microsite_id", null) // ★ เฉพาะของ main site
     .order("published_at", { ascending: false });
 
-  if (!articles) return [];
+  if (!articles || articles.length === 0) return [];
 
-  const summaries: ArticleSummary[] = await Promise.all(
-    articles.map(async (article: any) => {
+  // ดึง translations ของทุกบทความครั้งเดียว (แทนการยิง 2 query ต่อบทความ)
+  const articleIds = articles.map((a: any) => a.id);
+  const [{ data: localeTrans }, { data: allTrans }] = await Promise.all([
+    supabase
+      .from("translations")
+      .select("article_id, title, excerpt, short_excerpt, long_excerpt, content, translation_status")
+      .eq("locale", locale)
+      .in("article_id", articleIds),
+    supabase
+      .from("translations")
+      .select("article_id, locale, translation_status")
+      .in("article_id", articleIds),
+  ]);
+  const transByArticle = new Map<string, any>(
+    (localeTrans || []).map((t: any) => [t.article_id, t])
+  );
+
+  const summaries: ArticleSummary[] = articles.map((article: any) => {
+      const sourceLocale = sourceLocaleOf(article);
       const categoryName = locale === "th"
         ? article.categories?.name_th || ""
         : article.categories?.name_en || "";
 
-      // ดึง translation ทุกฟิลด์ที่ใช้แสดงในการ์ด (title + excerpt หลากหลายแบบ)
-      const { data: trans } = await supabase
-        .from("translations")
-        .select("title, excerpt, short_excerpt, long_excerpt, content, translation_status")
-        .eq("article_id", article.id)
-        .eq("locale", locale)
-        .maybeSingle();
+      const trans = locale === sourceLocale ? undefined : transByArticle.get(article.id);
 
       const status: TranslationStatus =
-        (trans as any)?.translation_status || "pending";
+        locale === sourceLocale ? "complete" : trans?.translation_status || "pending";
 
-      const title =
-        locale === "th"
-          ? article.original_title
-          : (trans as any)?.title || article.original_title;
+      const title = trans?.title || article.original_title;
 
       // เลือก excerpt ตามลำดับ: ธรรมดา (excerpt) > สั้น > ยาว > content (ตาม locale)
-      const excerpt = resolveSummaryExcerpt(locale, article, trans as any);
+      const excerpt = resolveSummaryExcerpt(article, trans);
 
-      // ★ availableLocales — ภาษาทั้งหมดที่บทความนี้ "เผยแพร่จริง"
-      //    (เปลี่ยนค่าเฉพาะที่เป็น translation_status = 'complete')
-      //    โดยปกติ языкไทย (ต้นฉบับ) มีเสมอ เพราะบทความนี้ status = published แล้ว
-      const { data: allTrans } = await supabase
-        .from("translations")
-        .select("locale, translation_status")
-        .eq("article_id", article.id);
-
-      const availableLocales = ["th"];
-      if (Array.isArray(allTrans)) {
-        for (const tr of allTrans as any[]) {
-          if (
-            tr?.locale &&
-            tr.locale !== "th" &&
-            tr.translation_status === "complete" &&
-            !availableLocales.includes(tr.locale)
-          ) {
-            availableLocales.push(tr.locale);
-          }
+      // ★ availableLocales — ต้นฉบับ + ภาษาที่ translation_status = 'complete'
+      const availableLocales: string[] = [sourceLocale];
+      for (const tr of (allTrans || []) as any[]) {
+        if (
+          tr.article_id === article.id &&
+          tr.locale !== sourceLocale &&
+          tr.translation_status === "complete" &&
+          !availableLocales.includes(tr.locale)
+        ) {
+          availableLocales.push(tr.locale);
         }
       }
 
@@ -155,8 +154,7 @@ export async function getTranslatedSummaries(locale: Locale): Promise<ArticleSum
         availableLocales,
         categoryHidden: article.categories?.show_on_public === false,
       };
-    })
-  );
+    });
 
   // ★ กรองบทความที่อยู่ในหมวด show_on_public = false ออกจากหน้า public
   //    (เช่น home / articles) เพื่อไม่ให้ชื่อหมวดที่ซ่อนไว้หลุดออกไป
@@ -166,24 +164,10 @@ export async function getTranslatedSummaries(locale: Locale): Promise<ArticleSum
 /**
  * เลือก excerpt ตามลำดับความสำคัญ: ธรรมดา (excerpt) > สั้น (short_excerpt) > ยาว (long_excerpt)
  * ถ้าไม่มีเลยจริงๆ ค่อย fallback ไปใช้เนื้อหา (content)
- * - ภาษาไทย → ใช้ field ต้นฉบับจาก articles
+ * - ภาษาต้นฉบับ (trans = undefined) → ใช้ field ต้นฉบับจาก articles
  * - ภาษาอื่น → ใช้ field ที่แปลแล้วจาก translations ก่อน แล้วค่อย fallback ไปต้นฉบับ
  */
-function resolveSummaryExcerpt(
-  locale: Locale,
-  article: any,
-  trans: any
-): string {
-  if (locale === "th") {
-    return (
-      article.original_excerpt ||
-      article.short_excerpt ||
-      article.long_excerpt ||
-      article.original_content ||
-      ""
-    );
-  }
-
+function resolveSummaryExcerpt(article: any, trans: any): string {
   // มีการแปลแล้ว → ใช้ฟิลด์ที่แปลตามลำดับ แล้วค่อย fallback ไปต้นฉบับ
   if (trans) {
     return (
@@ -426,7 +410,7 @@ export async function getFullArticle(
   let { data: article } = await client
     .from("articles")
     .select(`
-      id, slug, status, original_title, original_excerpt, original_content, tags,
+      id, slug, status, source_locale, original_title, original_excerpt, original_content, tags,
       categories(name_th, name_en, show_on_public),
       author_name, published_at, created_at, image_url, image_alt, featured,
       image_credit, image_photographer, image_source_url, image_year,
@@ -450,6 +434,8 @@ export async function getFullArticle(
   }
 
   const art = article as any;
+  const sourceLocale = sourceLocaleOf(art);
+  const isSource = locale === sourceLocale;
   const categoryName = locale === "th"
     ? art.categories?.name_th || ""
     : art.categories?.name_en || "";
@@ -481,25 +467,25 @@ export async function getFullArticle(
 
   // ★ imageAltTexts — alt text ของรูปที่ "แปลแล้ว" (key = URL รูป)
   //    ใช้ในหน้า public เพื่อแทน alt เดิมใน markdown content
-  //    - locale = th → ไม่มี (ใช้ต้นฉบับ)
+  //    - ภาษาต้นฉบับ → ไม่มี (ใช้ต้นฉบับ)
   //    - locale อื่น → อ่านจาก translations.image_alt_texts (ถ้ามี)
   const translatedImageAlts: Record<string, string> | undefined =
-    locale !== "th" && trans?.image_alt_texts && typeof trans.image_alt_texts === "object"
+    !isSource && trans?.image_alt_texts && typeof trans.image_alt_texts === "object"
       ? (trans.image_alt_texts as Record<string, string>)
       : undefined;
 
   // ★ availableLocales — ภาษาทั้งหมดที่บทความนี้ "เผยแพร่จริง"
-  //    (ไทยต้นฉบับเสมอ + translation_status = 'complete')
+  //    (ต้นฉบับเสมอ + translation_status = 'complete')
   const { data: allTrans } = await supabase
     .from("translations")
     .select("locale, translation_status")
     .eq("article_id", art.id);
-  const availableLocales: string[] = ["th"];
+  const availableLocales: string[] = [sourceLocale];
   if (Array.isArray(allTrans)) {
     for (const tr of allTrans as any[]) {
       if (
         tr?.locale &&
-        tr.locale !== "th" &&
+        tr.locale !== sourceLocale &&
         tr.translation_status === "complete" &&
         !availableLocales.includes(tr.locale)
       ) {
@@ -524,11 +510,11 @@ export async function getFullArticle(
   //   - translations.quick_facts เก็บเป็น object { label: value } → ต้องแปลงกลับเป็น array
   //   - translations.glossary เก็บเป็น array ของ { term, context } → แปลงเป็น GlossaryEntry[]
   const translatedQuickFacts =
-    locale !== "th" ? normalizeTranslatedQuickFacts(trans?.quick_facts) : undefined;
+    !isSource ? normalizeTranslatedQuickFacts(trans?.quick_facts) : undefined;
   const translatedGlossary =
-    locale !== "th" ? normalizeTranslatedGlossary(trans?.glossary) : undefined;
+    !isSource ? normalizeTranslatedGlossary(trans?.glossary) : undefined;
   const translatedEntityName =
-    locale !== "th" && trans?.entity_name ? (trans.entity_name as string) : undefined;
+    !isSource && trans?.entity_name ? (trans.entity_name as string) : undefined;
 
   // Entity name: ใช้คำแปล (ถ้ามี) ไม่งั้นใช้ต้นฉบับ
   const effectiveEntityName = translatedEntityName || baseEntityName;
@@ -566,12 +552,12 @@ export async function getFullArticle(
   };
 
   // Google Schema Markup สำหรับบทความแปล:
-  //   - ยังไม่มีการแปล (locale == th) → ใช้จาก articles table (ต้นฉบับ)
+  //   - ภาษาต้นฉบับ → ใช้จาก articles table
   //   - มีคำแปล → ใช้จาก translations table (ที่แปลแล้ว) ถ้ามี ไม่ใช่ fallback ไปต้นฉบับ
   //   - ถ้า translations.google_schema_markup เป็น null → fallback ไป articles table
   let googleSchema: Record<string, unknown> | undefined = undefined;
 
-  if (locale !== "th" && trans && trans.google_schema_markup) {
+  if (!isSource && trans && trans.google_schema_markup) {
     googleSchema = typeof trans.google_schema_markup === "string"
       ? JSON.parse(trans.google_schema_markup)
       : trans.google_schema_markup;
@@ -579,8 +565,8 @@ export async function getFullArticle(
     googleSchema = googleSchemaMarkup || undefined;
   }
 
-  // If Thai, return original
-  if (locale === "th") {
+  // ภาษาต้นฉบับ → คืนต้นฉบับ
+  if (isSource) {
     return {
       ...baseArticle,
       title: art.original_title,
@@ -646,7 +632,7 @@ export async function getArticleSEO(slug: string, locale: Locale): Promise<{
 
   const { data: rawArticle } = await supabase
     .from("articles")
-    .select("id, original_title, original_excerpt")
+    .select("id, source_locale, original_title, original_excerpt")
     .eq("slug", slug)
     .eq("status", "published")
     .is("microsite_id", null) // ★ เฉพาะของ main site
@@ -655,7 +641,7 @@ export async function getArticleSEO(slug: string, locale: Locale): Promise<{
   if (!rawArticle) return null;
   const article = rawArticle as any;
 
-  if (locale === "th") {
+  if (locale === sourceLocaleOf(article)) {
     return {
       title: article.original_title,
       description: article.original_excerpt,

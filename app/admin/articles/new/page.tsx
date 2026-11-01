@@ -4,7 +4,7 @@
 
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Upload, RefreshCw, CheckCircle2, XCircle } from "lucide-react";
 import ArticleEditor from "@/components/admin/article-editor";
@@ -13,6 +13,15 @@ import type { ArticleFormData } from "@/components/admin/article-editor";
 
 export default function NewArticlePage() {
   const router = useRouter();
+
+  // ภาษาต้นฉบับเริ่มต้นจาก Settings (รอโหลดก่อน render editor เพื่อให้ค่าเริ่มต้นถูก)
+  const [defaultSourceLocale, setDefaultSourceLocale] = useState<string | null>(null);
+  useEffect(() => {
+    adminFetch("/api/admin/settings")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => setDefaultSourceLocale(data?.settings?.defaultSourceLocale || "th"))
+      .catch(() => setDefaultSourceLocale("th"));
+  }, []);
 
   // ================================================================
   // Import JSON
@@ -89,7 +98,7 @@ export default function NewArticlePage() {
       <div className="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <h1 className="text-base sm:text-2xl font-bold text-white">เขียนบทความใหม่</h1>
-          <p className="text-white/50 text-sm mt-1">สร้างบทความภาษาไทยฉบับเต็ม</p>
+          <p className="text-white/50 text-sm mt-1">สร้างบทความต้นฉบับ (เลือกภาษาต้นฉบับได้ข้างช่อง slug)</p>
         </div>
 
         {/* ── Import JSON ── */}
@@ -135,7 +144,13 @@ export default function NewArticlePage() {
       </div>
 
       <div className="rounded-xl bg-gradient-to-br from-[#0f1f3a] to-[#162545] border border-white/10 p-6">
-        <ArticleEditor onSave={handleSave} locale="th" />
+        {defaultSourceLocale ? (
+          <ArticleEditor onSave={handleSave} defaultSourceLocale={defaultSourceLocale} />
+        ) : (
+          <div className="flex items-center gap-2 text-white/50 text-sm">
+            <RefreshCw size={14} className="animate-spin" /> กำลังโหลด...
+          </div>
+        )}
       </div>
     </div>
   );

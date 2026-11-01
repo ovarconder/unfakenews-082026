@@ -24,7 +24,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { pingIndexNow } from "./indexnow";
 import { submitUrlsToGoogle } from "./google-indexing";
 import { getArticleIndexTargets } from "./seo-utils";
-import { getActiveLocales } from "./locales";
+import { getActiveLocales, sourceLocaleOf } from "./locales";
 import { createAdminClient } from "./supabase-server";
 
 export interface PublishNotificationInput {
@@ -58,14 +58,14 @@ export async function isVariantPublished(
 
   const { data: article } = await supabase
     .from("articles")
-    .select("id, slug, status, published_at")
+    .select("id, slug, status, published_at, source_locale")
     .eq("slug", slug)
     .maybeSingle();
 
   if (!article) return false;
 
-  // ภาษาไทย = ต้นฉบับ ต้อง status published
-  if (locale === "th") {
+  // ภาษาต้นฉบับ = ต้อง status published
+  if (locale === sourceLocaleOf(article)) {
     return article.status === "published";
   }
 
@@ -108,7 +108,7 @@ export async function runPublishAutomation(
   const { data: articleRow } = await supabase
     .from("articles")
     .select(`
-      id, slug, status, published_at, original_title, updated_at,
+      id, slug, source_locale, status, published_at, original_title, updated_at,
       categories(show_on_public),
       translations(article_id, locale, title, is_full_translated,
                    translated_at, translation_status)

@@ -25,7 +25,9 @@ export interface GlossaryEntry {
 export interface ArticleMaster {
   id: string;
   slug: string;
-  // ต้นฉบับภาษาไทย
+  /** ภาษาของ original_* (articles.source_locale) — ค่าเดิมคือ "th" */
+  sourceLocale?: string;
+  // ต้นฉบับ (ภาษาตาม sourceLocale)
   originalTitle: string;
   originalExcerpt: string;
   originalContent: string;

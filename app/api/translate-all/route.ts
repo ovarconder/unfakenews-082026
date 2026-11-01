@@ -16,7 +16,7 @@ import {
   translateGoogleSchemaMarkup,
 } from "@/lib/translate-service";
 import type { Locale } from "@/lib/locales";
-import { isDisabled, isTier2 } from "@/lib/locales";
+import { isDisabled, isTier2, sourceLocaleOf } from "@/lib/locales";
 import { createAdminClient } from "@/lib/supabase-server";
 import { runPublishAutomation } from "@/lib/publish-automation";
 import { extractImageAltsFromContent } from "@/lib/image-alt-utils";
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
   try {
     const { locale } = await request.json();
 
-    if (!locale || locale === "th") {
+    if (!locale) {
       return NextResponse.json({ error: "Invalid locale" }, { status: 400 });
     }
 
@@ -68,6 +68,11 @@ export async function POST(request: Request) {
     const results: { slug: string; status: string }[] = [];
 
     for (const row of articles) {
+      const sourceLocale = sourceLocaleOf(row);
+      if (sourceLocale === targetLocale) {
+        results.push({ slug: row.slug, status: "skipped (source locale)" });
+        continue;
+      }
       try {
         // 1. Translate content (title + excerpts)
         const contentResult = await translateArticleContent(targetLocale, {
@@ -77,12 +82,13 @@ export async function POST(request: Request) {
           content: isTier2Locale ? undefined : row.original_content,
           includeFullContent: !isTier2Locale,
           isTier2Lazy: isTier2Locale,
+          sourceLocale,
         });
 
         // 2. Translate tags
         const originalTags: string[] = row.tags || [];
         const translatedTags = originalTags.length > 0
-          ? await translateTags(targetLocale, originalTags)
+          ? await translateTags(targetLocale, originalTags, sourceLocale)
           : [];
 
         // 3. Translate image alt texts — รูปหน้าปก + รูปทั้งหมดในเนื้อหา
@@ -92,7 +98,7 @@ export async function POST(request: Request) {
           row.image_alt
         );
         const translatedImageAlts = Object.keys(imageAltInput).length > 0
-          ? await translateImageAlts(targetLocale, imageAltInput)
+          ? await translateImageAlts(targetLocale, imageAltInput, sourceLocale)
           : {};
 
         // 4. Translate structured entity data
@@ -127,7 +133,7 @@ export async function POST(request: Request) {
           | undefined;
 
         if (Object.keys(structuredInput).length > 0) {
-          structuredResult = await translateStructuredData(targetLocale, structuredInput);
+          structuredResult = await translateStructuredData(targetLocale, structuredInput, sourceLocale);
         }
 
         // 4.5 SEO title/description + Google Schema Markup
@@ -142,7 +148,7 @@ export async function POST(request: Request) {
         let translatedSchema: Record<string, unknown> | null = null;
         const originalSchema = row.google_schema_markup as Record<string, unknown> | null | undefined;
         if (originalSchema && typeof originalSchema === "object" && !Array.isArray(originalSchema)) {
-          const res = await translateGoogleSchemaMarkup(targetLocale, originalSchema);
+          const res = await translateGoogleSchemaMarkup(targetLocale, originalSchema, sourceLocale);
           if (res !== null && Object.keys(res).length > 0) translatedSchema = res;
         }
 

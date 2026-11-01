@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth-service";
 import { createAdminClient } from "@/lib/supabase-server";
+import { normalizeSourceLocale, sourceLocaleOf } from "@/lib/locales";
 
 // ─── Export shape ──────────────────────────────────────────────
 
@@ -20,6 +21,8 @@ export interface ArticleTransferPayload {
 
   article: {
     slug: string;
+    /** ภาษาของ original_* — ไม่มี (ไฟล์เก่า) = "th" */
+    source_locale?: string;
     original_title: string;
     original_excerpt: string | null;
     original_content: string | null;
@@ -118,6 +121,7 @@ export async function GET(
 
     article: {
       slug: row.slug,
+      source_locale: sourceLocaleOf(row),
       original_title: row.original_title ?? "",
       original_excerpt: row.original_excerpt ?? null,
       original_content: row.original_content ?? null,
@@ -256,9 +260,14 @@ export async function POST(
   //   ถ้า slug ใน payload ต่างจาก slug ใน URL → ใช้ slug ใน URL เป็นหลัก
   //   (ป้องกันกรณี import ไฟล์ผิด แต่ต้องการ override slug เป้าหมาย)
   const targetSlug = slug;
+  const sourceLocale = normalizeSourceLocale(payload.article.source_locale);
+  // ใช้เวลาเดียวกันทั้ง content_updated_at และ translated_at
+  // ไม่งั้นคำแปลที่ import มาจะถูกมองว่า "ล้าสมัย" ทันที (translated_at เก่ากว่า content_updated_at)
+  const importedAt = new Date().toISOString();
 
   const articleUpsert: Record<string, unknown> = {
     slug: targetSlug,
+    source_locale: sourceLocale,
     original_title: payload.article.original_title,
     // NOT NULL — fallback เป็น string ว่างถ้า null (ป้องกัน NOT NULL constraint)
     original_excerpt: payload.article.original_excerpt ?? "",
@@ -286,7 +295,7 @@ export async function POST(
     long_excerpt: payload.article.long_excerpt,
     social_caption: payload.article.social_caption,
     google_schema_markup: payload.article.google_schema_markup,
-    content_updated_at: new Date().toISOString(),
+    content_updated_at: importedAt,
   };
 
   const { data: upserted, error: upsertErr } = await supabase
@@ -309,12 +318,13 @@ export async function POST(
   const translationResults: { locale: string; ok: boolean; error?: string }[] = [];
 
   for (const t of payload.translations ?? []) {
-    if (!t.locale) continue;
+    // ข้ามคำแปลที่เป็นภาษาเดียวกับต้นฉบับ (เช่นไฟล์ที่เรียบเรียงใหม่เป็น en แต่ยังมี translations.en ค้างอยู่)
+    if (!t.locale || t.locale === sourceLocale) continue;
 
     const tUpsert: Record<string, unknown> = {
       article_id: articleId,
       locale: t.locale,
-      translated_at: t.translated_at ?? new Date().toISOString(),
+      translated_at: importedAt,
       translation_status: t.translation_status ?? "complete",
     };
 

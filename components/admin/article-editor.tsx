@@ -44,20 +44,25 @@ import {
   Youtube,
 } from "lucide-react";
 import { ImageUploader } from "@/components/ui/image-uploader";
+import { ALL_LOCALES, DEFAULT_SOURCE_LOCALE, LOCALE_NAMES } from "@/lib/locales";
 
 interface ArticleEditorProps {
   initialData?: ArticleMaster;
   onSave: (data: ArticleFormData) => Promise<void>;
   onDelete?: () => Promise<void>;
   /**
-   * locale ที่กำลังแก้ไข (ค่าเริ่มต้น "th")
+   * locale ที่ใช้แสดงชื่อ/คำอธิบายหมวดหมู่ (ค่าเริ่มต้น = ภาษาต้นฉบับ)
    * ใช้แสดงคำอธิบายหมวดหมู่ให้ตรงภาษา — "th" → description_th, อื่น ๆ → description_en
    */
   locale?: string;
+  /** ภาษาต้นฉบับเริ่มต้นสำหรับโพสต์ใหม่ (จาก site_settings.default_source_locale) */
+  defaultSourceLocale?: string;
 }
 
 export interface ArticleFormData {
   slug: string;
+  /** ภาษาของ original_* (articles.source_locale) — เลือกได้ตอนสร้างเท่านั้น */
+  sourceLocale?: string;
   originalTitle: string;
   originalExcerpt: string;
   originalContent: string;
@@ -144,7 +149,12 @@ async function uploadImage(file: File): Promise<string> {
 // ============================================================
 
 
-export function ArticleEditor({ initialData, onSave, onDelete, locale = "th" }: ArticleEditorProps) {
+export function ArticleEditor({ initialData, onSave, onDelete, locale, defaultSourceLocale }: ArticleEditorProps) {
+  const [sourceLocale, setSourceLocale] = useState<string>(
+    initialData?.sourceLocale || defaultSourceLocale || DEFAULT_SOURCE_LOCALE
+  );
+  const isSourceThai = sourceLocale === "th";
+  const displayLocale = locale || sourceLocale;
   // 1. Declare All State first to avoid TDZ (Temporal Dead Zone) Errors
   const [title, setTitle] = useState(initialData?.originalTitle || "");
   const [slug, setSlug] = useState(initialData?.slug || "");
@@ -710,11 +720,12 @@ export function ArticleEditor({ initialData, onSave, onDelete, locale = "th" }: 
     try {
       await onSave({
         slug,
+        sourceLocale,
         originalTitle: title,
         originalExcerpt: excerpt || content.slice(0, 200).replace(/[#*\n]/g, ""),
         originalContent: content,
         category,
-        author: author || "ทีมงาน UnFake News",
+        author: author || (isSourceThai ? "ทีมงาน UnFake News" : "UnFake News Team"),
         publishedAt,
         imageUrl: imageUrl || undefined,
         imageCredit: imageCredit.trim() || undefined,
@@ -788,14 +799,14 @@ export function ArticleEditor({ initialData, onSave, onDelete, locale = "th" }: 
 
   // ── helper: เลือกชื่อหมวดหมู่ตาม locale (ไทย → nameTH, อื่น ๆ → nameEN ถ้ามี)
   const categoryName = (cat: { nameTH: string; nameEN?: string }): string =>
-    locale !== "th" && cat.nameEN ? cat.nameEN : cat.nameTH;
+    displayLocale !== "th" && cat.nameEN ? cat.nameEN : cat.nameTH;
 
   // ── helper: เลือกคำอธิบายหมวดหมู่ตาม locale (ไทย → descriptionTH, อื่น ๆ → descriptionEN ถ้ามี)
   const categoryDescription = (cat: {
     descriptionTH?: string;
     descriptionEN?: string;
   }): string | undefined =>
-    locale !== "th"
+    displayLocale !== "th"
       ? cat.descriptionEN || cat.descriptionTH
       : cat.descriptionTH || cat.descriptionEN;
 
@@ -1050,7 +1061,20 @@ export function ArticleEditor({ initialData, onSave, onDelete, locale = "th" }: 
           </button>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-white/30 text-sm">/th/articles/</span>
+          <select
+            value={sourceLocale}
+            onChange={(e) => setSourceLocale(e.target.value)}
+            disabled={!!initialData}
+            title={initialData ? "ภาษาต้นฉบับเปลี่ยนไม่ได้หลังสร้างบทความ" : "ภาษาต้นฉบับของบทความนี้"}
+            className="px-2 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-amber-300/50 disabled:opacity-60"
+          >
+            {ALL_LOCALES.map((l) => (
+              <option key={l} value={l} className="bg-[#0f1f3a]">
+                {LOCALE_NAMES[l].native}
+              </option>
+            ))}
+          </select>
+          <span className="text-white/30 text-sm">/{sourceLocale}/articles/</span>
           <input
             type="text"
             value={slug}

@@ -66,7 +66,7 @@ function normalizeToQuickFacts(raw: unknown): QuickFactEntry[] | undefined {
 
 /**
  * หา translation สำหรับ locale ที่กำหนด
- * Fallback chain: locale → en → ภาษาไทย (original columns in articles)
+ * Fallback chain: locale → en → ต้นฉบับ (original columns in articles)
  */
 function findBestTranslation(
   translations: TranslationRow[],
@@ -86,7 +86,7 @@ function findBestTranslation(
 
 /**
  * สร้าง ArticleMaster-like object สำหรับ locale ที่เลือก
- * Fallback chain: locale → en → ภาษาไทย (original)
+ * Fallback chain: locale → en → ต้นฉบับ (original)
  *
  * ★ Slug ห้ามแก้ — ใช้ slug เดียวกันทุก locale
  */
@@ -95,12 +95,12 @@ function buildLocaleArticle(
   translations: TranslationRow[],
   locale: string
 ): ArticleMaster {
-  // ภาษาไทย = ต้นฉบับ
-  if (locale === "th") return original;
+  // ภาษาต้นฉบับ = articles table
+  if (locale === (original.sourceLocale || "th")) return original;
 
   const source = findBestTranslation(translations, locale);
 
-  // ถ้าไม่มี translation เลย → ใช้ของภาษาไทย (original) ตามเดิม
+  // ถ้าไม่มี translation เลย → ใช้ต้นฉบับ (original) ตามเดิม
   if (!source) return original;
 
   return {
@@ -131,7 +131,10 @@ export default function EditArticleClient({
   // ================================================================
   // Locale state — เลือก locale ที่ต้องการแก้ไข
   // ================================================================
-  const [selectedLocale, setSelectedLocale] = useState<string>("th");
+  const sourceLocale = article.sourceLocale || "th";
+  const sourceName = LOCALE_NAMES[sourceLocale as keyof typeof LOCALE_NAMES]?.native || sourceLocale;
+  const [selectedLocale, setSelectedLocale] = useState<string>(sourceLocale);
+  const isSourceSelected = selectedLocale === sourceLocale;
 
   // ★ Stale detection — คำแปล locale ใด "ล้าสมัย" (ต้นฉบับถูกแก้หลังแปล)
   //   เทียบ translations.translated_at กับ article.content_updated_at
@@ -139,7 +142,7 @@ export default function EditArticleClient({
   if (contentUpdatedAt) {
     const contentMs = new Date(contentUpdatedAt).getTime();
     for (const t of translations) {
-      if (t.locale && t.locale !== "th" && t.translated_at) {
+      if (t.locale && t.locale !== sourceLocale && t.translated_at) {
         staleLocales[t.locale] = new Date(t.translated_at).getTime() < contentMs;
       }
     }
@@ -162,19 +165,19 @@ export default function EditArticleClient({
   }
   // Fill missing locales
   for (const l of ALL_LOCALES) {
-    if (l !== "th" && !localeStatusMap[l]) {
+    if (l !== sourceLocale && !localeStatusMap[l]) {
       localeStatusMap[l] = "pending";
     }
   }
 
   // ================================================================
   // Save
-  //   locale === "th"  → save to articles table (ไม่ auto-translate)
-  //   locale !== "th"  → save to translations table
+  //   ภาษาต้นฉบับ → save to articles table (ไม่ auto-translate)
+  //   ภาษาอื่น     → save to translations table
   // ================================================================
   const handleSave = async (data: ArticleFormData) => {
-    if (selectedLocale === "th") {
-      // === บันทึกต้นฉบับภาษาไทย → articles table ===
+    if (isSourceSelected) {
+      // === บันทึกต้นฉบับ → articles table ===
       const res = await adminFetch(`/api/admin/articles/${article.slug}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -521,29 +524,28 @@ export default function EditArticleClient({
 
       {/* ================================================================
            Locale Selector — เลือก locale ที่ต้องการแก้ไข
-           ถ้าเลือก "th" = แก้ต้นฉบับภาษาไทย → articles table
+           ถ้าเลือกภาษาต้นฉบับ = แก้ต้นฉบับ → articles table
            ถ้าเลือกภาษาอื่น = แก้คำแปล → translations table
       ================================================================ */}
       <div className="rounded-xl bg-gradient-to-br from-[#0f1f3a] to-[#162545] border border-white/10 p-4 mb-6">
         <div className="flex items-center gap-3 mb-3">
           <label className="text-white/60 text-sm font-medium">เลือกภาษา</label>
           <div className="flex flex-wrap gap-2">
-            {/* Thai = original language */}
+            {/* ภาษาต้นฉบับ (articles.source_locale) */}
             <button
-              onClick={() => { setSelectedLocale("th"); setManualError(null); setManualSuccess(false); }}
+              onClick={() => { setSelectedLocale(sourceLocale); setManualError(null); setManualSuccess(false); }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition-all ${
-                selectedLocale === "th"
+                isSourceSelected
                   ? "border-amber-400/50 bg-amber-400/10 text-amber-300 font-medium"
                   : "border-white/10 bg-white/5 text-white/40 hover:text-white/60"
               }`}
             >
-              <span>🇹🇭</span>
-              <span>ไทย</span>
-              <span className="text-[9px] opacity-60">TH</span>
+              <span>{sourceName}</span>
+              <span className="text-[9px] opacity-60">{sourceLocale.toUpperCase()} · ต้นฉบับ</span>
             </button>
 
             {/* Other locales */}
-            {ALL_LOCALES.filter((l) => l !== "th").map((locale) => {
+            {ALL_LOCALES.filter((l) => l !== sourceLocale).map((locale) => {
               // ใช้ localStatus (อัปเดตทันทีหลังกดแปล) ถ้ามี ไม่งั้นใช้จาก prop translations
               const status = localStatus[locale] || localeStatusMap[locale];
               const isSelected = locale === selectedLocale;
@@ -559,7 +561,7 @@ export default function EditArticleClient({
                     }}
                     title={
                       isStale
-                        ? `⚠️ ต้นฉบับภาษาไทยถูกแก้ไขหลังการแปลครั้งล่าสุด — ควรกด "แปลใหม่"`
+                        ? `⚠️ ต้นฉบับถูกแก้ไขหลังการแปลครั้งล่าสุด — ควรกด "แปลใหม่"`
                         : undefined
                     }
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition-all ${
@@ -586,7 +588,7 @@ export default function EditArticleClient({
                       ต้องแปลใหม่
                     </span>
                   )}
-                  {/* ปุ่มแปลอัตโนมัติ — กดซ้ำได้เสมอ (เพื่อแปลใหม่เมื่อต้นฉบับไทยแก้ไข / มีข้อมูลเพิ่ม) */}
+                  {/* ปุ่มแปลอัตโนมัติ — กดซ้ำได้เสมอ (เพื่อแปลใหม่เมื่อต้นฉบับแก้ไข / มีข้อมูลเพิ่ม) */}
                   <button
                     onClick={() => handleAutoTranslate(locale)}
                     disabled={
@@ -629,15 +631,13 @@ export default function EditArticleClient({
 
         {/* Info bar */}
         <div className={`px-3 py-2 rounded-lg text-xs ${
-          selectedLocale === "th"
+          isSourceSelected
             ? "bg-amber-400/10 border border-amber-400/20 text-amber-300/80"
             : "bg-emerald-400/10 border border-emerald-400/20 text-emerald-300/80"
         }`}>
-          {selectedLocale === "th"
-            ? "🟡 กำลังแก้ไขต้นฉบับภาษาไทย — บันทึกแล้วไม่แปลอัตโนมัติ ให้กดปุ่ม \"แปลอัตโนมัติ\" ทีละภาษาเอาเอง"
-            : selectedLocale === "en"
-            ? "🟢 กำลังแก้ไขภาษาอังกฤษ — ภาษาที่ไม่มีคำแปลจะ fallback เป็นภาษาไทย"
-            : `🟢 กำลังแก้ไข ${LOCALE_NAMES[selectedLocale as keyof typeof LOCALE_NAMES]?.native || selectedLocale} — ฟิลด์ที่ไม่มีคำแปลของภาษานี้จะ fallback เป็นภาษาอังกฤษ (ถ้ามี) หรือภาษาไทย`}
+          {isSourceSelected
+            ? `🟡 กำลังแก้ไขต้นฉบับ (${sourceName}) — บันทึกแล้วไม่แปลอัตโนมัติ ให้กดปุ่ม "แปลอัตโนมัติ" ทีละภาษาเอาเอง`
+            : `🟢 กำลังแก้ไข ${LOCALE_NAMES[selectedLocale as keyof typeof LOCALE_NAMES]?.native || selectedLocale} — ฟิลด์ที่ไม่มีคำแปลจะ fallback เป็นต้นฉบับ (${sourceName})`}
         </div>
 
         {/* Translate success/error messages */}
@@ -656,9 +656,9 @@ export default function EditArticleClient({
 
       {/* ================================================================
            Manual Translation Manager (เฉพาะ title, excerpt, content)
-           — ซ่อนเมื่อเลือกภาษาไทย (เพราะภาษาไทย = original)
+           — ซ่อนเมื่อเลือกภาษาต้นฉบับ
       ================================================================ */}
-      {selectedLocale !== "th" && (
+      {!isSourceSelected && (
         <div className="rounded-xl bg-gradient-to-br from-[#0f1f3a] to-[#162545] border border-white/10 p-6 mb-6">
           <h2 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
             แปลภาษาด้วยตนเอง (เฉพาะ Title, Excerpt, Content)
@@ -725,7 +725,7 @@ export default function EditArticleClient({
 
       {/* ================================================================
            Article Editor — รองรับทุก locale
-           ถ้าเลือกไทย → แก้ไข articles table (ต้นฉบับ)
+           ถ้าเลือกภาษาต้นฉบับ → แก้ไข articles table (ต้นฉบับ)
            ถ้าเลือกภาษาอื่น → แก้ไข translations table
       ================================================================ */}
       <div className="rounded-xl bg-gradient-to-br from-[#0f1f3a] to-[#162545] border border-white/10 p-6">
@@ -734,16 +734,16 @@ export default function EditArticleClient({
             <span>📝</span>
             ฟิลด์ทั้งหมดของบทความ
             <span className="text-white/30 font-normal text-xs">
-              ({selectedLocale === "th"
-                ? "ต้นฉบับภาษาไทย"
+              ({isSourceSelected
+                ? `ต้นฉบับ ${sourceName}`
                 : `คำแปล ${LOCALE_NAMES[selectedLocale as keyof typeof LOCALE_NAMES]?.native || selectedLocale}`}
               )
             </span>
           </h3>
           <p className="text-white/30 text-xs mt-1">
-            {selectedLocale === "th"
+            {isSourceSelected
               ? "บันทึกที่ articles table (ต้นฉบับ) — แปลด้วยปุ่ม \"แปลอัตโนมัติ\" ด้านบน ทีละภาษา"
-              : `บันทึกที่ translations table (ไม่กระทบต้นฉบับไทย) — Fallback chain: ${LOCALE_NAMES[selectedLocale as keyof typeof LOCALE_NAMES]?.native || selectedLocale} → อังกฤษ → ไทย`}
+              : `บันทึกที่ translations table (ไม่กระทบต้นฉบับ) — Fallback chain: ${LOCALE_NAMES[selectedLocale as keyof typeof LOCALE_NAMES]?.native || selectedLocale} → ต้นฉบับ (${sourceName})`}
           </p>
         </div>
 

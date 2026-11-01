@@ -8,7 +8,7 @@
 // Content-Type: application/xml ได้โดยตรง 100%
 // ============================================================
 
-import { getActiveLocales, type Locale } from "@/lib/locales";
+import { getActiveLocales, sourceLocaleOf, type Locale } from "@/lib/locales";
 import {
   getBaseUrl,
   getPublishedArticleRows,
@@ -55,8 +55,9 @@ export async function GET(): Promise<Response> {
 
       for (const v of activeVariants) liveLocales.add(v.locale);
 
+      const sourceLocale = sourceLocaleOf(article);
       const canonical =
-        activeVariants.find((v) => v.locale === "th") || activeVariants[0];
+        activeVariants.find((v) => v.locale === sourceLocale) || activeVariants[0];
 
       entries.push({
         loc: canonical.url,

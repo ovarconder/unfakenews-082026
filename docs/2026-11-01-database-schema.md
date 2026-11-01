@@ -1,4 +1,6 @@
-# 14 — Database Schema Reference (Supabase)
+# Database Schema Reference (Supabase)
+
+> อัปเดตล่าสุด: 2026-11-01 — เพิ่ม `articles.source_locale`, `site_settings.default_source_locale` (migration 029)
 
 > เอกสารอ้างอิง schema/tables ของโปรเจกต์ UnFakeNews
 > อะปเดตจากโค้ด (`lib/supabase-types.ts`, `lib/microsite-types.ts`, `lib/site-settings.ts`, `lib/microsite-service.ts`)
@@ -28,13 +30,14 @@
 
 ## 🧱 Table: `articles`
 
-บทความ master (เนื้อหาต้นฉบับเป็นภาษาไทย) — article_id ใช้เป็น key หลักของ `translations`
+บทความ master (เนื้อหาต้นฉบับ ภาษาตาม `source_locale`) — article_id ใช้เป็น key หลักของ `translations`
 
 | column | type | หมายเหตุ |
 |--------|------|----------|
 | `id` | uuid (PK) | |
 | `slug` | text | unique |
-| `original_title` | text | ชื่อภาษาไทยต้นฉบับ |
+| `source_locale` | text | ภาษาของ `original_*` (default `'th'`) — migration 029 |
+| `original_title` | text | ชื่อต้นฉบับ |
 | `original_excerpt` | text | คำโปรยต้นฉบับ |
 | `original_content` | text | เนื้อหาต้นฉบับ |
 | `category_id` | uuid (FK → categories) | |
@@ -263,6 +266,7 @@ Junction — สิทธิ์ผู้ใช้ในแต่ละ microsite
 | `support_account_number` | text (nullable) | ⚠️ column ใหม่ |
 | `updated_at` | timestamptz | |
 | `updated_by` | text (nullable) | |
+| `default_source_locale` | text | ภาษาต้นฉบับเริ่มต้นของโพสต์ใหม่ (default `'th'`) — migration 029 |
 
 > ⚠️ **คอลัมน์ใหม่ที่เพิ่มในโปรเจกต์นี้** (schema ที่เอามาจากโปรเจกต์อื่นยังไม่มี):
 > กลุ่ม OAuth (4 ตัว) + กลุ่ม Support (6 ตัว) — มี SQL ไว้ใน `scripts/add_missing_site_settings_columns.sql`

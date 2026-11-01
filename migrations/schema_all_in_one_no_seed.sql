@@ -237,6 +237,7 @@ ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS text_color_muted          TEX
 ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS sidebar_color             TEXT DEFAULT '#0a1628';
 ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS header_color              TEXT DEFAULT '#060e1a';
 -- Header text color (028) — สีข้อความ/เมนูใน Header
+ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS default_source_locale     TEXT NOT NULL DEFAULT 'th';
 ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS header_text_color         TEXT DEFAULT '#ffffff';
 -- Footer colors (027) — สีพื้นหลัง + สีข้อความของ Footer
 ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS footer_color              TEXT DEFAULT '#0a1628';
@@ -372,6 +373,7 @@ ALTER TABLE articles ADD COLUMN IF NOT EXISTS short_excerpt      TEXT;
 ALTER TABLE articles ADD COLUMN IF NOT EXISTS long_excerpt       TEXT;
 ALTER TABLE articles ADD COLUMN IF NOT EXISTS social_caption     TEXT;
 ALTER TABLE articles ADD COLUMN IF NOT EXISTS google_schema_markup JSONB DEFAULT NULL;
+ALTER TABLE articles ADD COLUMN IF NOT EXISTS source_locale      TEXT NOT NULL DEFAULT 'th';
 
 CREATE INDEX IF NOT EXISTS idx_articles_entity_type ON articles(entity_type);
 CREATE INDEX IF NOT EXISTS idx_articles_wikidata_id ON articles(wikidata_id);

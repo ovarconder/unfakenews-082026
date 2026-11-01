@@ -1,7 +1,7 @@
 // ============================================================
-// Siam Heritage - Gemini AI Translation Service
+// UnFakeNews - AI Translation Service
 // ============================================================
-// Using Gemini API for SiamHeritage encyclopedia translations
+// แปลบทความจากภาษาต้นฉบับ (articles.source_locale) ไปภาษาอื่น
 //
 // Architecture:
 // - Single API Key from Google AI Studio
@@ -14,7 +14,7 @@
 // ============================================================
 
 import type { Locale } from "./locales";
-import { LOCALE_NAMES } from "./locales";
+import { DEFAULT_SOURCE_LOCALE, LOCALE_NAMES } from "./locales";
 import { getSettings } from "./site-settings";
 
 // ============================================================
@@ -99,7 +99,7 @@ function getModelName(model: GeminiModel): string {
 }
 
 // ============================================================
-// Get target language name in English (for [TARGET_LANGUAGE] variable)
+// Language names in English (for prompt variables)
 // ============================================================
 
 function getTargetLanguage(locale: Locale): string {
@@ -107,73 +107,61 @@ function getTargetLanguage(locale: Locale): string {
 }
 
 // ============================================================
+// Shared prompt context — fact-check / counter-disinformation site
+// ============================================================
+
+const SITE_CONTEXT = `You translate articles for a fact-checking and counter-disinformation news site. Articles examine false or misleading claims (mostly concerning Thailand and Cambodia) and correct them with evidence and cited sources.`;
+
+const ACCURACY_RULES = `- **Accuracy first:** Preserve every factual claim, number, date, name, quotation and its attribution exactly. Never add, omit, soften or strengthen a claim.
+- **Tone:** Neutral, factual, journalistic. No editorializing beyond what the source text says.
+- **Names:** Use established international spellings for people, places and organizations (e.g. Preah Vihear, Ta Muen Thom, Hun Manet). If none exists, transliterate and keep the original-script form in parentheses on first use.
+- **Verdict labels:** Translate rating words (e.g. False, Misleading, Partly true, True) consistently and literally.
+- **Formatting:** Keep markdown, links, URLs, image syntax and shortcodes unchanged — translate only human-readable text.`;
+
+// ============================================================
 // System Prompt 1: Main Content (Title, Excerpts, Content)
 // ============================================================
 
-export function buildContentSystemPrompt(targetLocale: Locale): string {
+export function buildContentSystemPrompt(targetLocale: Locale, sourceLocale: Locale = DEFAULT_SOURCE_LOCALE): string {
+  const sourceLanguage = getTargetLanguage(sourceLocale);
   const targetLanguage = getTargetLanguage(targetLocale);
 
-  return `You are an expert translator and cultural mediator specializing in Thai heritage, arts, and history for the "Siam Heritage" encyclopedia project.
-Your task is to translate the provided Thai content into the target language specified in the variable: [${targetLanguage}].
+  return `${SITE_CONTEXT}
+Translate the provided ${sourceLanguage} content into ${targetLanguage}.
 
-### Translation Guidelines:
-1. **Tone & Style:** Maintain an encyclopedic, respectful, and engaging tone appropriate for a cultural heritage platform.
-2. **Natural Flow:** Avoid literal word-for-word translation. Prioritize the natural idiom, syntax, and flow of the [${targetLanguage}] while preserving the original historical and cultural context accurately.
-3. **Cultural Terms:** For specific Thai cultural terms (e.g., ประเพณีลอยกระทง, ศาลา, เครื่องถม), use the accepted international term, transliterate with a brief explanation, or use the closest cultural equivalent that makes sense to a native speaker of [${targetLanguage}].
-4. **Consistency:** Ensure the tone is consistent across the Title, Excerpt, and Full Content.
+### Guidelines:
+${ACCURACY_RULES}
+- **Natural flow:** Avoid word-for-word translation; write as a native ${targetLanguage} news editor would, without changing meaning.
+- **Consistency:** Use the same terminology across title, excerpts and content.
 
-### Input Data (JSON format):
-{
-  "title": "[THAI_TITLE]",
-  "short_excerpt": "[THAI_SHORT_EXCERPT]",
-  "long_excerpt": "[THAI_LONG_EXCERPT]",
-  "content": "[THAI_FULL_CONTENT]"
-}
+### Input (JSON): { "title", "short_excerpt", "long_excerpt", "content"? }
 
-### Expected Output:
-Return ONLY a valid JSON object matching the input structure, translated into [${targetLanguage}]. Do not include any markdown formatting (like \`\`\`json) or extra text outside the JSON.
-{
-  "title": "...",
-  "short_excerpt": "...",
-  "long_excerpt": "...",
-  "content": "..."
-}`;
+### Output:
+Return ONLY a valid JSON object with the same keys, values translated into ${targetLanguage}. No markdown code fences or extra text.`;
 }
 
 // ============================================================
 // System Prompt 2: Structured Data (Glossary, Quick Facts, Entity Values)
 // ============================================================
 
-export function buildStructuredDataSystemPrompt(targetLocale: Locale): string {
+export function buildStructuredDataSystemPrompt(targetLocale: Locale, sourceLocale: Locale = DEFAULT_SOURCE_LOCALE): string {
+  const sourceLanguage = getTargetLanguage(sourceLocale);
   const targetLanguage = getTargetLanguage(targetLocale);
 
-  return `You are a precise data localization engine for the "Siam Heritage" encyclopedia. Your task is to translate and localize structured data from Thai into [${targetLanguage}].
+  return `${SITE_CONTEXT}
+Localize structured data from ${sourceLanguage} into ${targetLanguage}.
 
-### Strict Instructions for Structured Data:
-1. **Structure Keys:** NEVER translate or modify structural JSON keys like "glossary", "quick_facts", "entity_values", "term", "context", "label", "value". Keep the exact same structure, array order, and number of items.
-2. **Quick Facts — label IS content:** Each quick fact has a Thai \`label\` (field name, e.g. "ยุคสมัย", "ที่ตั้ง", "ศาสนา") and a Thai \`value\`. You MUST translate BOTH the label AND the value into [${targetLanguage}]. Example: { "label": "ยุคสมัย", "value": "รัตนโกสินทร์" } -> { "label": "Period", "value": "Rattanakosin" }. Keep labels short (1-3 words).
-3. **Glossary Terms:** Translate technical cultural terms, historical eras (e.g., อยุธยา, รัตนโกสินทร์), and proper nouns using globally recognized historical standards in [${targetLanguage}]. Do not attempt to visually translate or create new terms.
-4. **Quick Facts values:** Keep the translated facts concise, sharp, and factually accurate. Ensure units or formatting (e.g., dates, eras) align with the standards of [${targetLanguage}].
-5. **No Hallucinations:** If a cultural term has a strict official translation (e.g., Royal Institute of Thailand standard), use it. Do not add descriptive fluff to the values.
+### Rules:
+1. **Keys:** NEVER translate or modify JSON keys ("glossary", "quick_facts", "entity_values", "term", "context", "label", "value"). Keep the same structure, array order and item count.
+2. **Quick facts — label IS content:** Translate BOTH \`label\` and \`value\`. Example: { "label": "ข้อกล่าวอ้าง", "value": "เท็จ" } -> { "label": "Claim", "value": "False" }. Keep labels to 1–3 words.
+3. **Glossary:** Translate terms and their context using established ${targetLanguage} terminology; do not invent new terms.
+4. **Values:** Concise and factually identical. Format dates and units to ${targetLanguage} conventions without changing the underlying value.
+5. **No hallucinations:** Do not add descriptive fluff.
 
-### Input Data (JSON format):
-{
-  "glossary": [
-    { "term": "THAI_TERM_1", "context": "CONTEXT_OR_DEFINITION_1" },
-    { "term": "THAI_TERM_2", "context": "CONTEXT_OR_DEFINITION_2" }
-  ],
-  "quick_facts": [
-    { "label": "THAI_LABEL_1", "value": "THAI_VALUE_1" },
-    { "label": "THAI_LABEL_2", "value": "THAI_VALUE_2" }
-  ],
-  "entity_values": {
-    "entity_key_1": "THAI_VALUE_3",
-    "entity_key_2": "THAI_VALUE_4"
-  }
-}
+### Input (JSON): { "glossary"?: [{ "term", "context" }], "quick_facts"?: [{ "label", "value" }], "entity_values"?: { key: value } }
 
-### Expected Output:
-Return ONLY the translated JSON structure. Keep the "glossary"/"quick_facts"/"entity_values" keys and array order exactly as the input, but translate the \`label\`, \`value\`, \`term\`, and \`context\` text values into [${targetLanguage}]. No conversational text or markdown wrappers.`;
+### Output:
+Return ONLY the translated JSON with the same shape. No conversational text or markdown wrappers.`;
 }
 
 // ============================================================
@@ -461,20 +449,22 @@ export interface TranslateOptions {
   content?: string;
   includeFullContent: boolean;
   isTier2Lazy?: boolean;
+  /** ภาษาต้นฉบับ (articles.source_locale) — ค่าเริ่มต้น "th" */
+  sourceLocale?: Locale;
 }
 
 export async function translateArticleContent(
   targetLocale: Locale,
   options: TranslateOptions
 ): Promise<GeminiContentResponse> {
-  const { title, shortExcerpt, longExcerpt, content, includeFullContent, isTier2Lazy } = options;
+  const { title, shortExcerpt, longExcerpt, content, includeFullContent, isTier2Lazy, sourceLocale } = options;
 
   const model = getModelForTask({
     isFullContent: includeFullContent,
     isTier2Lazy: isTier2Lazy ?? false,
   });
 
-  const systemPrompt = buildContentSystemPrompt(targetLocale);
+  const systemPrompt = buildContentSystemPrompt(targetLocale, sourceLocale);
 
   const promptObj: Record<string, string> = {
     title,
@@ -508,10 +498,11 @@ export interface StructuredDataInput {
 
 export async function translateStructuredData(
   targetLocale: Locale,
-  data: StructuredDataInput
+  data: StructuredDataInput,
+  sourceLocale: Locale = DEFAULT_SOURCE_LOCALE
 ): Promise<GeminiStructuredResponse> {
   // Always use Flash for structured data (low complexity, cheap)
-  const systemPrompt = buildStructuredDataSystemPrompt(targetLocale);
+  const systemPrompt = buildStructuredDataSystemPrompt(targetLocale, sourceLocale);
   const userPrompt = JSON.stringify(data, null, 2);
 
   console.log(
@@ -552,99 +543,30 @@ export async function translateStructuredData(
 }
 
 // ============================================================
-// Legacy: Translate Article (Title + Excerpt + Content) — old interface
-// Kept for backward compatibility, maps to new functions internally
-// ============================================================
-
-export async function translateArticle(
-  targetLocale: Locale,
-  options: { title: string; excerpt: string; content?: string; includeFullContent: boolean; isTier2Lazy?: boolean }
-): Promise<{ title: string; excerpt: string; content?: string }> {
-  const { title, excerpt, content, includeFullContent } = options;
-
-  const result = await translateArticleContent(targetLocale, {
-    title,
-    shortExcerpt: excerpt,
-    longExcerpt: excerpt,
-    content,
-    includeFullContent,
-  });
-
-  return {
-    title: result.title,
-    excerpt: result.short_excerpt || result.long_excerpt || excerpt,
-    content: result.content,
-  };
-}
-
-// ============================================================
-// Public API: Translate Content Only (for Tier 2 JIT / Lazy Load)
-// Uses Gemini Pro for highest quality
-// ============================================================
-
-export async function translateContentOnly(
-  targetLocale: Locale,
-  content: string
-): Promise<{ content: string }> {
-  const targetLanguage = getTargetLanguage(targetLocale);
-
-  // Always use Pro for on-demand content translation
-  const model: GeminiModel = "pro";
-  const modelName = getModelName(model);
-
-  const systemPrompt = `You are an expert translator and cultural mediator specializing in Thai heritage, arts, and history for the "Siam Heritage" encyclopedia project.
-Your task is to translate the provided Thai content into the target language specified in the variable: [${targetLanguage}].
-
-### Translation Guidelines:
-1. **Tone & Style:** Maintain an encyclopedic, respectful, and engaging tone appropriate for a cultural heritage platform.
-2. **Natural Flow:** Avoid literal word-for-word translation. Prioritize the natural idiom, syntax, and flow of the [${targetLanguage}] while preserving the original historical and cultural context accurately.
-3. **Cultural Terms:** For specific Thai cultural terms (e.g., ประเพณีลอยกระทง, ศาลา, เครื่องถม), use the accepted international term, transliterate with a brief explanation, or use the closest cultural equivalent that makes sense to a native speaker of [${targetLanguage}].
-
-### Input:
-${content}
-
-### Expected Output:
-Return ONLY a valid JSON object:
-{ "content": "translated content with markdown preserved" }`;
-
-  const userPrompt = content;
-
-  console.log(`[Gemini] Translating content only to ${targetLocale} using ${modelName}`);
-
-  const result = await callGeminiAPI<{ content: string }>(systemPrompt, userPrompt, model);
-
-  return {
-    content: result.content ?? content,
-  };
-}
-
-// ============================================================
 // Public API: Translate Image Alt Texts
 // Full translation for all locales — for Google Images + AI indexing
 // ============================================================
 
 export async function translateImageAlts(
   targetLocale: Locale,
-  alts: Record<string, string>
+  alts: Record<string, string>,
+  sourceLocale: Locale = DEFAULT_SOURCE_LOCALE
 ): Promise<Record<string, string>> {
   if (Object.keys(alts).length === 0) return {};
 
+  const sourceLanguage = getTargetLanguage(sourceLocale);
   const targetLanguage = getTargetLanguage(targetLocale);
 
-  const systemPrompt = `You are an expert translator specializing in Thai heritage imagery for Google Image Search and AI indexing.
-Your task is to translate image alt texts from Thai into ${targetLanguage}.
+  const systemPrompt = `${SITE_CONTEXT}
+Translate image alt texts from ${sourceLanguage} into ${targetLanguage} for accessibility and Google Image Search.
 
-### Strict Instructions:
-1. Keep the "image key" (identifier like image URL or filename) EXACTLY as-is.
-2. Translate ONLY the alt text values — make them descriptive, keyword-rich for Google Image Search.
-3. Preserve proper nouns (place names, person names) using accepted international spellings.
-4. Add relevant cultural context if the original Thai alt text is too brief.
+### Rules:
+1. Keep each key (image URL or filename) EXACTLY as-is.
+2. Translate ONLY the values — descriptive and factual; describe what the image shows, do not add claims.
+3. Use established international spellings for proper nouns.
 
-### Input (JSON):
-{ "image_key_1": "THAI_ALT_TEXT_1", "image_key_2": "THAI_ALT_TEXT_2" }
-
-### Expected Output:
-Return ONLY JSON with same keys, translated values: { "image_key_1": "TRANSLATED_ALT", ... }`;
+### Output:
+Return ONLY JSON with the same keys and translated values: { "image_key_1": "TRANSLATED_ALT", ... }`;
 
   const userPrompt = JSON.stringify(alts, null, 2);
 
@@ -656,47 +578,41 @@ Return ONLY JSON with same keys, translated values: { "image_key_1": "TRANSLATED
 
 // ============================================================
 // Public API: Translate Tags/Keywords
-// - English tags: pass through as-is
-// - Thai tags: translate -> deduplicate against existing English tags
+// - ต้นฉบับไทย: tag อังกฤษผ่านตรง, แปลเฉพาะ tag ไทย (พฤติกรรมเดิม)
+// - ต้นฉบับภาษาอื่น: แปลทุก tag
 // ============================================================
 
 export async function translateTags(
   targetLocale: Locale,
   tags: string[],
-  existingEnglishTags?: string[]
+  sourceLocale: Locale = DEFAULT_SOURCE_LOCALE
 ): Promise<string[]> {
   if (!tags || tags.length === 0) return [];
+  if (targetLocale === sourceLocale) return [...new Set(tags)];
 
+  const sourceLanguage = getTargetLanguage(sourceLocale);
   const targetLanguage = getTargetLanguage(targetLocale);
 
-  // Separate English vs Thai tags
   const thaiRegex = /[\u0E00-\u0E7F]/;
-  const thaiTags = tags.filter(t => thaiRegex.test(t));
-  const englishTags = tags.filter(t => !thaiRegex.test(t));
+  const toTranslate = sourceLocale === "th" ? tags.filter(t => thaiRegex.test(t)) : tags;
+  const resultTags = sourceLocale === "th" ? tags.filter(t => !thaiRegex.test(t)) : [];
 
-  // English tags pass through as-is
-  const resultTags = [...englishTags];
-
-  // If no Thai tags, return just English ones (deduplicated)
-  if (thaiTags.length === 0) {
+  if (toTranslate.length === 0) {
     return [...new Set(resultTags)];
   }
 
-  const systemPrompt = `You are a tag/keyword localization engine.
-Translate the following Thai tags into ${targetLanguage}.
+  const systemPrompt = `You are a tag/keyword localization engine for a fact-checking news site.
+Translate the following ${sourceLanguage} tags into ${targetLanguage}.
 
 ### Rules:
-1. Translate Thai cultural keywords appropriately (e.g., "\u0e41\u0e2b\u0e23\u0e48\u0e07\u0e1c\u0e32\u0e44\u0e2b\u0e21" -> "Phrae", "\u0E42\u0E02\u0E19\u0E44\u0E17\u0E22" -> "Khon Thai")
+1. Use established international spellings for names and places (e.g. "ปราสาทพระวิหาร" -> "Preah Vihear Temple").
 2. Return ONLY a JSON array of strings: ["translated_tag_1", "translated_tag_2"]
-3. No additional text, no markdown wrappers.
+3. No additional text, no markdown wrappers.`;
 
-### Input:
-${JSON.stringify(thaiTags)}`;
-
-  const userPrompt = JSON.stringify(thaiTags);
+  const userPrompt = JSON.stringify(toTranslate);
 
   try {
-    console.log(`[Gemini] Translating ${thaiTags.length} Thai tags to ${targetLanguage} using ${GEMINI_FLASH_MODEL}`);
+    console.log(`[Gemini] Translating ${toTranslate.length} ${sourceLanguage} tags to ${targetLanguage} using ${GEMINI_FLASH_MODEL}`);
     const translated = await callGeminiAPI<unknown>(systemPrompt, userPrompt, "flash");
 
     // 🌟 Gemini บางครั้งคืนเป็น object { "tags": [...] } หรือ { "translated_tags": [...] }
@@ -719,9 +635,9 @@ ${JSON.stringify(thaiTags)}`;
     }
 
     // ถ้ายังได้ array ว่าง (Gemini คืน not parseable) → fallback
-    if (translatedArray.length === 0 && thaiTags.length > 0) {
-      console.warn("[Gemini] Tag translation returned empty/unexpected shape, using original Thai tags:", translated);
-      return [...new Set([...resultTags, ...thaiTags])];
+    if (translatedArray.length === 0) {
+      console.warn("[Gemini] Tag translation returned empty/unexpected shape, using original tags:", translated);
+      return [...new Set([...resultTags, ...toTranslate])];
     }
 
     // Merge with existing English tags + deduplicate
@@ -841,8 +757,10 @@ function localizeSchemaUrls(
  */
 export async function translateGoogleSchemaMarkup(
   targetLocale: Locale,
-  schema: Record<string, unknown> | null | undefined
+  schema: Record<string, unknown> | null | undefined,
+  sourceLocale: Locale = DEFAULT_SOURCE_LOCALE
 ): Promise<Record<string, unknown> | null> {
+  const sourceLanguage = getTargetLanguage(sourceLocale);
   const targetLanguage = getTargetLanguage(targetLocale);
 
   // Guard: input ไม่มีค่า → ไม่แปล
@@ -893,8 +811,9 @@ export async function translateGoogleSchemaMarkup(
 
   const valuesToSend = stringsToTranslate.map((s) => s.value);
 
-  const systemPrompt = `You are a precise data localization engine for the "Siam Heritage" encyclopedia JSON-LD structured data (Google Schema.org).
-Translate ONLY the natural-language text values into ${targetLanguage}.
+  const systemPrompt = `${SITE_CONTEXT}
+You are localizing JSON-LD structured data (Google Schema.org, e.g. ClaimReview/NewsArticle).
+Translate ONLY the natural-language ${sourceLanguage} text values into ${targetLanguage}.
 Keep ALL structural keys, @type, URLs, numeric values, and boolean values EXACTLY as-is.
 Do NOT change the JSON key names, the array/object nesting structure, or the number of items.
 

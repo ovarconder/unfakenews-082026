@@ -1,5 +1,5 @@
 {
-  "name": "siamheritage",
+  "name": "unfakenews",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -10,7 +10,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@floating-ui/dom": "^1.7.6",
+    "@floating-ui/dom": "^1.8.0",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.93.3",
     "@tiptap/extension-bold": "^3.18.0",
@@ -25,13 +25,10 @@
     "@tiptap/pm": "^3.18.0",
     "@tiptap/react": "^3.18.0",
     "@tiptap/starter-kit": "^3.18.0",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
     "lucide-react": "^0.468.0",
     "next": "^14.2.29",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "tailwind-merge": "^2.6.0"
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@types/node": "^22.19.7",

@@ -1,4 +1,6 @@
-# 15 - SEO / AI Search Indexing Automation
+# SEO / AI Search Indexing Automation
+
+> อัปเดตล่าสุด: 2026-11-01 — ภาษาต้นฉบับอ่านจาก `articles.source_locale` (ไม่ fix `th` แล้ว): canonical, x-default, IndexNow ใช้ภาษาต้นฉบับของแต่ละบทความ
 
 > **สถานะ:** ✅ Implemented (ผ่าน `tsc --noEmit` ไม่มี type error)
 > **ขอบเขต:** Instant indexing (IndexNow + Google Indexing API), Sitemap + hreflang ตามสถานะเผยแพร่จริง, llms.txt, Open Claims API, ClaimReview structured data, และ post-publish automation pipeline
@@ -21,7 +23,7 @@
 
 | ภาษาต้นทาง | เกณฑ์ "เผยแพร่จริง" |
 |---|---|
-| ภาษาไทย (`th`, ต้นฉบับ) | `articles.status = 'published'` |
+| ภาษาต้นฉบับ (`articles.source_locale`) | `articles.status = 'published'` |
 | ภาษาที่แปล (`en`, `ja`, ...) | `translations.translation_status = 'complete'` |
 
 ถ้า variant ยังเป็น `draft` / `pending` / `summary_only` → ระบบจะ **ข้าม (skip)** ทันที และไม่ expose URL ไปยังช่องทางใด

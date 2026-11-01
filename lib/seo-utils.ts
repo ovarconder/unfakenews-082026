@@ -9,7 +9,7 @@
 // ============================================================
 
 import { createAdminClient } from "./supabase-server";
-import { ALL_LOCALES, type Locale } from "./locales";
+import { ALL_LOCALES, sourceLocaleOf, type Locale } from "./locales";
 import { SITE_URL } from "./constants";
 
 // ============================================================
@@ -66,7 +66,7 @@ export async function getPublishedArticleRows(): Promise<any[]> {
   const { data, error } = await supabase
     .from("articles")
     .select(`
-      id, slug, original_title, original_excerpt, category_id,
+      id, slug, source_locale, original_title, original_excerpt, category_id,
       author_name, published_at, image_url, image_alt, featured,
       status, google_schema_markup, updated_at,
       categories(show_on_public),
@@ -98,7 +98,7 @@ export async function getPublishedArticleRows(): Promise<any[]> {
 export interface PublishedVariant {
   locale: Locale;
   title: string;
-  /** วันที่ variant นี้เริ่มเผยแพร่ (th = article.published_at, อื่น = translated_at) */
+  /** วันที่ variant นี้เริ่มเผยแพร่ (ต้นฉบับ = article.published_at, อื่น = translated_at) */
   datePublished: string;
   /** วันที่แก้ไขล่าสุดของ variant (ใช้เป็น lastmod) */
   dateModified: string;
@@ -116,14 +116,15 @@ export function getPublishedVariants(article: any): PublishedVariant[] {
     return variants;
   }
 
-  // === Thai (ต้นฉบับ) — เผยแพร่ถ้าบทความ status = published ===
+  // === ต้นฉบับ (articles.source_locale) — เผยแพร่ถ้าบทความ status = published ===
+  const sourceLocale = sourceLocaleOf(article);
   if (article.status === "published") {
     variants.push({
-      locale: "th",
+      locale: sourceLocale,
       title: article.original_title,
       datePublished: article.published_at || article.updated_at || new Date().toISOString(),
       dateModified: article.updated_at || article.published_at || new Date().toISOString(),
-      url: `${baseUrl}/th/articles/${article.slug}`,
+      url: `${baseUrl}/${sourceLocale}/articles/${article.slug}`,
     });
   }
 
@@ -131,8 +132,8 @@ export function getPublishedVariants(article: any): PublishedVariant[] {
   const translations: any[] = article.translations || [];
   for (const t of translations) {
     const locale = t.locale as Locale;
-    // ข้าม th (จัดการด้านบน) และข้ามภาษาที่ไม่รู้จัก
-    if (locale === "th" || !ALL_LOCALES.includes(locale)) continue;
+    // ข้ามภาษาต้นฉบับ (จัดการด้านบน) และข้ามภาษาที่ไม่รู้จัก
+    if (locale === sourceLocale || !ALL_LOCALES.includes(locale)) continue;
     // ✅ ผ่านเกณฑ์ "verified published" เท่านั้น
     if (t.translation_status !== "complete") continue;
 

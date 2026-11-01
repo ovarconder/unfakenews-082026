@@ -13,7 +13,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPublishedVariants, getBaseUrl } from "@/lib/seo-utils";
 import { createAdminClient } from "@/lib/supabase-server";
-import { ALL_LOCALES, type Locale } from "@/lib/locales";
+import { ALL_LOCALES, sourceLocaleOf, type Locale } from "@/lib/locales";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     const { data: articles, error } = await supabase
       .from("articles")
       .select(`
-        id, slug, original_title, original_excerpt, original_content,
+        id, slug, source_locale, original_title, original_excerpt, original_content,
         category_id, author_name, published_at, status, updated_at,
         google_schema_markup, featured,
         categories(show_on_public),
@@ -72,14 +72,15 @@ export async function GET(request: NextRequest) {
           (t: any) => t.locale === v.locale
         );
 
+        const isSource = v.locale === sourceLocaleOf(article);
         const translatedTitle =
-          v.locale === "th" ? article.original_title : tr?.title || article.original_title;
+          isSource ? article.original_title : tr?.title || article.original_title;
         const excerpt =
-          v.locale === "th"
+          isSource
             ? article.original_excerpt
             : tr?.excerpt || article.original_excerpt;
         const content =
-          v.locale === "th"
+          isSource
             ? article.original_content
             : tr?.content || article.original_content;
 

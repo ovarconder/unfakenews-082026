@@ -675,7 +675,7 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
         const { data: articles } = await supabase
           .from("articles")
           .select(`
-            id, slug, original_title, original_excerpt, tags,
+            id, slug, source_locale, original_title, original_excerpt, tags,
             categories!inner(name_th, name_en, show_on_public),
             author_name, published_at, image_url, image_alt, featured
           `)
@@ -703,17 +703,16 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
           return;
         }
 
-        // ★ Fallback 2 ชั้น สำหรับ locale ≠ th:
-        //   ดึง translation ทุกภาษาที่เป็นไปได้ (ภาษาปัจจุบัน + en + th) พร้อมกัน
-        //   แล้วเลือกตามลำดับความสำคัญ: ภาษาปัจจุบัน > en > th (ต้นฉบับ)
+        // ★ Fallback สำหรับบทความที่ต้นฉบับไม่ใช่ภาษาที่อ่านอยู่:
+        //   ดึง translation (ภาษาปัจจุบัน + en) พร้อมกัน
+        //   แล้วเลือกตามลำดับความสำคัญ: ภาษาปัจจุบัน > en > ต้นฉบับ
         //   เพื่อให้ related articles แสดงภาษาเดียวกับหน้าที่อ่านเสมอ
         const articleIds = (visibleArticles as any[]).map((a) => a.id);
 
-        // ชุดภาษาที่จะดึง (dedupe ถ้า locale เป็น th/en ซ้ำกับที่รวมไว้)
-        const localesToFetch = Array.from(new Set([locale, "en", "th"]));
+        const localesToFetch = Array.from(new Set([locale, "en"]));
         let translationsByArticle: Record<string, any> = {};
 
-        if (locale !== "th") {
+        {
           const { data: translations } = await supabase
             .from("translations")
             .select("article_id, locale, title, excerpt, translation_status")
@@ -726,9 +725,9 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
               if (!grouped[t.article_id]) grouped[t.article_id] = {};
               grouped[t.article_id][t.locale] = t;
             });
-            // เลือกตามลำดับความสำคัญ: ภาษาปัจจุบัน > en > th
+            // เลือกตามลำดับความสำคัญ: ภาษาปัจจุบัน > en
             for (const [aid, byLocale] of Object.entries(grouped)) {
-              const order = localesToFetch; // [current, en, th] (เรียงลำดับสำคัญ)
+              const order = localesToFetch; // [current, en] (เรียงลำดับสำคัญ)
               for (const loc of order) {
                 const t = byLocale[loc];
                 // ใช้เมื่อมี title จริง (ถือว่ามี 'การแปล')
@@ -747,11 +746,12 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
             ? a.categories?.name_th || ""
             : a.categories?.name_en || "";
 
+          const isSource = locale === (a.source_locale || "th");
           const trans = translationsByArticle[a.id];
-          const title = locale === "th"
+          const title = isSource
             ? a.original_title
             : (trans?.title || a.original_title);
-          const excerpt = locale === "th"
+          const excerpt = isSource
             ? a.original_excerpt
             : (trans?.excerpt || a.original_excerpt);
 
@@ -759,7 +759,7 @@ export function ArticleDetail({ article, locale, localeUrl }: ArticleDetailProps
             slug: a.slug,
             originalTitle: a.original_title,
             originalExcerpt: a.original_excerpt,
-            title,      // ★ title ตาม locale (จาก fallback: current > en > th)
+            title,      // ★ title ตาม locale (จาก fallback: current > en > ต้นฉบับ)
             excerpt,    // ★ excerpt ตาม locale
             category: categoryName,
             imageUrl: a.image_url || undefined,

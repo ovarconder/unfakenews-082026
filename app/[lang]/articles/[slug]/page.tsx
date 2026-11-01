@@ -60,7 +60,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
     const { data: articleRow } = await supabase
       .from("articles")
       .select(`
-        id, slug, status, published_at, original_title, updated_at,
+        id, slug, source_locale, status, published_at, original_title, updated_at,
         categories(show_on_public),
         translations(article_id, locale, title, translated_at, translation_status),
         original_excerpt
@@ -147,7 +147,7 @@ export default async function LangArticlePage({ params, searchParams }: Props) {
         const { data: articleRow } = await supabase
           .from("articles")
           .select(`
-            id, slug, status, published_at, original_title, updated_at,
+            id, slug, source_locale, status, published_at, original_title, updated_at,
             categories(show_on_public),
             translations(article_id, locale, title, translated_at, translation_status),
             original_excerpt

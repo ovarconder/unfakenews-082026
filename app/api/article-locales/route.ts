@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     const { data: articleRow } = await supabase
       .from("articles")
       .select(`
-        id, slug, status, original_title, updated_at, published_at,
+        id, slug, source_locale, status, original_title, updated_at, published_at,
         categories(show_on_public),
         translations(article_id, locale, title, translated_at, translation_status)
       `)

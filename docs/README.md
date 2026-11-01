@@ -1,229 +1,35 @@
-# SiamHeritage.org - Premium Thai Heritage & Culture Platform
+# เอกสารโปรเจกต์ UnFakeNews
 
-A professional, minimalist, and high-performance newspaper/magazine web application built with Next.js, TypeScript, and Tailwind CSS.
+> อัปเดตล่าสุด: 2026-11-01
 
-## Features
+## กติกาการตั้งชื่อ
 
-- 🎨 **Minimalist Luxury Design** - High-end typography with Noto Sans Thai font
-- 🌐 **Multilingual Support** - i18n structure for Thai and English (easily extensible)
-- 🔐 **Authentication** - NextAuth.js with role-based access control
-- 👥 **User Roles** - SUPER_ADMIN, ADMIN, EDITOR, and USER with protected routes
-- 📊 **Admin Dashboard** - Comprehensive content management system
-- 📝 **Post Management** - Full CRUD operations for articles
-- 🖼️ **Media Library** - Organized media management
-- 👤 **User Management** - Role assignment and user administration
-- ✨ **Smooth Animations** - Framer Motion for elegant transitions
-- 📱 **Responsive Design** - Mobile-first approach with Tailwind CSS
-- 🎯 **shadcn/ui Components** - Beautiful, accessible UI components
+- ไฟล์ชื่อ `YYYY-MM-DD-หัวข้อ.md` โดย **วันที่ = วันที่อัปเดตเนื้อหาล่าสุด**
+- แก้เนื้อหาเอกสารเมื่อไร ให้ `git mv` เปลี่ยนวันที่นำหน้าเป็นวันนั้น และแก้ตารางด้านล่าง
+- 1 หัวข้อมีไฟล์เดียว ห้ามสร้างไฟล์ใหม่ที่เนื้อหาทับกับไฟล์เดิม ให้แก้ไฟล์เดิมแทน
+- บันทึกงานแต่ละครั้ง (ทำอะไร ทำไม เหลืออะไร) สร้างเป็นไฟล์ใหม่ เช่น `2026-11-01-code-review-cleanup.md`
+- เอกสารที่ล้าสมัยให้ย้ายไป `archive/` ไม่ต้องลบ
 
-## Tech Stack
+## เอกสารหลัก (เรียงจากอัปเดตล่าสุด)
 
-- **Framework:** Next.js 15 (App Router)
-- **Language:** TypeScript
-- **Styling:** Tailwind CSS
-- **UI Components:** shadcn/ui
-- **Icons:** Lucide React
-- **Animations:** Framer Motion
-- **Authentication:** NextAuth.js
-- **Font:** Noto Sans Thai (Google Fonts)
+| อัปเดต | เอกสาร | เนื้อหา |
+|---|---|---|
+| 2026-11-01 | [overview](2026-11-01-overview.md) | **เริ่มอ่านที่นี่** — เครือข่าย 5 เว็บ, โครงสร้างโค้ด, แนวคิดข้อมูล |
+| 2026-11-01 | [content-workflow](2026-11-01-content-workflow.md) | ทำบทความด้วย Claude Code → Import JSON → ตรวจ → publish / clone ไปเว็บเครือข่าย |
+| 2026-11-01 | [translation-and-source-locale](2026-11-01-translation-and-source-locale.md) | ภาษาต้นฉบับรายบทความ, ระบบแปล, prompt |
+| 2026-11-01 | [new-site-setup](2026-11-01-new-site-setup.md) | ตั้งเว็บใหม่: Supabase + Vercel + domain + env |
+| 2026-11-01 | [database-schema](2026-11-01-database-schema.md) | ตาราง/คอลัมน์ทั้งหมด + กติกา migration |
+| 2026-11-01 | [seo-indexing](2026-11-01-seo-indexing.md) | IndexNow, Google Indexing, sitemap/hreflang, llms.txt, Claims API |
+| 2026-10-06 | [image-upload](2026-10-06-image-upload.md) | ระบบอัปโหลดรูป (Supabase Storage) |
+| 2026-08-18 | [google-schema-markup](2026-08-18-google-schema-markup.md) | JSON-LD / ClaimReview ต่อบทความ |
 
-## Project Structure
+## บันทึกงาน
 
-```
-SiamHeritage/
-├── app/
-│   ├── [lang]/              # Localized routes (en, th)
-│   │   ├── layout.tsx       # Main layout with navbar & footer
-│   │   ├── page.tsx         # Home page
-│   │   ├── article/[id]/    # Article detail pages
-│   │   └── auth/            # Authentication pages
-│   ├── admin/               # Admin dashboard
-│   │   ├── layout.tsx       # Admin layout with sidebar
-│   │   ├── page.tsx         # Dashboard overview
-│   │   ├── posts/           # Post management
-│   │   ├── media/           # Media library
-│   │   ├── users/           # User management
-│   │   └── settings/        # Settings
-│   └── api/
-│       └── auth/            # NextAuth API routes
-├── components/
-│   ├── ui/                  # shadcn/ui components
-│   ├── admin/               # Admin-specific components
-│   ├── navbar.tsx           # Main navigation
-│   ├── footer.tsx           # Footer component
-│   └── article-card.tsx     # Article display component
-├── lib/
-│   ├── auth.ts              # Authentication configuration
-│   ├── i18n.ts              # Internationalization setup
-│   ├── translations.ts      # Translation strings
-│   └── utils.ts             # Utility functions
-└── types/
-    └── next-auth.d.ts       # NextAuth type definitions
-```
+| วันที่ | บันทึก |
+|---|---|
+| 2026-11-01 | [code-review-cleanup](2026-11-01-code-review-cleanup.md): ตรวจโครงสร้าง, เพิ่มภาษาต้นฉบับ, prompt fact-check, ลบโค้ดที่ไม่ใช้, จัด docs |
 
-## Getting Started
+## archive/
 
-### Prerequisites
-
-- Node.js 18+ 
-- npm, yarn, or pnpm
-
-### Installation
-
-1. Clone the repository or navigate to the project directory
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Create a `.env.local` file:
-```bash
-cp .env.example .env.local
-```
-
-4. Update environment variables in `.env.local`:
-```env
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your-secret-key-here
-```
-
-### Development
-
-Run the development server:
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser.
-
-### Demo Credentials
-
-For testing authentication:
-- Email: `admin@siamheritage.com`
-- Password: `password123`
-
-Available users:
-- **Super Admin:** admin@siamheritage.com (SUPER_ADMIN role)
-- **Editor:** editor@siamheritage.com (EDITOR role)
-- **Editor (alternate):** author@siamheritage.com (EDITOR role)
-
-All demo accounts use password: `password123`
-
-## Features in Detail
-
-### Multilingual Support
-
-The application supports multiple languages through URL-based routing:
-- English: `/en`
-- Thai: `/th`
-
-Add new languages by updating:
-1. `lib/i18n.ts` - Add locale to the `locales` array
-2. `lib/translations.ts` - Add translation strings
-
-### Authentication & Authorization
-
-Built with NextAuth.js featuring:
-- Credential-based authentication
-- JWT session strategy
-- Role-based access control (RBAC)
-- Protected admin routes
-
-### Admin Dashboard
-
-Comprehensive admin panel includes:
-- **Dashboard:** Overview with statistics and recent activity
-- **Posts:** Create, edit, and manage articles
-- **Media:** Upload and organize images
-- **Users:** Manage users and assign roles
-- **Settings:** Configure site settings
-
-### Design Philosophy
-
-- **Typography:** Noto Sans Thai for excellent Thai and English readability
-- **Colors:** Refined Zinc/Slate color palette
-- **Spacing:** Generous whitespace for clarity
-- **Borders:** Subtle borders for elegant separation
-- **Animations:** Smooth, purposeful transitions
-
-## Building for Production
-
-Build the application:
-
-```bash
-npm run build
-```
-
-Start the production server:
-
-```bash
-npm start
-```
-
-## Deployment
-
-### Vercel (Recommended)
-
-1. Push your code to GitHub
-2. Import your repository to Vercel
-3. Configure environment variables
-4. Deploy
-
-The application is optimized for Vercel deployment with automatic:
-- Server-side rendering
-- Static generation
-- Image optimization
-- Edge functions
-
-### Environment Variables
-
-Required environment variables for production:
-
-```env
-NEXTAUTH_URL=https://yourdomain.com
-NEXTAUTH_SECRET=your-production-secret
-```
-
-## Customization
-
-### Styling
-
-Modify `tailwind.config.ts` to customize:
-- Colors
-- Typography
-- Spacing
-- Border radius
-
-Update `app/globals.css` for:
-- CSS variables
-- Dark mode colors
-- Global styles
-
-### Content
-
-Replace mock data in pages with your actual data source:
-- Database (PostgreSQL, MongoDB, etc.)
-- CMS (Strapi, Contentful, etc.)
-- API endpoints
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License.
-
-## Support
-
-For support, email support@siamheritage.com or open an issue in the repository.
-
----
-
-Built with ❤️ using Next.js and TypeScript
+เอกสารเก่า 29 ไฟล์ (ก่อน 2026-11-01) ส่วนใหญ่เป็นสมัยที่โค้ดยังเป็น SiamHeritage / Vibe หรือเป็นบันทึกการแก้แต่ละครั้งที่ถูกรวมเข้าเอกสารหลักแล้ว
+เก็บไว้ค้นประวัติเท่านั้น **ข้อมูลอาจไม่ตรงกับโค้ดปัจจุบัน**

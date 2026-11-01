@@ -9,6 +9,7 @@ import { getAllArticleMasters } from "@/lib/articles-data";
 import { createAdminClient } from "@/lib/supabase-server";
 import { runPublishAutomation } from "@/lib/publish-automation";
 import type { ArticleMaster } from "@/lib/types";
+import { normalizeSourceLocale, sourceLocaleOf } from "@/lib/locales";
 
 // ============================================================
 // GET /api/admin/articles — ดึงจาก Supabase articles table
@@ -37,6 +38,7 @@ export async function GET() {
     const articles: ArticleMaster[] = (rows || []).map((row: any) => ({
       id: row.id,
       slug: row.slug,
+      sourceLocale: sourceLocaleOf(row),
       originalTitle: row.original_title,
       originalExcerpt: row.original_excerpt,
       originalContent: row.original_content,
@@ -97,7 +99,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const {
-      slug, originalTitle, originalExcerpt, originalContent,
+      slug, sourceLocale, originalTitle, originalExcerpt, originalContent,
       category, author, publishedAt, imageUrl, imageAlt,
       imageCredit, imagePhotographer, imageSourceUrl, imageYear,
       featured, tags, status,
@@ -184,6 +186,7 @@ export async function POST(request: NextRequest) {
       .from("articles")
       .insert({
         slug,
+        source_locale: normalizeSourceLocale(sourceLocale),
         original_title: originalTitle,
         original_excerpt: originalExcerpt || originalContent.slice(0, 200).replace(/[#*\n]/g, ""),
         original_content: originalContent,
@@ -223,6 +226,7 @@ export async function POST(request: NextRequest) {
     const newArticle: ArticleMaster = {
       id: inserted.id,
       slug: inserted.slug,
+      sourceLocale: sourceLocaleOf(inserted),
       originalTitle: inserted.original_title,
       originalExcerpt: inserted.original_excerpt,
       originalContent: inserted.original_content,
@@ -263,10 +267,10 @@ export async function POST(request: NextRequest) {
       try {
         seoResult = await runPublishAutomation({
           slug: inserted.slug,
-          locale: "th",
+          locale: sourceLocaleOf(inserted),
         });
         console.log(
-          `[Article POST] SEO automation for new "${inserted.slug}" [th]:`,
+          `[Article POST] SEO automation for new "${inserted.slug}" [${sourceLocaleOf(inserted)}]:`,
           seoResult
         );
       } catch (seoErr: any) {

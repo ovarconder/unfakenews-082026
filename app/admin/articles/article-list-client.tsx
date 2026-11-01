@@ -180,8 +180,9 @@ export default function ArticleListClient({
                   const tiersRes = await fetch("/api/settings/tiers");
                   const tiersData = await tiersRes.json();
                   const tierConfig: Record<string, "0" | "1" | "2"> = tiersData.tiers || {};
+                  // ข้ามภาษาต้นฉบับของแต่ละบทความใน loop ด้านล่าง
                   const localesToTranslate = Object.entries(tierConfig)
-                    .filter(([locale, tier]) => locale !== "th" && tier !== "0")
+                    .filter(([, tier]) => tier !== "0")
                     .map(([locale]) => locale);
 
                   setTranslateProgress(`กำลังแปล ${articles.length} บทความ → ${localesToTranslate.length} ภาษา...`);
@@ -190,6 +191,7 @@ export default function ArticleListClient({
                   let done = 0;
                   for (const article of articles) {
                     for (const locale of localesToTranslate) {
+                      if (locale === (article.sourceLocale || "th")) continue;
                       try {
                         await fetch("/api/translate-new", {
                           method: "POST",
@@ -363,7 +365,7 @@ export default function ArticleListClient({
                       <div className="flex items-center justify-end gap-2">
                         {/* Preview - visible to all (เพิ่ม ?preview=1 ให้ draft ดูได้) */}
                         <Link
-                          href={`/${"th"}/articles/${article.slug}?preview=1`}
+                          href={`/${article.sourceLocale || "th"}/articles/${article.slug}?preview=1`}
                           target="_blank"
                           className="p-1.5 rounded hover:bg-white/10 text-white/40 hover:text-amber-300 transition-all"
                           title="ดูตัวอย่าง"
@@ -383,7 +385,7 @@ export default function ArticleListClient({
                                 const tiersData = await tiersRes.json();
                                 const tierConfig: Record<string, "0" | "1" | "2"> = tiersData.tiers || {};
                                 const localesToTranslate = Object.entries(tierConfig)
-                                  .filter(([locale, tier]) => locale !== "th" && tier !== "0")
+                                  .filter(([locale, tier]) => locale !== (article.sourceLocale || "th") && tier !== "0")
                                   .map(([locale]) => locale);
 
                                 // Translate for all locales

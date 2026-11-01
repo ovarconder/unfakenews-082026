@@ -40,6 +40,7 @@ export default async function EditArticlePage({
   const article = {
     id: row.id,
     slug: row.slug,
+    sourceLocale: row.source_locale || "th",
     originalTitle: row.original_title || "",
     originalExcerpt: row.original_excerpt || "",
     originalContent: row.original_content || "",

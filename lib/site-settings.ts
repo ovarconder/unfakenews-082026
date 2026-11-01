@@ -7,7 +7,7 @@
 
 import { createAdminClient } from "@/lib/supabase-server";
 import type { Locale } from "@/lib/locales";
-import { ALL_LOCALES, setLocaleTiers } from "@/lib/locales";
+import { ALL_LOCALES, DEFAULT_SOURCE_LOCALE, normalizeSourceLocale, setLocaleTiers } from "@/lib/locales";
 
 export interface SiteSettings {
   /** DB row id — เป็นได้ทั้ง UUID (เว็บอื่น) หรือ TEXT 'default' ขึ้นกับ schema ของแต่ละ DB */
@@ -74,6 +74,8 @@ export interface SiteSettings {
    * Default: 6 active locales are Tier 1, rest are Tier 2
    */
   localeTiers: Record<string, "0" | "1" | "2">;
+  /** ภาษาต้นฉบับเริ่มต้นตอนสร้างโพสต์ใหม่ (articles.source_locale) */
+  defaultSourceLocale: Locale;
   // OAuth Keys for login with Google / Facebook
   // เก็บใน DB และตรวจสอบคู่กับ Environment Variables
   googleOAuthClientId?: string;
@@ -158,6 +160,7 @@ const DEFAULT_SETTINGS: SiteSettings = {
     "en": "1", "th": "1", "zh": "1", "ja": "1", "es": "1", "pt": "1",
     "fr": "2", "ko": "2", "de": "2", "ru": "2", "ar": "2", "hi": "2", "it": "2", "vi": "2", "ms": "2",
   },
+  defaultSourceLocale: normalizeSourceLocale(process.env.NEXT_PUBLIC_DEFAULT_SOURCE_LOCALE || DEFAULT_SOURCE_LOCALE),
   // OAuth Keys — fallback to env vars if set
   googleOAuthClientId: process.env.AUTH_GOOGLE_CLIENT_ID || "",
   googleOAuthClientSecret: process.env.AUTH_GOOGLE_CLIENT_SECRET || "",
@@ -257,6 +260,7 @@ function dbRowToSettings(row: any): SiteSettings {
     maintenanceMode: toBool(row.maintenance_mode, DEFAULT_SETTINGS.maintenanceMode),
     maintenanceMessage: row.maintenance_message || DEFAULT_SETTINGS.maintenanceMessage,
     localeTiers: row.locale_tiers ? row.locale_tiers : DEFAULT_SETTINGS.localeTiers,
+    defaultSourceLocale: normalizeSourceLocale(row.default_source_locale),
     // OAuth Keys — ใช้ค่าจาก DB ก่อน ถ้าไม่มี fallback จาก env var
     googleOAuthClientId: row.google_oauth_client_id || process.env.AUTH_GOOGLE_CLIENT_ID || "",
     googleOAuthClientSecret: row.google_oauth_client_secret || process.env.AUTH_GOOGLE_CLIENT_SECRET || "",
@@ -335,6 +339,7 @@ function settingsToDbRow(settings: SiteSettings): any {
     maintenance_mode: settings.maintenanceMode,
     maintenance_message: settings.maintenanceMessage || null,
     locale_tiers: settings.localeTiers,
+    default_source_locale: settings.defaultSourceLocale,
     // OAuth Keys
     google_oauth_client_id: settings.googleOAuthClientId || null,
     google_oauth_client_secret: settings.googleOAuthClientSecret || null,

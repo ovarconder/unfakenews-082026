@@ -8,7 +8,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase-server";
 import { getSettings } from "@/lib/site-settings";
-import { ALL_LOCALES } from "@/lib/locales";
+import { ALL_LOCALES, sourceLocaleOf } from "@/lib/locales";
 import type { Locale } from "@/lib/locales";
 
 export async function GET(request: Request) {
@@ -23,7 +23,17 @@ export async function GET(request: Request) {
 
     const locale = localeParam as Locale;
 
-    if (locale === "th") {
+    const supabase = createAdminClient();
+
+    // ★ ดึง content_updated_at ของต้นฉบับ เพื่อตรวจ "ความล้าสมัย" ของคำแปล
+    //   (ถ้าต้นฉบับแก้หลังแปล → คำแปล stale → ต้องแปลใหม่)
+    const { data: articleRow } = await supabase
+      .from("articles")
+      .select("content_updated_at, updated_at, source_locale")
+      .eq("id", articleId)
+      .maybeSingle();
+
+    if (locale === sourceLocaleOf(articleRow as any)) {
       return NextResponse.json({
         status: "complete",
         tier: 1,
@@ -33,20 +43,11 @@ export async function GET(request: Request) {
       });
     }
 
-    const supabase = createAdminClient();
-
     // Get tier config
     const settings = await getSettings();
     const localeTiers: Record<string, number> = (settings.localeTiers as any) || {};
     const tier = localeTiers[locale] || 1;
 
-    // ★ ดึง content_updated_at ของต้นฉบับ เพื่อตรวจ "ความล้าสมัย" ของคำแปล
-    //   (ถ้าต้นฉบับแก้หลังแปล → คำแปล stale → ต้องแปลใหม่)
-    const { data: articleRow } = await supabase
-      .from("articles")
-      .select("content_updated_at, updated_at")
-      .eq("id", articleId)
-      .maybeSingle();
     const contentUpdatedAt: string | null =
       (articleRow as any)?.content_updated_at || (articleRow as any)?.updated_at || null;
 

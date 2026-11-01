@@ -63,7 +63,7 @@ Arguments: `$ARGUMENTS`
 | `translations` | `[]` (ให้เว็บปลายทางกดแปลเอง) |
 | `category_slug`, ฟิลด์รูปอื่น ๆ, `featured`, `entity_type`, `wikidata_id` | คงเดิม |
 
-บันทึกเป็น `<โฟลเดอร์ของไฟล์ input>/<เว็บ>/<slug ใหม่>.json` (UTF-8, indent 2)
+บันทึกเป็น `<โฟลเดอร์ของไฟล์ input>/out/<เว็บ>/<slug ใหม่>.json` (UTF-8, indent 2)
 
 ## 5. ตรวจไฟล์ก่อนส่ง
 

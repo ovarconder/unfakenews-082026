@@ -1,6 +1,6 @@
 # ขั้นตอนทำบทความด้วย Claude Code (หัวข้อ + เนื้อหาคร่าวๆ → draft)
 
-> อัปเดตล่าสุด: 2026-11-01 — เพิ่ม `/clone-article`
+> อัปเดตล่าสุด: 2026-11-01 — เพิ่ม `/draft-article`, `/clone-article`
 
 หลักการ: **คนเป็นคนเลือกหัวข้อ ใส่ข้อเท็จจริงและแหล่งอ้างอิง** Claude ช่วยเรียบเรียงเป็นบทความเต็ม แล้วส่งออกเป็นไฟล์ JSON
 ไฟล์นั้น import เข้าเว็บเป็น **draft** เสมอ ต้องมีคนตรวจก่อน publish
@@ -22,12 +22,20 @@
 
 ## 2. สั่ง Claude Code
 
-เปิด Claude Code ในโฟลเดอร์ repo แล้วสั่ง เช่น
+เปิด Claude Code **ในโฟลเดอร์ repo** (`unfakenews-082026`) แล้วพิมพ์
 
-> เรียบเรียงบทความจาก `~/Project-UnFakeNews/content/2026-11-01-topics.md` เป็นภาษาไทยสำหรับ unfakenews.asia
-> ทำเป็นไฟล์ JSON สำหรับ Import (รูปแบบตาม docs/2026-11-01-content-workflow.md) บันทึกที่ `~/Project-UnFakeNews/content/out/`
+```
+/draft-article ~/Project-UnFakeNews/content/2026-11-01-topics.md
+/draft-article ~/Project-UnFakeNews/content/2026-11-01-topics.md factbase.asia      ← ร่างลงเว็บเครือข่ายเป็นภาษาอังกฤษโดยตรง
+/draft-article ~/Project-UnFakeNews/content/2026-11-01-topics.md unfakenews.asia ค้นข้อมูลเพิ่มได้
+```
 
-Claude จะสร้าง 1 ไฟล์ต่อ 1 บทความ (title, excerpt, content markdown, quick facts, tags, ClaimReview schema)
+- 1 หัวข้อ (`## หัวข้อ:`) = 1 ไฟล์ บันทึกที่ `<โฟลเดอร์ไฟล์หัวข้อ>/out/<เว็บ>/<slug>.json`
+- โครงบทความ: ข้อกล่าวอ้าง → คำตัดสิน → ข้อเท็จจริง → บริบท → สรุป → แหล่งอ้างอิง + quick facts + ClaimReview schema
+- Claude ใช้เฉพาะข้อมูลและลิงก์ที่ให้ไป เปิดอ่านลิงก์เพื่อยืนยันรายละเอียดได้ แต่ **ไม่ค้นแหล่งใหม่** เว้นแต่สั่งในหมายเหตุ
+- หัวข้อที่ข้อมูลไม่พอจะถูกข้าม พร้อมบอกว่าต้องเพิ่มอะไร
+- ถ้าไม่ได้ใส่คำตัดสิน Claude จะเสนอให้ และบอกว่าต้องยืนยัน
+- กติกาทั้งหมดอยู่ใน `.claude/commands/draft-article.md`
 
 ## 3. Import → ตรวจ → Publish
 
@@ -48,7 +56,7 @@ Claude จะสร้าง 1 ไฟล์ต่อ 1 บทความ (title
    ```
 
    Claude จะเรียบเรียงใหม่เป็นภาษาอังกฤษตามมุมเล่าของแต่ละเว็บ ตั้ง `source_locale: "en"` ใช้ slug ใหม่ เอาคำแปลออก
-   แล้วตรวจไฟล์ให้เอง (slug, ไม่มีอักษรไทยหลง, ลิงก์ไม่หาย) บันทึกที่ `<โฟลเดอร์ไฟล์ export>/<เว็บ>/<slug>.json`
+   แล้วตรวจไฟล์ให้เอง (slug, ไม่มีอักษรไทยหลง, ลิงก์ไม่หาย) บันทึกที่ `<โฟลเดอร์ไฟล์ export>/out/<เว็บ>/<slug>.json`
    พร้อมสรุปจุดที่ควรตรวจก่อน publish
 3. เว็บปลายทาง → Admin → เขียนบทความใหม่ → **Import JSON** → ตรวจ → Publish
 
@@ -106,5 +114,4 @@ Claude จะสร้าง 1 ไฟล์ต่อ 1 บทความ (title
 
 ## 6. ต่อยอด (ยังไม่ได้ทำ)
 
-- slash command `/draft-article` (จากหัวข้อ + เนื้อหาคร่าวๆ → JSON สำหรับเว็บหลัก)
 - ตั้งเวลาให้ร่างอัตโนมัติ (`/schedule`) ซึ่งต้องเพิ่ม API endpoint ที่ใช้ token ส่ง draft เข้าเว็บ

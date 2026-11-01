@@ -18,9 +18,11 @@ import {
   Star,
   AlertCircle,
   Languages,
+  Download,
 } from "lucide-react";
 import type { ArticleMaster } from "@/lib/types";
 import { addNotification } from "@/lib/notification-store";
+import { adminFetch } from "@/lib/use-admin-fetch";
 
 interface ArticleListClientProps {
   articles: ArticleMaster[];
@@ -49,6 +51,9 @@ export default function ArticleListClient({
   const [translateProgress, setTranslateProgress] = useState<string | null>(null);
   const [translatingSlug, setTranslatingSlug] = useState<string | null>(null);
   const [featuredToggling, setFeaturedToggling] = useState<string | null>(null);
+  // Export หลายบทความ (editor/admin — API ต้องการ article:edit_any)
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [exportProgress, setExportProgress] = useState<string | null>(null);
 
   // categoryMap: from parent prop (page.tsx), fallback to empty
   const categoryMap = categoryMapProp || {};
@@ -131,6 +136,51 @@ export default function ArticleListClient({
     }
   };
 
+  // ================================================================
+  // Export หลายบทความ — download ทีละไฟล์ article-<slug>.json
+  //   (รูปแบบเดียวกับปุ่ม Export ในหน้า edit → ใช้กับ Import / /clone-article ได้เลย)
+  // ================================================================
+  const toggleSelected = (slug: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(slug)) next.delete(slug);
+      else next.add(slug);
+      return next;
+    });
+  };
+
+  const handleExportSelected = async () => {
+    const slugs = [...selected];
+    if (slugs.length === 0) return;
+    const failed: string[] = [];
+    for (let i = 0; i < slugs.length; i++) {
+      setExportProgress(`กำลัง Export ${i + 1}/${slugs.length}...`);
+      try {
+        const res = await adminFetch(`/api/admin/articles/${slugs[i]}/transfer`);
+        if (!res.ok) {
+          failed.push(slugs[i]);
+          continue;
+        }
+        const url = URL.createObjectURL(await res.blob());
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `article-${slugs[i]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        // เว้นระยะเล็กน้อย กัน browser ตัด download ที่ยิงติดกัน
+        await new Promise((r) => setTimeout(r, 300));
+      } catch {
+        failed.push(slugs[i]);
+      }
+    }
+    setExportProgress(
+      failed.length === 0
+        ? `Export สำเร็จ ${slugs.length} ไฟล์ (อยู่ใน Downloads)`
+        : `Export สำเร็จ ${slugs.length - failed.length}/${slugs.length} — ล้มเหลว: ${failed.join(", ")}`
+    );
+    if (failed.length === 0) setSelected(new Set());
+  };
+
   // Toggle featured (highlight) — editor/admin only
   const toggleFeatured = async (article: ArticleMaster) => {
     if (!isEditor) return;
@@ -165,9 +215,22 @@ export default function ArticleListClient({
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-base sm:text-2xl font-bold text-white">บทความทั้งหมด</h1>
-          <p className="text-white/50 text-sm mt-1">จัดการบทความภาษาไทย ({articles.length} เรื่อง)</p>
+          <p className="text-white/50 text-sm mt-1">จัดการบทความ ({articles.length} เรื่อง)</p>
         </div>
         <div className="flex items-center gap-2">
+          {/* Export ที่เลือก */}
+          {isEditor && (
+            <button
+              onClick={handleExportSelected}
+              disabled={selected.size === 0 || (exportProgress?.startsWith("กำลัง") ?? false)}
+              title="ติ๊กเลือกบทความในตาราง แล้วกดเพื่อ download ไฟล์ JSON ทีละบทความ"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-violet-400/30 text-violet-300 hover:bg-violet-400/10 transition-all text-sm disabled:opacity-40"
+            >
+              <Download size={16} />
+              Export ที่เลือก{selected.size > 0 ? ` (${selected.size})` : ""}
+            </button>
+          )}
+
           {/* Batch Translate Button */}
           {canCreate && (
             <button
@@ -247,6 +310,13 @@ export default function ArticleListClient({
         </div>
       </div>
 
+      {exportProgress && (
+        <div className="mb-4 px-3 py-2 rounded-lg text-xs bg-violet-400/10 border border-violet-400/20 text-violet-200">
+          {exportProgress}
+          {exportProgress.startsWith("กำลัง") ? "" : " — ถ้า browser ถามให้อนุญาตดาวน์โหลดหลายไฟล์ ให้กดอนุญาต"}
+        </div>
+      )}
+
       {/* Filters + Sort */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
@@ -287,6 +357,19 @@ export default function ArticleListClient({
           <table className="w-full">
             <thead>
               <tr className="border-b border-white/10">
+                {isEditor && (
+                  <th className="pl-4 py-3 w-8">
+                    <input
+                      type="checkbox"
+                      aria-label="เลือกทั้งหมด"
+                      checked={filtered.length > 0 && filtered.every((a) => selected.has(a.slug))}
+                      onChange={(e) =>
+                        setSelected(e.target.checked ? new Set(filtered.map((a) => a.slug)) : new Set())
+                      }
+                      className="accent-violet-400"
+                    />
+                  </th>
+                )}
                 <th
                   className="text-left px-4 py-3 text-white/50 text-xs font-medium uppercase tracking-wider cursor-pointer hover:text-white select-none"
                   onClick={() => toggleSort("title")}
@@ -315,7 +398,7 @@ export default function ArticleListClient({
             <tbody className="divide-y divide-white/5">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-white/40">
+                  <td colSpan={isEditor ? 7 : 6} className="px-4 py-12 text-center text-white/40">
                     <FileText size={32} className="mx-auto mb-2 opacity-30" />
                     ไม่พบบทความ
                   </td>
@@ -323,6 +406,17 @@ export default function ArticleListClient({
               ) : (
                 filtered.map((article) => (
                   <tr key={article.id} className="hover:bg-white/5 transition-colors">
+                    {isEditor && (
+                      <td className="pl-4 py-3 w-8">
+                        <input
+                          type="checkbox"
+                          aria-label={`เลือก ${article.slug}`}
+                          checked={selected.has(article.slug)}
+                          onChange={() => toggleSelected(article.slug)}
+                          className="accent-violet-400"
+                        />
+                      </td>
+                    )}
                     <td className="px-4 py-3">
                       <div>
                         <p className="text-white font-medium text-sm line-clamp-1">

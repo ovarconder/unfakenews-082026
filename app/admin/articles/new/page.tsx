@@ -5,11 +5,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Upload, RefreshCw, CheckCircle2, XCircle } from "lucide-react";
 import ArticleEditor from "@/components/admin/article-editor";
 import { adminFetch } from "@/lib/use-admin-fetch";
 import type { ArticleFormData } from "@/components/admin/article-editor";
+
+type ImportResult = { file: string; ok: boolean; slug?: string; error?: string };
 
 export default function NewArticlePage() {
   const router = useRouter();
@@ -24,55 +27,99 @@ export default function NewArticlePage() {
   }, []);
 
   // ================================================================
-  // Import JSON
+  // Import JSON — เลือกได้หลายไฟล์ (import ทีละไฟล์ตามลำดับ)
+  //   1 ไฟล์สำเร็จ → ไปหน้า edit ทันที (พฤติกรรมเดิม)
+  //   หลายไฟล์    → แสดงสรุปผลรายไฟล์ พร้อมลิงก์ไปหน้า edit
   // ================================================================
   const importFileRef = useRef<HTMLInputElement>(null);
   const [importLoading, setImportLoading] = useState(false);
-  const [importMsg, setImportMsg] = useState<{
-    type: "success" | "error";
-    text: string;
-  } | null>(null);
+  const [importProgress, setImportProgress] = useState<string | null>(null);
+  const [importResults, setImportResults] = useState<ImportResult[]>([]);
 
   const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
     e.target.value = "";
+    if (files.length === 0) return;
 
     setImportLoading(true);
-    setImportMsg(null);
-    try {
-      const text = await file.text();
-      const payload = JSON.parse(text);
+    setImportResults([]);
 
-      const targetSlug = payload?.article?.slug;
-      if (!targetSlug) {
-        setImportMsg({ type: "error", text: "ไฟล์ JSON ไม่มี article.slug — ไม่สามารถ import ได้" });
-        return;
+    // 1. อ่าน + ตรวจทุกไฟล์ก่อน (กัน slug ซ้ำกันเองในรอบเดียว — ไฟล์หลังจะทับไฟล์แรก)
+    const parsed: { file: string; slug?: string; payload?: unknown; error?: string }[] = [];
+    const seen = new Set<string>();
+    for (const file of files) {
+      try {
+        const payload = JSON.parse(await file.text());
+        const slug: string | undefined = payload?.article?.slug;
+        if (!slug) {
+          parsed.push({ file: file.name, error: "ไม่มี article.slug" });
+        } else if (seen.has(slug)) {
+          parsed.push({ file: file.name, slug, error: "slug ซ้ำกับไฟล์อื่นในรอบนี้" });
+        } else {
+          seen.add(slug);
+          parsed.push({ file: file.name, slug, payload });
+        }
+      } catch {
+        parsed.push({ file: file.name, error: "อ่านไฟล์ไม่ได้ หรือ JSON ผิดรูปแบบ" });
       }
-
-      const res = await adminFetch(`/api/admin/articles/${targetSlug}/transfer`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const result = await res.json();
-
-      if (!res.ok) {
-        setImportMsg({ type: "error", text: result.error || "Import ล้มเหลว" });
-        return;
-      }
-
-      // Import สำเร็จ → redirect ไปหน้า edit ของ slug นั้นเลย
-      router.push(`/admin/articles/edit/${result.slug}`);
-      router.refresh();
-    } catch (err: unknown) {
-      setImportMsg({
-        type: "error",
-        text: err instanceof Error ? err.message : "อ่านไฟล์ไม่ได้ หรือ JSON ผิดรูปแบบ",
-      });
-    } finally {
-      setImportLoading(false);
     }
+
+    // 2. เตือนถ้ามีบทความ slug เดียวกันอยู่แล้ว (import จะทับ + กลับเป็น draft)
+    const valid = parsed.filter((p) => p.payload);
+    const existing: string[] = [];
+    for (const p of valid) {
+      const res = await adminFetch(`/api/admin/articles/${p.slug}`).catch(() => null);
+      if (res?.ok) existing.push(p.slug!);
+    }
+    if (
+      existing.length > 0 &&
+      !confirm(
+        `มีบทความ slug นี้อยู่แล้ว ${existing.length} เรื่อง:\n${existing.join("\n")}\n\n` +
+          `import จะเขียนทับและเปลี่ยนเป็น draft (ถ้า publish อยู่จะหายจากหน้าเว็บ) — ดำเนินการต่อ?`
+      )
+    ) {
+      setImportLoading(false);
+      return;
+    }
+
+    // 3. import ทีละไฟล์
+    const results: ImportResult[] = parsed
+      .filter((p) => p.error)
+      .map((p) => ({ file: p.file, ok: false, slug: p.slug, error: p.error }));
+    let done = 0;
+    for (const p of valid) {
+      setImportProgress(`กำลัง Import ${++done}/${valid.length}...`);
+      try {
+        const res = await adminFetch(`/api/admin/articles/${p.slug}/transfer`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(p.payload),
+        });
+        const result = await res.json();
+        results.push(
+          res.ok
+            ? { file: p.file, ok: true, slug: result.slug }
+            : { file: p.file, ok: false, slug: p.slug, error: result.error || "Import ล้มเหลว" }
+        );
+      } catch (err: unknown) {
+        results.push({
+          file: p.file,
+          ok: false,
+          slug: p.slug,
+          error: err instanceof Error ? err.message : "Import ล้มเหลว",
+        });
+      }
+    }
+    setImportProgress(null);
+    setImportLoading(false);
+
+    if (files.length === 1 && results[0]?.ok) {
+      router.push(`/admin/articles/edit/${results[0].slug}`);
+      router.refresh();
+      return;
+    }
+    setImportResults(results);
+    router.refresh();
   };
 
   const handleSave = async (data: ArticleFormData) => {
@@ -106,7 +153,7 @@ export default function NewArticlePage() {
           <button
             onClick={() => importFileRef.current?.click()}
             disabled={importLoading}
-            title="Import บทความจากไฟล์ JSON (จากเว็บอื่นที่ใช้ schema เดียวกัน) — import แล้วจะเป็น draft"
+            title="Import บทความจากไฟล์ JSON (เลือกได้หลายไฟล์) — import แล้วจะเป็น draft"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border border-violet-400/30 bg-violet-400/10 text-violet-300 hover:bg-violet-400/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {importLoading ? (
@@ -114,30 +161,43 @@ export default function NewArticlePage() {
             ) : (
               <Upload size={12} />
             )}
-            {importLoading ? "กำลัง Import..." : "Import JSON"}
+            {importLoading ? importProgress || "กำลัง Import..." : "Import JSON"}
           </button>
           <input
             ref={importFileRef}
             type="file"
             accept=".json,application/json"
+            multiple
             className="hidden"
             onChange={handleImportFile}
           />
 
-          {importMsg && (
-            <div
-              className={`flex items-start gap-1.5 px-3 py-2 rounded-lg text-xs max-w-sm ${
-                importMsg.type === "success"
-                  ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-300"
-                  : "bg-red-500/10 border border-red-500/30 text-red-300"
-              }`}
-            >
-              {importMsg.type === "success" ? (
-                <CheckCircle2 size={12} className="mt-0.5 shrink-0" />
-              ) : (
-                <XCircle size={12} className="mt-0.5 shrink-0" />
-              )}
-              <span>{importMsg.text}</span>
+          {importResults.length > 0 && (
+            <div className="flex flex-col gap-1 px-3 py-2 rounded-lg text-xs max-w-md bg-white/5 border border-white/10">
+              <span className="text-white/60">
+                Import สำเร็จ {importResults.filter((r) => r.ok).length}/{importResults.length} ไฟล์ — ทุกบทความเป็น draft
+              </span>
+              {importResults.map((r) => (
+                <div
+                  key={r.file}
+                  className={`flex items-start gap-1.5 ${r.ok ? "text-emerald-300" : "text-red-300"}`}
+                >
+                  {r.ok ? (
+                    <CheckCircle2 size={12} className="mt-0.5 shrink-0" />
+                  ) : (
+                    <XCircle size={12} className="mt-0.5 shrink-0" />
+                  )}
+                  {r.ok ? (
+                    <Link href={`/admin/articles/edit/${r.slug}`} className="underline hover:text-emerald-200">
+                      {r.slug}
+                    </Link>
+                  ) : (
+                    <span>
+                      {r.file}: {r.error}
+                    </span>
+                  )}
+                </div>
+              ))}
             </div>
           )}
         </div>

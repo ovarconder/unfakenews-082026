@@ -110,13 +110,16 @@ function getTargetLanguage(locale: Locale): string {
 // Shared prompt context — fact-check / counter-disinformation site
 // ============================================================
 
-const SITE_CONTEXT = `You translate articles for a fact-checking and counter-disinformation news site. Articles examine false or misleading claims (mostly concerning Thailand and Cambodia) and correct them with evidence and cited sources.`;
+const SITE_CONTEXT = `You translate articles for a fact-checking and counter-disinformation news site. Most articles examine false or misleading claims (mostly concerning Thailand and Cambodia) and correct them with evidence and cited sources; others are explainers or feature stories.`;
 
 const ACCURACY_RULES = `- **Accuracy first:** Preserve every factual claim, number, date, name, quotation and its attribution exactly. Never add, omit, soften or strengthen a claim.
 - **Tone:** Neutral, factual, journalistic. No editorializing beyond what the source text says.
 - **Names:** Use established international spellings for people, places and organizations (e.g. Preah Vihear, Ta Muen Thom, Hun Manet). If none exists, transliterate and keep the original-script form in parentheses on first use.
 - **Verdict labels:** Translate rating words (e.g. False, Misleading, Partly true, True) consistently and literally.
 - **Formatting:** Keep markdown, links, URLs, image syntax and shortcodes unchanged — translate only human-readable text.`;
+
+// ให้คำแปลอ่านเหมือนคนเขียน ไม่ใช่ AI (หลักเดียวกับ .claude/writing-style.md)
+const HUMAN_STYLE = `- **Sound human, not AI:** The result must read as if a native-speaking news reporter wrote it from scratch. Plain, concrete words; active voice; varied sentence length. No filler or stock phrases (e.g. "delve", "it's important to note", "in today's digital age", "a testament to", "underscores", "pivotal", "navigate", "landscape"; in Thai: "ทำการ", "มีการ" chains, "ถือเป็น", "สะท้อนให้เห็นถึง", "ในยุคดิจิทัล"). Don't add transitions like "Moreover/Furthermore" that the source doesn't need, and don't add summaries or morals. Keep the source's structure and meaning — style must never change facts.`;
 
 // ============================================================
 // System Prompt 1: Main Content (Title, Excerpts, Content)
@@ -132,6 +135,7 @@ Translate the provided ${sourceLanguage} content into ${targetLanguage}.
 ### Guidelines:
 ${ACCURACY_RULES}
 - **Natural flow:** Avoid word-for-word translation; write as a native ${targetLanguage} news editor would, without changing meaning.
+${HUMAN_STYLE}
 - **Consistency:** Use the same terminology across title, excerpts and content.
 
 ### Input (JSON): { "title", "short_excerpt", "long_excerpt", "content"? }

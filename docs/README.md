@@ -15,8 +15,8 @@
 | อัปเดต | เอกสาร | เนื้อหา |
 |---|---|---|
 | 2026-11-03 | [article-guide](2026-11-03-article-guide.md) | **คู่มือ** สร้างบทความ (`/draft-article`) → Import → ตรวจ → publish → clone ไปเว็บ 2–5 (`/clone-article`) |
+| 2026-11-03 | [translation-and-source-locale](2026-11-03-translation-and-source-locale.md) | ภาษาต้นฉบับรายบทความ, ระบบแปล, prompt |
 | 2026-11-01 | [overview](2026-11-01-overview.md) | **เริ่มอ่านที่นี่** — เครือข่าย 5 เว็บ, โครงสร้างโค้ด, แนวคิดข้อมูล |
-| 2026-11-01 | [translation-and-source-locale](2026-11-01-translation-and-source-locale.md) | ภาษาต้นฉบับรายบทความ, ระบบแปล, prompt |
 | 2026-11-01 | [new-site-setup](2026-11-01-new-site-setup.md) | ตั้งเว็บใหม่: Supabase + Vercel + domain + env |
 | 2026-11-01 | [database-schema](2026-11-01-database-schema.md) | ตาราง/คอลัมน์ทั้งหมด + กติกา migration |
 | 2026-11-01 | [seo-indexing](2026-11-01-seo-indexing.md) | IndexNow, Google Indexing, sitemap/hreflang, llms.txt, Claims API |

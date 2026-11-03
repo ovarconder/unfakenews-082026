@@ -1,6 +1,6 @@
 # คู่มือสร้างบทความ + Clone ไปเว็บเครือข่าย
 
-> อัปเดตล่าสุด: 2026-11-03 — เพิ่มแนวเรื่อง (fact-check / อธิบาย / เล่าเรื่อง), ไฟล์ตัวอย่าง `content/TEMPLATE-topics.md` · 2026-11-01 — คู่มือทีละขั้น (เดิมชื่อ `content-workflow`), Import หลายไฟล์, Export หลายบทความ, `/clone-article` แบบโฟลเดอร์
+> อัปเดตล่าสุด: 2026-11-03 — แนวการเขียน `.claude/writing-style.md` (ให้อ่านเหมือนคนเขียน), เพิ่มแนวเรื่อง (fact-check / อธิบาย / เล่าเรื่อง), ไฟล์ตัวอย่าง `content/TEMPLATE-topics.md` · 2026-11-01 — คู่มือทีละขั้น (เดิมชื่อ `content-workflow`), Import หลายไฟล์, Export หลายบทความ, `/clone-article` แบบโฟลเดอร์
 
 ```
  ① เขียนหัวข้อ        ② Claude ร่าง          ③ Import + ตรวจ       ④ Export          ⑤ Claude clone        ⑥ Import + ตรวจ
@@ -59,6 +59,8 @@
 ```
 
 > ไฟล์ตัวอย่างครบทุกแบบ: `~/Project-UnFakeNews/content/TEMPLATE-topics.md` (copy ไปแก้ — ข้อมูลในนั้นเป็นของสมมติ ห้ามรันตรงๆ)
+
+> สำนวนภาษา: `/draft-article` และ `/clone-article` ใช้กฎใน `.claude/writing-style.md` (เขียนให้เหมือนนักข่าวคนจริง เลี่ยงคำติดปาก AI) — อยากปรับสำนวน แก้ไฟล์นั้นไฟล์เดียว
 
 #### แนวเรื่อง — บอก AI ว่าหัวข้อนี้เขียนแบบไหน
 

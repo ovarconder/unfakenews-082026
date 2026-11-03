@@ -1,6 +1,6 @@
 # ระบบแปลภาษา + ภาษาต้นฉบับรายบทความ
 
-> อัปเดตล่าสุด: 2026-11-01 — เพิ่ม `source_locale` (เลือกภาษาต้นฉบับได้), เขียน prompt แปลใหม่ให้เป็นแนว fact-check
+> อัปเดตล่าสุด: 2026-11-03 — เพิ่ม `HUMAN_STYLE` (คำแปลต้องอ่านเหมือนคนเขียน) · 2026-11-01 — เพิ่ม `source_locale` (เลือกภาษาต้นฉบับได้), เขียน prompt แปลใหม่ให้เป็นแนว fact-check
 > แทนเอกสารเก่า: `translation-architecture.md`, `translation-strategy-blueprint.md`, `translation-v2-implementation.md`,
 > `07-locale-tier-0-disabled.md`, `10-…translation-provider…`, `11-auto-translate-batch…`, `13-edit-article-locale-aware.md`,
 > `16-manual-translate-only-no-jit.md` (อยู่ใน `archive/`)
@@ -44,6 +44,7 @@
 - ชื่อเฉพาะใช้การสะกดสากล (Preah Vihear, Ta Muen Thom ฯลฯ)
 - คำตัดสิน (False / Misleading / True) แปลตรงตัวและสม่ำเสมอ
 - ไม่แตะ markdown, ลิงก์, URL, shortcode
+- `HUMAN_STYLE` (ใช้ใน prompt เนื้อหาหลัก): อ่านเหมือนนักข่าวเจ้าของภาษาเขียนเอง ไม่ใช้คำติดปากของ AI — หลักเดียวกับ `.claude/writing-style.md` ที่ `/draft-article`, `/clone-article` ใช้
 
 แก้ prompt ที่เดียวแล้วมีผลทุกเว็บ (เพราะโค้ดชุดเดียวกัน)
 
